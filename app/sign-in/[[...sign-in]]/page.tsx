@@ -6,7 +6,7 @@ export default function SignInPage() {
       style={{ background: "linear-gradient(150deg,#06060e 0%,#060e06 100%)" }}>
 
       <div className="text-center mb-2">
-        <h1 className="text-3xl font-black text-white">Tactics Board</h1>
+        <h1 className="text-3xl font-black text-white">Footboard</h1>
         <p className="text-gray-400 mt-1 text-sm">Connecte-toi pour accéder à la plateforme</p>
       </div>
 

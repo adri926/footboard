@@ -39,7 +39,7 @@ export default function Home() {
         {/* Hero */}
         <div className="mb-16">
           <h1 className="text-5xl font-black mb-4 tracking-tight text-white">
-            Tactics Board
+            Footboard
           </h1>
           <p className="text-xl max-w-lg text-gray-300">
             Crée, anime et partage des tactiques football comme un coach professionnel.

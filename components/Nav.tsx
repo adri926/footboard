@@ -42,7 +42,7 @@ export default function Nav() {
     >
       {/* Logo */}
       <Link href="/" className="text-white font-bold text-sm tracking-wide hover:opacity-75 transition shrink-0">
-        ⚽ Tactics Board
+        ⚽ Footboard
       </Link>
 
       {/* Sections */}

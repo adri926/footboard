@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Tactics Board",
+  title: "Footboard",
   description: "Crée et analyse des tactiques football",
 };
 
