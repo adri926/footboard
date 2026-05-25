@@ -23,16 +23,95 @@ function buildPlayers(formationId: string, team: "red" | "blue"): Player[] {
   }))
 }
 
+// Construit l'effectif rouge depuis les joueurs réels du club
+// Assigne automatiquement les joueurs aux slots de la formation par poste
+function buildClubPlayers(formationId: string, clubPlayers: ClubPlayerLite[]): Player[] {
+  const formation = FORMATIONS.find(f => f.id === formationId) ?? FORMATIONS[0]
+  const slots = formation.players // chaque slot a un nom de poste (GK, RB, etc.)
+
+  // Groupe les joueurs disponibles par poste
+  const available = clubPlayers.filter(p => p.status !== "injured" && p.status !== "suspended")
+  const byPos: Record<string, ClubPlayerLite[]> = { GK:[], DEF:[], MIL:[], ATT:[] }
+  available.forEach(p => { (byPos[p.position] ?? byPos.MIL).push(p) })
+
+  // Pour chaque slot, trouve le meilleur joueur (priorité au même poste)
+  const used = new Set<string>()
+  const result: Player[] = []
+
+  slots.forEach((slot, i) => {
+    const slotPos = inferPosition(slot.name)
+    // Cherche dans le bon poste d'abord
+    let player = byPos[slotPos]?.find(p => !used.has(p.id))
+    // Sinon, n'importe quel joueur disponible
+    if (!player) {
+      for (const pos of ["MIL","DEF","ATT","GK"]) {
+        player = byPos[pos]?.find(p => !used.has(p.id))
+        if (player) break
+      }
+    }
+    if (player) used.add(player.id)
+    result.push({
+      id: player?.id ?? `r${i+1}`,
+      name: player ? (player.number?.toString() ?? player.last_name.slice(0,3).toUpperCase()) : slot.name,
+      number: player?.number ?? i + 1,
+      position: "MID",
+      x: slot.x, y: slot.y,
+      team: "red",
+    })
+  })
+
+  return result
+}
+
+function inferPosition(slotName: string): string {
+  if (slotName === "GK") return "GK"
+  if (["RB","LB","CB","RWB","LWB"].includes(slotName)) return "DEF"
+  if (["RW","LW","ST","SS","CF"].includes(slotName)) return "ATT"
+  return "MIL"
+}
+
+interface ClubPlayerLite {
+  id: string; first_name: string; last_name: string
+  position: string; number?: number; status?: string
+}
+
+interface ClubData {
+  club: { id: string; name: string }
+  players: ClubPlayerLite[]
+}
+
+interface Props {
+  clubData?: ClubData | null
+}
+
 const DEFAULT_RED  = "4-3-3"
 const DEFAULT_BLUE = "4-4-2"
 
-export default function TacticBoard() {
+export default function TacticBoard({ clubData }: Props = {}) {
+  // Mode joueurs : "demo" (génériques) ou "club" (vrais joueurs)
+  const hasClub = !!clubData && clubData.players.length > 0
+  const [mode, setMode] = useState<"demo" | "club">(hasClub ? "club" : "demo")
   const [redFormation,   setRedFormation]   = useState(DEFAULT_RED)
   const [blueFormation,  setBlueFormation]  = useState(DEFAULT_BLUE)
+  const buildRed = useCallback((fId: string) => {
+    return hasClub && mode === "club"
+      ? buildClubPlayers(fId, clubData!.players)
+      : buildPlayers(fId, "red")
+  }, [hasClub, mode, clubData])
   const [players,        setPlayers]        = useState<Player[]>([
     ...buildPlayers(DEFAULT_RED, "red"),
     ...buildPlayers(DEFAULT_BLUE, "blue"),
   ])
+
+  // Au montage, si le club est dispo, remplace l'équipe rouge par les vrais joueurs
+  useEffect(() => {
+    if (hasClub && mode === "club") {
+      setPlayers(prev => [
+        ...buildClubPlayers(redFormation, clubData!.players),
+        ...prev.filter(p => p.team === "blue"),
+      ])
+    }
+  }, [mode, hasClub])
   const [transitioning,  setTransitioning]  = useState(false)
   const [activeAnim,     setActiveAnim]     = useState<TacticAnim | null>(null)
   const [currentStep,    setCurrentStep]    = useState(0)
@@ -99,11 +178,12 @@ export default function TacticBoard() {
     setTransitioning(true)
     if (team === "red") setRedFormation(formationId)
     else setBlueFormation(formationId)
-    setPlayers(prev => [...prev.filter(p => p.team !== team), ...buildPlayers(formationId, team)])
+    const newTeam = team === "red" ? buildRed(formationId) : buildPlayers(formationId, "blue")
+    setPlayers(prev => [...prev.filter(p => p.team !== team), ...newTeam])
     setActiveSituation(null)
     setActiveBall(undefined)
     setTimeout(() => setTransitioning(false), 500)
-  }, [])
+  }, [buildRed])
 
   // ── Applique la situation choisie ET la contre-réaction automatique ──
   const applySituation = useCallback((situationId: string, team: "red" | "blue") => {
@@ -222,11 +302,38 @@ export default function TacticBoard() {
         {/* Titre + retour */}
         <div className="hidden md:block shrink-0">
           <a href="/tactique" className="text-xs text-white/25 hover:text-white/60 transition mb-2 inline-block">← Tactique</a>
-          <h1 className="text-sm font-bold text-white tracking-wide">Tactics Board</h1>
+          <h1 className="text-sm font-bold text-white tracking-wide">Footboard</h1>
           <p className="text-xs mt-0.5 text-gray-500">Glisse · anime · simule · affronte</p>
         </div>
 
         <Divider />
+
+        {/* Toggle Démo / Mon Club */}
+        {hasClub && (
+          <>
+            <Section label="Équipe rouge">
+              <div className="flex gap-1 p-1 rounded-lg" style={{ backgroundColor:"rgba(255,255,255,0.04)" }}>
+                <button onClick={() => setMode("club")}
+                  className="flex-1 py-1.5 rounded-md text-xs font-semibold transition"
+                  style={{
+                    backgroundColor: mode === "club" ? "rgba(239,68,68,0.25)" : "transparent",
+                    color: mode === "club" ? "#fca5a5" : "rgba(255,255,255,0.4)",
+                  }}>
+                  {clubData!.club.name}
+                </button>
+                <button onClick={() => setMode("demo")}
+                  className="flex-1 py-1.5 rounded-md text-xs font-semibold transition"
+                  style={{
+                    backgroundColor: mode === "demo" ? "rgba(255,255,255,0.1)" : "transparent",
+                    color: mode === "demo" ? "white" : "rgba(255,255,255,0.4)",
+                  }}>
+                  Démo
+                </button>
+              </div>
+            </Section>
+            <Divider />
+          </>
+        )}
 
         {/* Formations */}
         <Section label="Formations">
