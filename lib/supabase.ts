@@ -1,18 +1,25 @@
 import { createClient } from "@supabase/supabase-js"
 
-const URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const URL          = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const ANON_KEY     = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-export const supabase = createClient(URL, KEY)
+// Client serveur (bypasse RLS, sécurité gérée par Clerk + filtres owner_id)
+// Si la service_role key n'est pas définie, retombe sur l'anon key
+export const supabase = createClient(
+  URL,
+  SERVICE_KEY ?? ANON_KEY,
+  { auth: { persistSession: false } }
+)
 
 // ─── Types DB ─────────────────────────────────────────────────
 
 export interface Club {
   id: string
-  owner_id: string       // Clerk user ID
+  owner_id: string
   name: string
   logo?: string
-  level?: string         // ex: "Régional 1", "Départemental 2"
+  level?: string
   city?: string
   created_at: string
 }
@@ -59,7 +66,7 @@ export interface Match {
   goals_for?: number
   goals_against?: number
   notes?: string
-  lineup?: Record<string, { x: number; y: number }>  // playerId → position
+  lineup?: Record<string, { x: number; y: number }>
   formation?: string
   created_at: string
 }
