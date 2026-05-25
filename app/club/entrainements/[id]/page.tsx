@@ -1,7 +1,8 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { getTrainingWithAttendance } from "../actions"
+import { getTrainingWithAttendance, sendTrainingConvocations } from "../actions"
 import PresenceClient from "./PresenceClient"
+import ConvocationButton from "@/components/ConvocationButton"
 
 export default async function TrainingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -19,18 +20,21 @@ export default async function TrainingDetailPage({ params }: { params: Promise<{
         </Link>
 
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-black">{training.theme ?? "Entraînement"}</h1>
-          <div className="flex gap-4 mt-2 text-sm text-gray-400">
-            <span>📅 {date.toLocaleDateString("fr-FR", { weekday:"long", day:"2-digit", month:"long" })} à {date.toLocaleTimeString("fr-FR", { hour:"2-digit", minute:"2-digit" })}</span>
-            {training.location && <span>📍 {training.location}</span>}
+        <div className="mb-8 flex items-start justify-between gap-4 flex-wrap">
+          <div className="flex-1 min-w-64">
+            <h1 className="text-3xl font-black">{training.theme ?? "Entraînement"}</h1>
+            <div className="flex gap-4 mt-2 text-sm text-gray-400">
+              <span>📅 {date.toLocaleDateString("fr-FR", { weekday:"long", day:"2-digit", month:"long" })} à {date.toLocaleTimeString("fr-FR", { hour:"2-digit", minute:"2-digit" })}</span>
+              {training.location && <span>📍 {training.location}</span>}
+            </div>
+            {training.notes && (
+              <p className="mt-3 text-sm text-gray-300 p-3 rounded-xl"
+                style={{ backgroundColor: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                {training.notes}
+              </p>
+            )}
           </div>
-          {training.notes && (
-            <p className="mt-3 text-sm text-gray-300 p-3 rounded-xl"
-              style={{ backgroundColor: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-              {training.notes}
-            </p>
-          )}
+          <ConvocationButton onSend={async () => await sendTrainingConvocations(id)} />
         </div>
 
         {/* Feuille de présence */}

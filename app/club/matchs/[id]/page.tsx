@@ -1,7 +1,8 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { getMatchDetail } from "../actions"
+import { getMatchDetail, sendMatchConvocations } from "../actions"
 import MatchDetailClient from "./MatchDetailClient"
+import ConvocationButton from "@/components/ConvocationButton"
 
 export default async function MatchDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -25,8 +26,8 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
 
         {/* Header */}
         <div className="flex items-start justify-between mb-8 flex-wrap gap-4">
-          <div>
-            <div className="flex items-center gap-3 mb-1">
+          <div className="flex-1 min-w-64">
+            <div className="flex items-center gap-3 mb-1 flex-wrap">
               <h1 className="text-3xl font-black">{match.opponent}</h1>
               {played && result && (
                 <div className="flex items-center gap-2">
@@ -40,12 +41,15 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
                 </div>
               )}
             </div>
-            <div className="flex gap-3 text-sm text-gray-400">
+            <div className="flex gap-3 text-sm text-gray-400 flex-wrap">
               <span>📅 {date.toLocaleDateString("fr-FR", { weekday:"long", day:"2-digit", month:"long" })}</span>
               <span>{match.home_away === "home" ? "🏠 Domicile" : "✈️ Extérieur"}</span>
               {match.competition && <span>🏆 {match.competition}</span>}
             </div>
           </div>
+          {!played && (
+            <ConvocationButton onSend={async () => await sendMatchConvocations(id)} />
+          )}
         </div>
 
         <MatchDetailClient

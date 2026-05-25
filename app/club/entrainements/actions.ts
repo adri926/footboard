@@ -3,6 +3,7 @@
 import { auth } from "@clerk/nextjs/server"
 import { supabase } from "@/lib/supabase"
 import { revalidatePath } from "next/cache"
+import { resend, hasEmailKey, trainingTemplate } from "@/lib/email"
 
 async function getClubId(userId: string) {
   const { data } = await supabase.from("clubs").select("id").eq("owner_id", userId).single()
@@ -82,4 +83,54 @@ export async function updateAttendance(trainingId: string, playerId: string, sta
 export async function deleteTraining(id: string) {
   await supabase.from("trainings").delete().eq("id", id)
   revalidatePath("/club/entrainements")
+}
+
+export async function sendTrainingConvocations(trainingId: string) {
+  const { userId } = await auth()
+  if (!userId) throw new Error("Non connecté")
+  if (!hasEmailKey() || !resend) {
+    return { sent: 0, skipped: 0, error: "Resend API key manquante. Ajoute RESEND_API_KEY dans .env.local" }
+  }
+
+  const clubId = await getClubId(userId)
+  if (!clubId) throw new Error("Club introuvable")
+
+  const [{ data: training }, { data: club }, { data: players }] = await Promise.all([
+    supabase.from("trainings").select("*").eq("id", trainingId).single(),
+    supabase.from("clubs").select("name").eq("id", clubId).single(),
+    supabase.from("club_players").select("*").eq("club_id", clubId),
+  ])
+
+  if (!training || !club) throw new Error("Données introuvables")
+
+  const recipients = (players ?? []).filter(p => p.email && p.email.trim() !== "")
+
+  if (recipients.length === 0) {
+    return { sent: 0, skipped: (players?.length ?? 0), error: "Aucun joueur n'a d'email renseigné" }
+  }
+
+  let sent = 0
+  for (const p of recipients) {
+    try {
+      const { subject, html } = trainingTemplate({
+        clubName:        club.name,
+        playerFirstName: p.first_name,
+        date:            training.date,
+        location:        training.location,
+        theme:           training.theme,
+        notes:           training.notes,
+      })
+      await resend.emails.send({
+        from:    process.env.RESEND_FROM ?? "Footboard <onboarding@resend.dev>",
+        to:      p.email!,
+        subject,
+        html,
+      })
+      sent++
+    } catch (err) {
+      console.error(`Échec envoi à ${p.email}`, err)
+    }
+  }
+
+  return { sent, skipped: (players?.length ?? 0) - sent }
 }
