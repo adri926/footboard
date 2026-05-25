@@ -529,7 +529,9 @@ export default function TacticBoard({ clubData }: Props = {}) {
           ref={containerRef}
           className="relative rounded-2xl overflow-hidden"
           style={{
-            height: "min(calc(100vh - 2.5rem), calc((100vw - 17rem) * 1.5))",
+            height: hasClub && mode === "club"
+              ? "min(calc(100vh - 2.5rem), calc((100vw - 32rem) * 1.5))"
+              : "min(calc(100vh - 2.5rem), calc((100vw - 17rem) * 1.5))",
             aspectRatio: "600 / 900",
             boxShadow: "0 0 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.08)",
           }}
@@ -569,6 +571,95 @@ export default function TacticBoard({ clubData }: Props = {}) {
           )}
         </div>
       </main>
+
+      {/* ── DROITE : effectif (uniquement si club + mode club) ── */}
+      {hasClub && mode === "club" && (
+        <aside
+          className="hidden md:flex md:w-60 md:h-full shrink-0 flex-col gap-3 px-4 py-4 overflow-y-auto border-l"
+          style={{
+            backdropFilter: "blur(24px)",
+            WebkitBackdropFilter: "blur(24px)",
+            backgroundColor: "rgba(0,0,0,0.45)",
+            borderColor: "rgba(255,255,255,0.1)",
+          }}
+        >
+          <div>
+            <p className="text-xs uppercase tracking-widest text-white/25">Effectif</p>
+            <h2 className="text-sm font-bold text-white mt-0.5">{clubData!.club.name}</h2>
+            <p className="text-[10px] text-white/30 mt-0.5">{clubData!.players.length} joueurs</p>
+          </div>
+
+          <Divider />
+
+          <RosterPanel clubPlayers={clubData!.players} onFieldIds={players.filter(p => p.team === "red").map(p => p.id)} />
+        </aside>
+      )}
+    </div>
+  )
+}
+
+function RosterPanel({ clubPlayers, onFieldIds }: {
+  clubPlayers: ClubPlayerLite[]
+  onFieldIds: string[]
+}) {
+  const onFieldSet = new Set(onFieldIds)
+  const byPos: Record<string, ClubPlayerLite[]> = { GK:[], DEF:[], MIL:[], ATT:[] }
+  clubPlayers.forEach(p => { (byPos[p.position] ?? byPos.MIL).push(p) })
+
+  const labels = { GK:"Gardiens", DEF:"Défenseurs", MIL:"Milieux", ATT:"Attaquants" }
+  const colors = { GK:"#c084fc", DEF:"#4ade80", MIL:"#60a5fa", ATT:"#f87171" }
+
+  return (
+    <div className="flex flex-col gap-3">
+      {(["GK","DEF","MIL","ATT"] as const).map(pos => {
+        const group = byPos[pos]
+        if (!group?.length) return null
+        return (
+          <div key={pos}>
+            <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5"
+              style={{ color: colors[pos] }}>
+              {labels[pos]} ({group.length})
+            </p>
+            <div className="flex flex-col gap-1">
+              {group.sort((a,b) => (a.number ?? 99) - (b.number ?? 99)).map(p => {
+                const isOnField    = onFieldSet.has(p.id)
+                const isInjured    = p.status === "injured"
+                const isSuspended  = p.status === "suspended"
+                const isUnavailable = isInjured || isSuspended
+
+                return (
+                  <div key={p.id}
+                    className="flex items-center gap-2 px-2 py-1.5 rounded-lg transition"
+                    style={{
+                      backgroundColor: isOnField ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.02)",
+                      border: isOnField ? `1px solid ${colors[pos]}55` : "1px solid rgba(255,255,255,0.05)",
+                      opacity: isUnavailable ? 0.4 : 1,
+                    }}>
+                    <span className="text-[10px] font-bold w-5 text-center"
+                      style={{ color: isOnField ? colors[pos] : "rgba(255,255,255,0.3)" }}>
+                      {p.number ?? "—"}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-white truncate">
+                        {p.first_name} {p.last_name}
+                      </p>
+                    </div>
+                    {isOnField && (
+                      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: colors[pos] }} />
+                    )}
+                    {isInjured && <span className="text-[9px]" title="Blessé">🤕</span>}
+                    {isSuspended && <span className="text-[9px]" title="Suspendu">🟨</span>}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })}
+
+      <p className="text-[10px] text-white/25 mt-2 leading-relaxed">
+        ● = sur le terrain · 🤕 blessé · 🟨 suspendu
+      </p>
     </div>
   )
 }
