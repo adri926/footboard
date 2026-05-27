@@ -1,17 +1,26 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Barlow_Condensed, Space_Mono, Barlow } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import Nav from "@/components/Nav";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const barlowCondensed = Barlow_Condensed({
+  variable: "--font-display",
   subsets: ["latin"],
+  weight: ["400", "600", "700", "900"],
+  style: ["normal", "italic"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const spaceMono = Space_Mono({
+  variable: "--font-mono",
   subsets: ["latin"],
+  weight: ["400", "700"],
+});
+
+const barlow = Barlow({
+  variable: "--font-body",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
 });
 
 export const metadata: Metadata = {
@@ -27,10 +36,10 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html
-        lang="en"
-        className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+        lang="fr"
+        className={`${barlowCondensed.variable} ${spaceMono.variable} ${barlow.variable} h-full antialiased`}
       >
-        <body className="min-h-full flex flex-col" style={{ background: "linear-gradient(150deg,#06060e 0%,#060e06 100%)" }}>
+        <body className="min-h-full flex flex-col" style={{ background: "#181812" }}>
           <Nav />
           {children}
         </body>

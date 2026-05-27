@@ -1,18 +1,25 @@
 "use client"
 
-import { useState, useRef, useCallback, useEffect } from "react"
+import { useState, useRef, useCallback, useEffect, useMemo } from "react"
 import Pitch from "./Pitch"
 import PlayerToken from "./PlayerToken"
 import ArrowLayer from "./ArrowLayer"
 import PlaybackControls from "./PlaybackControls"
 import { FORMATIONS, mirrorY } from "@/lib/formations"
 import { ANIMATIONS, CATEGORIES } from "@/lib/animations"
-import { SITUATIONS, COUNTER, ballPosition, CONTEXT_LABEL } from "@/lib/situations"
+import { SITUATIONS, PHASES } from "@/lib/situations"
 import { REACTIONS, BASE_POSITIONS, getZone } from "@/lib/reactions"
+import AppelLayer from "./AppelLayer"
+import ZoneOverlay from "./ZoneOverlay"
 import BallToken from "./BallToken"
 import type { Player } from "@/types"
 import type { TacticAnim } from "@/lib/animations"
 import type { Block, Zone } from "@/lib/reactions"
+import type { AppelArrow } from "./AppelLayer"
+import { computeTargetPositions, jitter, lerp, type PositionMap } from "@/lib/engine/engine"
+import type { PossessionState } from "@/lib/engine/rules"
+
+type DemoMode = "bloc-bas" | "bloc-median" | "bloc-haut" | "pressing" | "contre"
 
 function buildPlayers(formationId: string, team: "red" | "blue"): Player[] {
   const formation = FORMATIONS.find(f => f.id === formationId) ?? FORMATIONS[0]
@@ -91,6 +98,7 @@ export default function TacticBoard({ clubData }: Props = {}) {
   // Mode joueurs : "demo" (génériques) ou "club" (vrais joueurs)
   const hasClub = !!clubData && clubData.players.length > 0
   const [mode, setMode] = useState<"demo" | "club">(hasClub ? "club" : "demo")
+  const [showRoster, setShowRoster] = useState(false)
   const [redFormation,   setRedFormation]   = useState(DEFAULT_RED)
   const [blueFormation,  setBlueFormation]  = useState(DEFAULT_BLUE)
   const buildRed = useCallback((fId: string) => {
@@ -120,8 +128,8 @@ export default function TacticBoard({ clubData }: Props = {}) {
   const [activeArrows,   setActiveArrows]   = useState<TacticAnim["steps"][0]["arrows"]>([])
   const [activeBall,     setActiveBall]     = useState<{ x: number; y: number } | undefined>()
   const [activeCategory, setActiveCategory] = useState<string>("pressing")
-  const [activeSituation,setActiveSituation]= useState<string | null>(null)
-  const [situationTeam,  setSituationTeam]  = useState<"red" | "blue">("blue")
+  const [activeSituation,setActiveSituationState]= useState<string | null>(null)
+  const [activePhase,    setActivePhase]    = useState<string>("possession")
 
   // ── Mode Sparring ──
   const [sparring,        setSparring]        = useState(false)
@@ -130,15 +138,34 @@ export default function TacticBoard({ clubData }: Props = {}) {
   const [currentZone,     setCurrentZone]     = useState<Zone | null>(null)
   const [currentReaction, setCurrentReaction] = useState<{ label:string; description:string } | null>(null)
 
-  const containerRef = useRef<HTMLDivElement>(null)
-  const timerRef     = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // ── Moteur de mouvement (sparring live) ──
+  const [demoMode,        setDemoMode]        = useState<DemoMode>("bloc-bas")
+  const [enginePositions, setEnginePositions] = useState<PositionMap>({})
+  const engineRef         = useRef<PositionMap>({})
+  const engineTimerRef    = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [activeAppels,    setActiveAppels]    = useState<AppelArrow[]>([])
+  const [showZones,       setShowZones]       = useState(false)
+
+  const containerRef       = useRef<HTMLDivElement>(null)
+  const timerRef           = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const activeSituationRef = useRef<string | null>(null)
+  const possessionRef      = useRef<"red" | "blue" | null>(null)
+  // Wrapper qui garde le ref en sync — utilisé partout à la place du setter brut
+  const setActiveSituation = useCallback((v: string | null) => {
+    activeSituationRef.current = v
+    setActiveSituationState(v)
+  }, [])
+
+  const [isMobile,           setIsMobile]           = useState(false)
+  const [mobileCtrlOpen,     setMobileCtrlOpen]     = useState(false)
 
   const applyStep = useCallback((anim: TacticAnim, stepIdx: number) => {
     const step = anim.steps[stepIdx]
     if (!step) return
     setAnimPlayers(prev => ({ ...prev, ...(step.moves ?? {}) }))
     setActiveArrows(step.arrows ?? [])
-    setActiveBall(step.ball)
+    // Only update ball when step defines it — keep previous position otherwise
+    if (step.ball !== undefined) setActiveBall(step.ball)
     setCurrentStep(stepIdx)
   }, [])
 
@@ -151,6 +178,13 @@ export default function TacticBoard({ clubData }: Props = {}) {
     setActiveAnim(anim); setCurrentStep(0); setIsPlaying(false)
     setActiveArrows(anim.steps[0].arrows ?? [])
     setActiveBall(anim.steps[0].ball)
+  }, [])
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
   }, [])
 
   useEffect(() => {
@@ -168,11 +202,16 @@ export default function TacticBoard({ clubData }: Props = {}) {
   const handlePause = () => { setIsPlaying(false); if (timerRef.current) clearTimeout(timerRef.current) }
   const handleNext  = () => { if (!activeAnim) return; applyStep(activeAnim, Math.min(currentStep + 1, activeAnim.steps.length - 1)); setIsPlaying(false) }
   const handlePrev  = () => { if (!activeAnim) return; applyStep(activeAnim, Math.max(currentStep - 1, 0)); setIsPlaying(false) }
-  const handleStop  = () => {
+  const handleStop  = useCallback(() => {
     setIsPlaying(false); setActiveAnim(null); setAnimPlayers({})
-    setActiveArrows([]); setActiveBall(undefined)
     if (timerRef.current) clearTimeout(timerRef.current)
-  }
+    // Restore situation context (arrows + ball) without stale closure
+    const sit = activeSituationRef.current
+      ? SITUATIONS.find(s => s.id === activeSituationRef.current)
+      : null
+    setActiveArrows(sit?.arrows ?? [])
+    setActiveBall(sit?.ball)
+  }, [])
 
   const changeFormation = useCallback((team: "red" | "blue", formationId: string) => {
     setTransitioning(true)
@@ -185,35 +224,53 @@ export default function TacticBoard({ clubData }: Props = {}) {
     setTimeout(() => setTransitioning(false), 500)
   }, [buildRed])
 
-  // ── Applique la situation choisie ET la contre-réaction automatique ──
-  const applySituation = useCallback((situationId: string, team: "red" | "blue") => {
-    const situation  = SITUATIONS.find(s => s.id === situationId)
-    const counterId  = COUNTER[situationId]
-    const counter    = SITUATIONS.find(s => s.id === counterId)
-    const otherTeam  = team === "red" ? "blue" : "red"
+  // ── Applique la situation choisie (22 joueurs + balle + flèches de contexte) ──
+  const applySituation = useCallback((situationId: string) => {
+    const situation = SITUATIONS.find(s => s.id === situationId)
     if (!situation) return
 
     setTransitioning(true)
     setActiveSituation(situationId)
-    setSituationTeam(team)
-    setActiveArrows([])
+    setActiveAnim(null)
+    setAnimPlayers({})
 
-    const teamOverrides  = situation.positions[team]
-    const otherOverrides = counter?.positions[otherTeam] ?? []
-    const allOverrides   = [...teamOverrides, ...otherOverrides]
-
+    const all = [...situation.positions.red, ...situation.positions.blue]
     setPlayers(prev => prev.map(p => {
-      const ov = allOverrides.find(o => o.id === p.id)
+      const ov = all.find(o => o.id === p.id)
       return ov ? { ...p, x: ov.x, y: ov.y } : p
     }))
 
-    setActiveBall(ballPosition(situationId, team))
+    setActiveBall(situation.ball)
+    setActiveArrows(situation.arrows ?? [])
     setTimeout(() => setTransitioning(false), 500)
   }, [])
 
   const updatePosition = useCallback((id: string, x: number, y: number) => {
     setPlayers(prev => prev.map(p => p.id === id ? { ...p, x, y } : p))
   }, [])
+
+  // ── Engine tick — mouvement continu des deux équipes pendant le sparring ──
+  useEffect(() => {
+    if (!sparring) {
+      if (engineTimerRef.current) clearInterval(engineTimerRef.current)
+      return
+    }
+
+    const tick = () => {
+      const ball = sparringBall
+      const poss: PossessionState = possessionRef.current ?? "contested"
+
+      const target = jitter(computeTargetPositions(ball, poss), 1.0)
+      const blended = lerp(engineRef.current, target, 0.3)
+      engineRef.current = blended
+      setEnginePositions({ ...blended })
+    }
+
+    engineTimerRef.current = setInterval(tick, 1800)
+    return () => { if (engineTimerRef.current) clearInterval(engineTimerRef.current) }
+  // possessionRef.current est lu dans tick via closure — pas besoin de le lister ici
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sparring, sparringBall])
 
   // ── Réaction adversaire quand le ballon change de zone ──
   const handleSparringBall = useCallback((x: number, y: number) => {
@@ -243,23 +300,26 @@ export default function TacticBoard({ clubData }: Props = {}) {
     setTimeout(() => setTransitioning(false), 500)
   }, [currentZone, sparringBlock])
 
-  // Démarrer le sparring — reset les positions
+  // Démarrer le sparring — reset les positions + init engine
   const startSparring = useCallback(() => {
     handleStop()
     setActiveSituation(null)
+    const initBall = { x: 50, y: 50 }
     setSparring(true)
-    setSparringBall({ x: 50, y: 50 })
+    setSparringBall(initBall)
     setCurrentZone(null)
     setCurrentReaction(null)
     setActiveArrows([])
 
-    // Bleu en bloc bas par défaut au départ
-    const base = BASE_POSITIONS[sparringBlock]
-    setPlayers(prev => prev.map(p => {
-      const pos = base[p.id]
-      return pos && p.team === "blue" ? { ...p, x: pos.x, y: pos.y } : p
-    }))
-  }, [sparringBlock, handleStop])
+    // Seed engine positions from current player state
+    const initPos: PositionMap = {}
+    setPlayers(prev => {
+      prev.forEach(p => { initPos[p.id] = { x: p.x, y: p.y } })
+      return prev
+    })
+    engineRef.current = initPos
+    setEnginePositions(initPos)
+  }, [handleStop])
 
   const stopSparring = useCallback(() => {
     setSparring(false)
@@ -269,16 +329,33 @@ export default function TacticBoard({ clubData }: Props = {}) {
     setCurrentZone(null)
   }, [])
 
-  const displayPlayers = players.map(p => ({
-    ...p,
-    x: animPlayers[p.id]?.x ?? p.x,
-    y: animPlayers[p.id]?.y ?? p.y,
-  }))
+  const displayPlayers = players.map(p => {
+    const eng = sparring ? enginePositions[p.id] : undefined
+    return {
+      ...p,
+      x: animPlayers[p.id]?.x ?? eng?.x ?? p.x,
+      y: animPlayers[p.id]?.y ?? eng?.y ?? p.y,
+    }
+  })
 
   const activeStep    = activeAnim?.steps[currentStep]
   const filteredAnims = ANIMATIONS.filter(a => a.category === activeCategory)
-  const otherTeam     = situationTeam === "red" ? "blue" : "red"
-  const ctx           = activeSituation ? CONTEXT_LABEL[activeSituation] : null
+  const activeSit     = activeSituation ? SITUATIONS.find(s => s.id === activeSituation) : null
+  const activePhaseDef = activeSit ? PHASES.find(p => p.id === activeSit.phase) : null
+
+  // Possession auto : équipe dont le joueur est le plus proche de la balle
+  const ballPos = sparring ? sparringBall : activeBall
+  const possession = useMemo((): "red" | "blue" | null => {
+    if (!ballPos) return null
+    let minDist = Infinity
+    let closest: "red" | "blue" | null = null
+    for (const p of displayPlayers) {
+      const d = Math.hypot(p.x - ballPos.x, p.y - ballPos.y)
+      if (d < minDist) { minDist = d; closest = p.team }
+    }
+    possessionRef.current = closest
+    return closest
+  }, [displayPlayers, ballPos])
 
   const teamAccent = (t: "red" | "blue") => t === "red"
     ? { border: "rgba(232,16,16,0.6)", bg: "rgba(232,16,16,0.15)", text: "#ff5555", dim: "rgba(232,16,16,0.35)" }
@@ -287,23 +364,44 @@ export default function TacticBoard({ clubData }: Props = {}) {
   return (
     <div
       className="flex flex-col md:flex-row h-screen overflow-hidden"
-      style={{ background: "linear-gradient(150deg, #06060e 0%, #060e06 100%)" }}
+      style={{ background: "#181812" }}
     >
       {/* ── GAUCHE : contrôles ── */}
       <aside
-        className="md:w-64 md:h-full shrink-0 flex flex-row md:flex-col gap-3 px-4 py-4 overflow-x-auto md:overflow-y-auto md:overflow-x-hidden border-b md:border-b-0 md:border-r"
+        className="md:w-64 md:h-full shrink-0 flex flex-col border-b md:border-b-0 md:border-r"
         style={{
-          backdropFilter: "blur(24px)",
-          WebkitBackdropFilter: "blur(24px)",
-          backgroundColor: "rgba(0,0,0,0.45)",
-          borderColor: "rgba(255,255,255,0.1)",
+          backgroundColor: "#1f1f19",
+          borderColor: "rgba(122,154,130,0.15)",
         }}
       >
+        {/* Mobile toggle */}
+        <button
+          className="md:hidden flex items-center justify-between px-4 py-3 text-xs transition shrink-0"
+          style={{ color: "rgba(255,255,255,0.45)" }}
+          onClick={() => setMobileCtrlOpen(o => !o)}
+        >
+          <span>⚙ Contrôles</span>
+          <span className="text-base leading-none">{mobileCtrlOpen ? "▲" : "▼"}</span>
+        </button>
+
+        {/* Content wrapper — collapsible on mobile */}
+        <div className={`flex flex-row md:flex-col gap-3 px-4 py-2 md:py-4 overflow-x-auto md:overflow-y-auto md:overflow-x-hidden flex-1 ${isMobile && !mobileCtrlOpen ? "hidden" : ""}`}>
+
         {/* Titre + retour */}
         <div className="hidden md:block shrink-0">
-          <a href="/tactique" className="text-xs text-white/25 hover:text-white/60 transition mb-2 inline-block">← Tactique</a>
-          <h1 className="text-sm font-bold text-white tracking-wide">Footboard</h1>
-          <p className="text-xs mt-0.5 text-gray-500">Glisse · anime · simule · affronte</p>
+          <a href="/tactique"
+            className="transition mb-3 inline-block"
+            style={{ fontFamily:"var(--font-mono),monospace", fontSize:10, letterSpacing:"0.06em", color:"rgba(122,154,130,0.45)" }}>
+            ← TACTIQUE
+          </a>
+          <h1 style={{
+            fontFamily:"var(--font-display),system-ui,sans-serif",
+            fontWeight:900, fontSize:22, letterSpacing:"0.05em",
+            color:"rgba(255,255,255,0.92)", lineHeight:1,
+          }}>FOOTBOARD</h1>
+          <p style={{ fontFamily:"var(--font-mono),monospace", fontSize:9, letterSpacing:"0.08em", color:"rgba(122,154,130,0.5)", marginTop:4 }}>
+            GLISSE · ANIME · SIMULE
+          </p>
         </div>
 
         <Divider />
@@ -343,62 +441,73 @@ export default function TacticBoard({ clubData }: Props = {}) {
 
         <Divider />
 
-        {/* Opposition */}
-        <Section label="Simulation">
-          {/* Équipe qui choisit */}
-          <div className="flex gap-1.5">
-            {(["red", "blue"] as const).map(t => {
-              const a = teamAccent(t)
-              const active = situationTeam === t
+        {/* Toggle zones */}
+        <button
+          onClick={() => setShowZones(v => !v)}
+          className="shrink-0 py-1.5 px-3 rounded-lg transition"
+          style={{
+            fontFamily:"var(--font-mono),monospace", fontSize:10, letterSpacing:"0.06em",
+            backgroundColor: showZones ? "rgba(122,154,130,0.15)" : "transparent",
+            border: showZones ? "1px solid rgba(122,154,130,0.45)" : "1px solid rgba(122,154,130,0.15)",
+            color: showZones ? "#7A9A82" : "rgba(122,154,130,0.4)",
+          }}>
+          {showZones ? "⊟ MASQUER ZONES" : "⊞ 9 ZONES"}
+        </button>
+
+        <Divider />
+
+        {/* Phases de jeu */}
+        <Section label="Phase de jeu">
+          {/* Les 4 phases en 2×2 */}
+          <div className="grid grid-cols-2 gap-1">
+            {PHASES.map(phase => {
+              const isActive = activePhase === phase.id
               return (
-                <button key={t} onClick={() => setSituationTeam(t)}
-                  className="flex-1 py-1.5 rounded-lg text-xs font-bold transition"
+                <button key={phase.id}
+                  onClick={() => setActivePhase(phase.id)}
+                  className="py-2 px-2 rounded-lg text-left transition"
                   style={{
-                    backgroundColor: active ? a.bg : "rgba(255,255,255,0.04)",
-                    border: `1px solid ${active ? a.border : "rgba(255,255,255,0.1)"}`,
-                    color: active ? a.text : "rgba(255,255,255,0.4)",
-                    boxShadow: active ? `0 0 12px ${a.dim}` : "none",
+                    backgroundColor: isActive ? phase.dim : "rgba(255,255,255,0.04)",
+                    border: `1px solid ${isActive ? phase.color + "55" : "rgba(255,255,255,0.08)"}`,
                   }}>
-                  ● {t === "red" ? "Rouge" : "Bleu"}
+                  <p className="text-xs font-bold leading-tight"
+                    style={{ color: isActive ? phase.color : "rgba(255,255,255,0.5)" }}>
+                    {phase.label}
+                  </p>
+                  <p className="text-[9px] mt-0.5 leading-tight"
+                    style={{ color: isActive ? phase.color + "99" : "rgba(255,255,255,0.2)" }}>
+                    {phase.sublabel}
+                  </p>
                 </button>
               )
             })}
           </div>
 
-          {/* Blocs */}
-          <div className="flex gap-1.5 mt-1">
-            {SITUATIONS.map(s => {
-              const a  = teamAccent(situationTeam)
-              const active = activeSituation === s.id
+          {/* Situations de la phase active */}
+          <div className="flex flex-col gap-1 mt-1">
+            {SITUATIONS.filter(s => s.phase === activePhase).map(s => {
+              const isActive = activeSituation === s.id
               return (
-                <button key={s.id} onClick={() => applySituation(s.id, situationTeam)}
-                  className="flex-1 py-2 rounded-lg text-xs font-semibold transition"
+                <button key={s.id} onClick={() => applySituation(s.id)}
+                  className="text-left px-3 py-2.5 rounded-xl transition"
                   style={{
-                    backgroundColor: active ? a.bg : "rgba(255,255,255,0.04)",
-                    border: `1px solid ${active ? a.border : "rgba(255,255,255,0.1)"}`,
-                    color: active ? a.text : "rgba(255,255,255,0.45)",
-                    boxShadow: active ? `0 0 14px ${a.dim}` : "none",
+                    backgroundColor: isActive ? "rgba(122,154,130,0.12)" : "rgba(122,154,130,0.03)",
+                    border: `1px solid ${isActive ? "rgba(122,154,130,0.4)" : "rgba(122,154,130,0.1)"}`,
                   }}>
-                  {s.label}
+                  <p style={{
+                    fontFamily:"var(--font-display),system-ui,sans-serif",
+                    fontWeight:700, fontSize:13, letterSpacing:"0.02em",
+                    color: isActive ? "#7A9A82" : "rgba(255,255,255,0.85)",
+                  }}>
+                    {s.label}
+                  </p>
+                  <p style={{ fontFamily:"var(--font-body),sans-serif", fontSize:10, marginTop:2, color:"rgba(122,154,130,0.5)", lineHeight:1.4 }}>
+                    {s.description}
+                  </p>
                 </button>
               )
             })}
           </div>
-
-          {/* Contexte de match */}
-          {ctx && activeSituation && (
-            <div className="mt-1.5 rounded-lg p-2.5 flex flex-col gap-1"
-              style={{ backgroundColor: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: teamAccent(situationTeam).text }} />
-                <span className="text-xs text-white font-medium">{ctx.owner}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: teamAccent(otherTeam).text }} />
-                <span className="text-xs text-gray-400">{ctx.other}</span>
-              </div>
-            </div>
-          )}
         </Section>
 
         <Divider />
@@ -407,47 +516,62 @@ export default function TacticBoard({ clubData }: Props = {}) {
         <Section label="Sparring">
           {!sparring ? (
             <div className="flex flex-col gap-2">
+              {/* Mode équipe démo */}
               <div>
-                <label className="text-xs mb-1 block" style={{ color:"rgba(255,255,255,0.4)" }}>Bloc adverse</label>
-                <div className="flex gap-1">
-                  {(["bloc-haut","bloc-median","bloc-bas"] as Block[]).map(b => {
-                    const labels: Record<Block, string> = { "bloc-haut":"Haut", "bloc-median":"Médian", "bloc-bas":"Bas" }
+                <label className="text-xs mb-1.5 block" style={{ color:"rgba(255,255,255,0.4)" }}>Mode équipe bleue (démo)</label>
+                <div className="grid grid-cols-2 gap-1">
+                  {(["bloc-bas","bloc-median","bloc-haut","pressing","contre"] as DemoMode[]).map(m => {
+                    const mLabels: Record<DemoMode, string> = {
+                      "bloc-bas":    "Bloc bas",
+                      "bloc-median": "Bloc médian",
+                      "bloc-haut":   "Bloc haut",
+                      "pressing":    "Pressing",
+                      "contre":      "Contre",
+                    }
                     return (
-                      <button key={b} onClick={() => setSparringBlock(b)}
-                        className="flex-1 py-1.5 rounded-lg text-xs font-semibold transition"
+                      <button key={m} onClick={() => setDemoMode(m)}
+                        className="py-1.5 px-2 rounded-lg text-xs font-semibold transition text-left"
                         style={{
-                          backgroundColor: sparringBlock === b ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.04)",
-                          border: sparringBlock === b ? "1px solid rgba(255,255,255,0.25)" : "1px solid rgba(255,255,255,0.08)",
-                          color: sparringBlock === b ? "white" : "rgba(255,255,255,0.35)",
+                          backgroundColor: demoMode === m ? "rgba(85,153,255,0.18)" : "rgba(255,255,255,0.04)",
+                          border: demoMode === m ? "1px solid rgba(85,153,255,0.4)" : "1px solid rgba(255,255,255,0.08)",
+                          color: demoMode === m ? "#5599ff" : "rgba(255,255,255,0.35)",
                         }}>
-                        {labels[b]}
+                        {mLabels[m]}
                       </button>
                     )
                   })}
                 </div>
               </div>
               <button onClick={startSparring}
-                className="w-full py-2 rounded-xl text-sm font-bold transition hover:opacity-90"
-                style={{ backgroundColor:"rgba(255,255,255,0.9)", color:"black" }}>
-                ▶ Lancer le sparring
+                className="w-full py-2 rounded-xl transition hover:opacity-90"
+                style={{
+                  fontFamily:"var(--font-mono),monospace", fontWeight:700, fontSize:11, letterSpacing:"0.08em",
+                  backgroundColor:"#7A9A82", color:"#181812",
+                }}>
+                ▶ LANCER
               </button>
             </div>
           ) : (
             <div className="flex flex-col gap-2">
-              {currentReaction ? (
-                <div className="p-3 rounded-xl"
-                  style={{ backgroundColor:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.12)" }}>
-                  <p className="text-white text-xs font-bold">{currentReaction.label}</p>
-                  <p className="text-xs mt-1" style={{ color:"rgba(255,255,255,0.4)" }}>{currentReaction.description}</p>
+              {/* Indicateur de direction */}
+              <div className="flex gap-1">
+                <div className="flex-1 p-2 rounded-lg text-center"
+                  style={{ backgroundColor:"rgba(232,16,16,0.12)", border:"1px solid rgba(232,16,16,0.25)" }}>
+                  <p className="text-[10px] font-bold" style={{ color:"#ff5555" }}>● Rouge</p>
+                  <p className="text-[9px] mt-0.5" style={{ color:"rgba(255,255,255,0.35)" }}>Tu diriges</p>
                 </div>
-              ) : (
-                <div className="p-3 rounded-xl text-center"
-                  style={{ backgroundColor:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)" }}>
-                  <p className="text-xs" style={{ color:"rgba(255,255,255,0.3)" }}>
-                    🟡 Glisse le ballon sur le terrain
-                  </p>
+                <div className="flex-1 p-2 rounded-lg text-center"
+                  style={{ backgroundColor:"rgba(0,68,232,0.12)", border:"1px solid rgba(85,153,255,0.25)" }}>
+                  <p className="text-[10px] font-bold" style={{ color:"#5599ff" }}>● Bleu</p>
+                  <p className="text-[9px] mt-0.5" style={{ color:"rgba(255,255,255,0.35)" }}>Moteur IA</p>
                 </div>
-              )}
+              </div>
+              <div className="p-2 rounded-lg text-center"
+                style={{ backgroundColor:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)" }}>
+                <p className="text-[10px]" style={{ color:"rgba(255,255,255,0.3)" }}>
+                  Glisse le ballon jaune sur le terrain
+                </p>
+              </div>
               <button onClick={stopSparring}
                 className="w-full py-1.5 rounded-lg text-xs font-semibold transition"
                 style={{ border:"1px solid rgba(255,255,255,0.1)", color:"rgba(255,255,255,0.4)" }}>
@@ -521,26 +645,36 @@ export default function TacticBoard({ clubData }: Props = {}) {
             Réinitialiser
           </button>
         )}
+
+        </div>{/* end content wrapper */}
       </aside>
 
       {/* ── DROITE : terrain ── */}
-      <main className="flex-1 flex items-center justify-center p-3 md:p-5 order-first md:order-last">
+      <main className="flex-1 flex items-center justify-center p-3 md:p-5 order-first md:order-none">
         <div
           ref={containerRef}
           className="relative rounded-2xl overflow-hidden"
           style={{
-            height: hasClub && mode === "club"
-              ? "min(calc(100vh - 2.5rem), calc((100vw - 32rem) * 1.5))"
-              : "min(calc(100vh - 2.5rem), calc((100vw - 17rem) * 1.5))",
+            height: isMobile
+              ? undefined
+              : hasClub && mode === "club"
+                ? "min(calc(100vh - 2.5rem), calc((100vw - 32rem) * 1.5))"
+                : "min(calc(100vh - 2.5rem), calc((100vw - 17rem) * 1.5))",
+            width: isMobile
+              ? `min(calc(100vw - 24px), calc((100vh - ${mobileCtrlOpen ? 225 : 92}px) / 1.5))`
+              : undefined,
             aspectRatio: "600 / 900",
             boxShadow: "0 0 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.08)",
+            touchAction: "none",
           }}
         >
           <Pitch />
+          <ZoneOverlay visible={showZones} />
           <ArrowLayer
             arrows={activeArrows ?? []}
             ball={sparring ? undefined : activeBall}
           />
+          <AppelLayer appels={activeAppels} />
           {displayPlayers.map(player => (
             <PlayerToken
               key={player.id} id={player.id} label={player.name}
@@ -555,44 +689,164 @@ export default function TacticBoard({ clubData }: Props = {}) {
               x={sparringBall.x}
               y={sparringBall.y}
               draggable={true}
+              transitioning={false}
+              possession={possession}
               containerRef={containerRef}
               onPositionUpdate={handleSparringBall}
             />
           )}
-          {/* Ballon animation (non draggable) */}
+          {/* Ballon animation (non draggable) — plain div, CSS transition garantie */}
           {!sparring && activeBall && (
             <BallToken
               x={activeBall.x}
               y={activeBall.y}
               draggable={false}
+              transitioning={!!activeAnim || transitioning}
+              possession={possession}
               containerRef={containerRef}
               onPositionUpdate={() => {}}
             />
           )}
+
+          {/* ── Indicateur possession + attaque/défense ── */}
+          {possession && ballPos && (
+            <div className="absolute top-3 left-1/2 z-20 pointer-events-none"
+              style={{ transform: "translateX(-50%)", whiteSpace: "nowrap" }}>
+              <div style={{
+                backgroundColor: "rgba(4,6,10,0.76)",
+                backdropFilter: "blur(14px)",
+                WebkitBackdropFilter: "blur(14px)",
+                borderRadius: 100,
+                padding: "5px 14px",
+                border: "1px solid rgba(255,255,255,0.1)",
+                display: "flex",
+                gap: 16,
+                alignItems: "center",
+              }}>
+                <span style={{
+                  fontSize: 11, fontWeight: 700,
+                  color: possession === "red" ? "#ff5555" : "rgba(255,255,255,0.3)",
+                  transition: "color 0.3s",
+                }}>
+                  ● Rouge — {possession === "red" ? "Attaque" : "Défense"}
+                </span>
+                <span style={{
+                  fontSize: 11, fontWeight: 700,
+                  color: possession === "blue" ? "#5599ff" : "rgba(255,255,255,0.3)",
+                  transition: "color 0.3s",
+                }}>
+                  ● Bleu — {possession === "blue" ? "Attaque" : "Défense"}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* ── Overlay : label étape (animation) ── */}
+          {activeAnim && activeStep && (
+            <div className="absolute bottom-3 left-3 right-3 z-20 pointer-events-none">
+              <div style={{
+                backgroundColor: "rgba(4,6,10,0.78)",
+                backdropFilter: "blur(14px)",
+                WebkitBackdropFilter: "blur(14px)",
+                borderRadius: 12,
+                padding: "10px 14px",
+                border: "1px solid rgba(255,255,255,0.1)",
+              }}>
+                <div className="flex items-start justify-between gap-3">
+                  <p style={{ color: "#ffffff", fontWeight: 700, fontSize: 13, lineHeight: 1.3 }}>
+                    {activeStep.label}
+                  </p>
+                  <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, whiteSpace: "nowrap", flexShrink: 0 }}>
+                    {currentStep + 1} / {activeAnim.steps.length}
+                  </span>
+                </div>
+                <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 11, marginTop: 4, lineHeight: 1.4 }}>
+                  {activeStep.info}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* ── Overlay : phase + situation (pas d'animation active) ── */}
+          {activeSit && activePhaseDef && !activeAnim && (
+            <div className="absolute bottom-3 left-3 right-3 z-20 pointer-events-none">
+              <div style={{
+                backgroundColor: "rgba(4,6,10,0.78)",
+                backdropFilter: "blur(14px)",
+                WebkitBackdropFilter: "blur(14px)",
+                borderRadius: 12,
+                padding: "10px 14px",
+                border: `1px solid ${activePhaseDef.color}33`,
+              }}>
+                <div className="flex items-center gap-2 mb-1">
+                  <span style={{
+                    width: 7, height: 7, borderRadius: "50%",
+                    backgroundColor: activePhaseDef.color,
+                    display: "inline-block", flexShrink: 0,
+                  }} />
+                  <span style={{ color: activePhaseDef.color, fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                    {activePhaseDef.sublabel}
+                  </span>
+                </div>
+                <p style={{ color: "#ffffff", fontWeight: 700, fontSize: 13, lineHeight: 1.3 }}>
+                  {activeSit.label}
+                </p>
+                <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 11, marginTop: 3, lineHeight: 1.4 }}>
+                  {activeSit.description}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </main>
 
-      {/* ── DROITE : effectif (uniquement si club + mode club) ── */}
+      {/* ── DROITE : effectif COLLAPSIBLE (uniquement si club + mode club) ── */}
       {hasClub && mode === "club" && (
-        <aside
-          className="hidden md:flex md:w-60 md:h-full shrink-0 flex-col gap-3 px-4 py-4 overflow-y-auto border-l"
-          style={{
-            backdropFilter: "blur(24px)",
-            WebkitBackdropFilter: "blur(24px)",
-            backgroundColor: "rgba(0,0,0,0.45)",
-            borderColor: "rgba(255,255,255,0.1)",
-          }}
-        >
-          <div>
-            <p className="text-xs uppercase tracking-widest text-white/25">Effectif</p>
-            <h2 className="text-sm font-bold text-white mt-0.5">{clubData!.club.name}</h2>
-            <p className="text-[10px] text-white/30 mt-0.5">{clubData!.players.length} joueurs</p>
-          </div>
+        <>
+          {/* Bouton flottant pour ouvrir */}
+          {!showRoster && (
+            <button onClick={() => setShowRoster(true)}
+              className="hidden md:flex items-center gap-2 absolute top-5 right-5 z-30 px-3 py-2 rounded-xl text-xs font-bold transition hover:opacity-90"
+              style={{
+                backdropFilter: "blur(12px)",
+                backgroundColor: "rgba(255,255,255,0.1)",
+                color: "white",
+                border: "1px solid rgba(255,255,255,0.2)",
+              }}>
+              👥 Effectif
+            </button>
+          )}
 
-          <Divider />
+          {/* Panel collapsible */}
+          {showRoster && (
+            <aside
+              className="hidden md:flex md:w-64 md:h-full shrink-0 flex-col gap-3 px-4 py-4 overflow-y-auto border-l relative"
+              style={{
+                backdropFilter: "blur(24px)",
+                WebkitBackdropFilter: "blur(24px)",
+                backgroundColor: "rgba(0,0,0,0.55)",
+                borderColor: "rgba(255,255,255,0.1)",
+              }}
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-widest text-white/25">Effectif</p>
+                  <h2 className="text-sm font-bold text-white mt-0.5">{clubData!.club.name}</h2>
+                  <p className="text-[10px] text-white/30 mt-0.5">{clubData!.players.length} joueurs</p>
+                </div>
+                <button onClick={() => setShowRoster(false)}
+                  className="text-white/40 hover:text-white text-lg leading-none transition px-2"
+                  title="Fermer">
+                  ✕
+                </button>
+              </div>
 
-          <RosterPanel clubPlayers={clubData!.players} onFieldIds={players.filter(p => p.team === "red").map(p => p.id)} />
-        </aside>
+              <Divider />
+
+              <RosterPanel clubPlayers={clubData!.players} onFieldIds={players.filter(p => p.team === "red").map(p => p.id)} />
+            </aside>
+          )}
+        </>
       )}
     </div>
   )
@@ -665,28 +919,41 @@ function RosterPanel({ clubPlayers, onFieldIds }: {
 }
 
 function Divider() {
-  return <hr className="shrink-0 hidden md:block border-white/10" />
+  return <hr className="shrink-0 hidden md:block" style={{ borderColor:"rgba(122,154,130,0.12)" }} />
 }
 
 function Section({ label, children, className = "" }: { label: string; children: React.ReactNode; className?: string }) {
   return (
     <div className={`shrink-0 md:shrink flex flex-col gap-1.5 min-w-44 md:min-w-0 ${className}`}>
-      <p className="text-xs uppercase tracking-widest text-white/25">{label}</p>
+      <p style={{
+        fontFamily:"var(--font-mono),monospace", fontSize:9,
+        letterSpacing:"0.12em", textTransform:"uppercase",
+        color:"rgba(122,154,130,0.45)",
+      }}>{label}</p>
       {children}
     </div>
   )
 }
 
 function FormSelect({ team, value, onChange }: { team: "red" | "blue"; value: string; onChange: (v: string) => void }) {
-  const color = team === "red" ? "#ff5555" : "#5599ff"
+  const color = team === "red" ? "#c07070" : "#7A9A82"
+  const label = team === "red" ? "ROUGE" : "BLEU"
   return (
     <div>
-      <label className="text-xs font-bold" style={{ color }}>● {team === "red" ? "Rouge" : "Bleu"}</label>
+      <label style={{
+        fontFamily:"var(--font-mono),monospace", fontSize:9, letterSpacing:"0.1em",
+        fontWeight:700, color,
+      }}>● {label}</label>
       <select value={value} onChange={e => onChange(e.target.value)}
-        className="mt-0.5 w-full text-white text-xs rounded-lg px-2 py-1.5 cursor-pointer focus:outline-none"
-        style={{ backgroundColor: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)" }}>
+        className="mt-0.5 w-full text-xs rounded-lg px-2 py-1.5 cursor-pointer focus:outline-none"
+        style={{
+          fontFamily:"var(--font-mono),monospace",
+          color:"rgba(255,255,255,0.75)",
+          backgroundColor:"rgba(122,154,130,0.06)",
+          border:"1px solid rgba(122,154,130,0.18)",
+        }}>
         {FORMATIONS.map(f => (
-          <option key={f.id} value={f.id} style={{ backgroundColor: "#111" }}>
+          <option key={f.id} value={f.id} style={{ backgroundColor: "#1f1f19" }}>
             {f.label} — {f.description}
           </option>
         ))}

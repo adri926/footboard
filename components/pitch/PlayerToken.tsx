@@ -3,7 +3,7 @@
 import { motion, useMotionValue } from "framer-motion"
 import type { RefObject } from "react"
 
-const SIZE = 40
+const SIZE = 38
 
 interface Props {
   id: string
@@ -20,9 +20,20 @@ export default function PlayerToken({ id, label, x, y, team, transitioning, cont
   const mx = useMotionValue(0)
   const my = useMotionValue(0)
 
+  // Moodboard : rouge mat + vert sauge mat — sans néon
   const colors = team === "red"
-    ? { bg: "#e81010", border: "#ff4444", glow: "rgba(232,16,16,0.75)", text: "#fff" }
-    : { bg: "#0040e8", border: "#4488ff", glow: "rgba(0,64,232,0.75)", text: "#fff" }
+    ? {
+        bg:     "#8a1f1f",
+        border: "rgba(192,80,80,0.7)",
+        glow:   "rgba(140,32,32,0.5)",
+        text:   "rgba(255,255,255,0.92)",
+      }
+    : {
+        bg:     "#2e3e31",
+        border: "rgba(122,154,130,0.55)",
+        glow:   "rgba(46,62,49,0.6)",
+        text:   "rgba(122,154,130,0.95)",
+      }
 
   return (
     <motion.div
@@ -37,21 +48,22 @@ export default function PlayerToken({ id, label, x, y, team, transitioning, cont
         width: SIZE, height: SIZE,
         borderRadius: "50%",
         backgroundColor: colors.bg,
-        border: `2.5px solid ${colors.border}`,
-        boxShadow: `0 0 18px ${colors.glow}, 0 0 6px ${colors.glow}`,
+        border: `2px solid ${colors.border}`,
+        boxShadow: `0 0 12px ${colors.glow}`,
         display: "flex", alignItems: "center", justifyContent: "center",
         color: colors.text,
-        fontSize: 10, fontWeight: "800",
+        fontSize: 10,
+        fontWeight: 700,
+        fontFamily: "var(--font-mono), monospace",
         cursor: "grab",
         userSelect: "none",
         zIndex: 10,
-        textShadow: "0 1px 3px rgba(0,0,0,0.8)",
         ...(transitioning && {
           transition: "left 0.45s cubic-bezier(0.4,0,0.2,1), top 0.45s cubic-bezier(0.4,0,0.2,1)",
         }),
       }}
-      whileHover={{ scale: 1.18 }}
-      whileDrag={{ scale: 1.25, cursor: "grabbing", zIndex: 50 }}
+      whileHover={{ scale: 1.15 }}
+      whileDrag={{ scale: 1.2, cursor: "grabbing", zIndex: 50 }}
       onDragEnd={(_, info) => {
         const container = containerRef.current
         if (!container) return

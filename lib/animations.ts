@@ -248,7 +248,7 @@ const retourDefensif: TacticAnim = {
       duration: 1000,
       label: "Perte en phase offensive",
       info: "Ballon perdu dans la moitié adverse",
-      ball: { x: 65, y: 65 },
+      ball: { x: 62, y: 67 },
       moves: {
         r9:  { x: 82, y: 65 },
         r10: { x: 55, y: 63 },

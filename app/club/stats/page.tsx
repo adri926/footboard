@@ -25,20 +25,20 @@ export default async function StatsPage() {
     .slice(0, 3)
 
   return (
-    <main className="min-h-[calc(100vh-56px)] text-white">
+    <main className="min-h-[calc(100vh-56px)]" style={{ color: "#111111" }}>
       <div className="max-w-5xl mx-auto px-6 py-10">
 
         <div className="mb-8">
-          <Link href="/club" className="text-xs text-white/30 hover:text-white/60 transition mb-2 inline-block">← Mon Club</Link>
-          <h1 className="text-3xl font-black">Statistiques</h1>
-          <p className="text-sm text-gray-400 mt-1">Saison en cours</p>
+          <Link href="/club" className="text-xs transition mb-2 inline-block hover:opacity-60" style={{ color: "#999999" }}>← Mon Club</Link>
+          <h1 className="text-3xl font-black" style={{ color: "#111111" }}>Statistiques</h1>
+          <p className="text-sm mt-1" style={{ color: "#888888" }}>Saison en cours</p>
         </div>
 
         {/* Bilan équipe */}
         <div className="p-5 rounded-2xl mb-8"
-          style={{ backgroundColor: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
+          style={{ backgroundColor: "#ffffff", border: "1px solid rgba(0,0,0,0.08)", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
           <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-            <p className="text-sm font-semibold text-gray-300">Bilan collectif</p>
+            <p className="text-sm font-semibold" style={{ color: "#666666" }}>Bilan collectif</p>
             {team.forme.length > 0 && (
               <div className="flex gap-1">
                 {team.forme.map((r, i) => {
@@ -52,17 +52,17 @@ export default async function StatsPage() {
           <div className="grid grid-cols-4 md:grid-cols-8 gap-3 text-center">
             {[
               { label: "J",   value: team.played },
-              { label: "V",   value: team.v,   color: "#4ade80" },
-              { label: "N",   value: team.n,   color: "#94a3b8" },
-              { label: "D",   value: team.d,   color: "#f87171" },
+              { label: "V",   value: team.v,   color: "#16a34a" },
+              { label: "N",   value: team.n,   color: "#6b7280" },
+              { label: "D",   value: team.d,   color: "#dc2626" },
               { label: "BP",  value: team.bp },
               { label: "BC",  value: team.bc },
-              { label: "Diff",value: (team.bp - team.bc > 0 ? "+" : "") + (team.bp - team.bc), color: team.bp >= team.bc ? "#4ade80" : "#f87171" },
-              { label: "Pts", value: team.pts, color: "white" },
+              { label: "Diff",value: (team.bp - team.bc > 0 ? "+" : "") + (team.bp - team.bc), color: team.bp >= team.bc ? "#16a34a" : "#dc2626" },
+              { label: "Pts", value: team.pts, color: "#111111" },
             ].map(({ label, value, color }) => (
               <div key={label}>
-                <p className="text-xl font-black" style={{ color: color ?? "rgba(255,255,255,0.85)" }}>{value}</p>
-                <p className="text-[10px] text-gray-400">{label}</p>
+                <p className="text-xl font-black" style={{ color: color ?? "#111111" }}>{value}</p>
+                <p className="text-[10px]" style={{ color: "#888888" }}>{label}</p>
               </div>
             ))}
           </div>
@@ -71,30 +71,31 @@ export default async function StatsPage() {
         {/* Top 3 — podiums */}
         {(topScorers.length > 0 || topAssists.length > 0 || topPresence.length > 0) && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <Podium title="Meilleurs buteurs"   icon="⚽" players={topScorers}  stat="goals"     color="#f87171" />
-            <Podium title="Meilleurs passeurs"  icon="🅐" players={topAssists}  stat="assists"   color="#60a5fa" />
-            <Podium title="Plus assidus"        icon="📋" players={topPresence} stat="presence"  color="#4ade80" totalTrainings={totalTrainings} />
+            <Podium title="Meilleurs buteurs"   icon="⚽" players={topScorers}  stat="goals"     color="#dc2626" />
+            <Podium title="Meilleurs passeurs"  icon="🅐" players={topAssists}  stat="assists"   color="#2563eb" />
+            <Podium title="Plus assidus"        icon="📋" players={topPresence} stat="presence"  color="#16a34a" totalTrainings={totalTrainings} />
           </div>
         )}
 
         {/* Tableau complet joueurs */}
-        <h2 className="text-sm font-semibold text-gray-400 mb-3">Détail par joueur</h2>
+        <h2 className="text-sm font-semibold mb-3" style={{ color: "#888888" }}>Détail par joueur</h2>
         {players.length === 0 ? (
           <div className="text-center py-12 rounded-2xl"
-            style={{ backgroundColor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
-            <p className="text-gray-400 text-sm">Aucun joueur dans l'effectif</p>
-            <Link href="/club/effectif" className="text-sm text-white font-semibold mt-2 inline-block">
+            style={{ backgroundColor: "#ffffff", border: "1px solid rgba(0,0,0,0.08)" }}>
+            <p className="text-sm" style={{ color: "#888888" }}>Aucun joueur dans l'effectif</p>
+            <Link href="/club/effectif" className="text-sm font-semibold mt-2 inline-block hover:opacity-70" style={{ color: "#111111" }}>
               + Ajouter des joueurs
             </Link>
           </div>
         ) : (
-          <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid rgba(255,255,255,0.08)" }}>
+          <div className="rounded-2xl overflow-hidden"
+            style={{ border: "1px solid rgba(0,0,0,0.08)", backgroundColor: "#ffffff", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr style={{ backgroundColor: "rgba(255,255,255,0.04)", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+                  <tr style={{ backgroundColor: "rgba(0,0,0,0.03)", borderBottom: "1px solid rgba(0,0,0,0.08)" }}>
                     {["Joueur","Pos","MJ","Min","⚽","🅐","🟨","🟥","Présence"].map(h => (
-                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-400 whitespace-nowrap">{h}</th>
+                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold whitespace-nowrap" style={{ color: "#888888" }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -104,26 +105,26 @@ export default async function StatsPage() {
                     .map((p, i) => {
                       const pct = p.trainings > 0 ? Math.round((p.presences / p.trainings) * 100) : null
                       return (
-                        <tr key={p.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.05)", backgroundColor: i%2===0?"transparent":"rgba(255,255,255,0.02)" }}>
-                          <td className="px-4 py-3 font-semibold text-white whitespace-nowrap">{p.first_name} {p.last_name}</td>
+                        <tr key={p.id} style={{ borderBottom: "1px solid rgba(0,0,0,0.05)", backgroundColor: i%2===0?"transparent":"rgba(0,0,0,0.015)" }}>
+                          <td className="px-4 py-3 font-semibold whitespace-nowrap" style={{ color: "#111111" }}>{p.first_name} {p.last_name}</td>
                           <td className="px-4 py-3">
                             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded"
-                              style={{ backgroundColor: POS_COLORS[p.position as keyof typeof POS_COLORS]+"30", color: POS_COLORS[p.position as keyof typeof POS_COLORS] }}>
+                              style={{ backgroundColor: POS_COLORS[p.position as keyof typeof POS_COLORS]+"22", color: POS_COLORS[p.position as keyof typeof POS_COLORS] }}>
                               {p.position}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-xs text-center text-gray-400">{p.played}</td>
-                          <td className="px-4 py-3 text-xs text-center text-gray-400">{p.minutes}'</td>
-                          <td className="px-4 py-3 text-xs text-center font-bold" style={{ color: p.goals > 0 ? "#f87171" : "rgba(255,255,255,0.2)" }}>{p.goals}</td>
-                          <td className="px-4 py-3 text-xs text-center font-bold" style={{ color: p.assists > 0 ? "#60a5fa" : "rgba(255,255,255,0.2)" }}>{p.assists}</td>
-                          <td className="px-4 py-3 text-xs text-center" style={{ color: p.yellows > 0 ? "#fbbf24" : "rgba(255,255,255,0.2)" }}>{p.yellows || "—"}</td>
-                          <td className="px-4 py-3 text-xs text-center" style={{ color: p.reds > 0 ? "#f87171" : "rgba(255,255,255,0.2)" }}>{p.reds || "—"}</td>
+                          <td className="px-4 py-3 text-xs text-center" style={{ color: "#888888" }}>{p.played}</td>
+                          <td className="px-4 py-3 text-xs text-center" style={{ color: "#888888" }}>{p.minutes}'</td>
+                          <td className="px-4 py-3 text-xs text-center font-bold" style={{ color: p.goals > 0 ? "#dc2626" : "#cccccc" }}>{p.goals}</td>
+                          <td className="px-4 py-3 text-xs text-center font-bold" style={{ color: p.assists > 0 ? "#2563eb" : "#cccccc" }}>{p.assists}</td>
+                          <td className="px-4 py-3 text-xs text-center" style={{ color: p.yellows > 0 ? "#d97706" : "#cccccc" }}>{p.yellows || "—"}</td>
+                          <td className="px-4 py-3 text-xs text-center" style={{ color: p.reds > 0 ? "#dc2626" : "#cccccc" }}>{p.reds || "—"}</td>
                           <td className="px-4 py-3 text-xs text-center">
                             {pct !== null ? (
-                              <span style={{ color: pct >= 80 ? "#4ade80" : pct >= 60 ? "#fbbf24" : "#f87171" }}>
+                              <span style={{ color: pct >= 80 ? "#16a34a" : pct >= 60 ? "#d97706" : "#dc2626" }}>
                                 {p.presences}/{p.trainings} ({pct}%)
                               </span>
-                            ) : <span className="text-gray-600">—</span>}
+                            ) : <span style={{ color: "#cccccc" }}>—</span>}
                           </td>
                         </tr>
                       )
@@ -144,16 +145,16 @@ function Podium({ title, icon, players, stat, color, totalTrainings }: {
 }) {
   if (players.length === 0) return (
     <div className="p-5 rounded-2xl"
-      style={{ backgroundColor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
-      <p className="text-sm font-semibold text-gray-400 mb-3">{icon} {title}</p>
-      <p className="text-xs text-gray-600">Aucune donnée</p>
+      style={{ backgroundColor: "#ffffff", border: "1px solid rgba(0,0,0,0.08)" }}>
+      <p className="text-sm font-semibold mb-3" style={{ color: "#888888" }}>{icon} {title}</p>
+      <p className="text-xs" style={{ color: "#aaaaaa" }}>Aucune donnée</p>
     </div>
   )
 
   return (
     <div className="p-5 rounded-2xl"
-      style={{ backgroundColor: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
-      <p className="text-sm font-semibold text-gray-300 mb-4">{icon} {title}</p>
+      style={{ backgroundColor: "#ffffff", border: "1px solid rgba(0,0,0,0.08)", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+      <p className="text-sm font-semibold mb-4" style={{ color: "#666666" }}>{icon} {title}</p>
       <div className="flex flex-col gap-2.5">
         {players.map((p, i) => {
           const value = stat === "presence" && totalTrainings
@@ -163,7 +164,7 @@ function Podium({ title, icon, players, stat, color, totalTrainings }: {
           return (
             <div key={p.id} className="flex items-center gap-3">
               <span className="text-sm">{medal}</span>
-              <p className="flex-1 text-sm font-semibold text-white truncate">
+              <p className="flex-1 text-sm font-semibold truncate" style={{ color: "#111111" }}>
                 {p.first_name} {p.last_name}
               </p>
               <span className="text-base font-black" style={{ color }}>{value}</span>

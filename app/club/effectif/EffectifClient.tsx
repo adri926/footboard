@@ -5,16 +5,16 @@ import { addPlayer, updatePlayer, updateStatus, deletePlayer } from "./actions"
 import type { ClubPlayer } from "@/lib/supabase"
 
 const STATUS_STYLES = {
-  available: { label: "Disponible", color: "#4ade80", bg: "rgba(74,222,128,0.15)" },
-  injured:   { label: "Blessé",     color: "#f87171", bg: "rgba(248,113,113,0.15)" },
-  suspended: { label: "Suspendu",   color: "#fbbf24", bg: "rgba(251,191,36,0.15)"  },
+  available: { label: "Disponible", color: "#16a34a", bg: "rgba(22,163,74,0.1)" },
+  injured:   { label: "Blessé",     color: "#dc2626", bg: "rgba(220,38,38,0.1)" },
+  suspended: { label: "Suspendu",   color: "#d97706", bg: "rgba(217,119,6,0.1)"  },
 }
 
 const POS_COLORS = {
-  GK:  { color: "#c084fc", bg: "rgba(192,132,252,0.2)" },
-  DEF: { color: "#4ade80", bg: "rgba(74,222,128,0.2)"  },
-  MIL: { color: "#60a5fa", bg: "rgba(96,165,250,0.2)"  },
-  ATT: { color: "#f87171", bg: "rgba(248,113,113,0.2)" },
+  GK:  { color: "#9333ea", bg: "rgba(147,51,234,0.1)" },
+  DEF: { color: "#16a34a", bg: "rgba(22,163,74,0.1)"  },
+  MIL: { color: "#2563eb", bg: "rgba(37,99,235,0.1)"  },
+  ATT: { color: "#dc2626", bg: "rgba(220,38,38,0.1)"  },
 }
 
 const POSITIONS = ["GK", "DEF", "MIL", "ATT"]
@@ -66,24 +66,24 @@ export default function EffectifClient({ players: initial }: Props) {
       {/* Résumé */}
       <div className="grid grid-cols-3 gap-3 mb-8">
         {[
-          { label: "Disponibles", value: available, color: "#4ade80" },
-          { label: "Blessés",     value: injured,   color: "#f87171" },
-          { label: "Suspendus",   value: suspended, color: "#fbbf24" },
+          { label: "Disponibles", value: available, color: "#16a34a" },
+          { label: "Blessés",     value: injured,   color: "#dc2626" },
+          { label: "Suspendus",   value: suspended, color: "#d97706" },
         ].map(({ label, value, color }) => (
           <div key={label} className="p-4 rounded-xl text-center"
-            style={{ backgroundColor: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
+            style={{ backgroundColor: "#ffffff", border: "1px solid rgba(0,0,0,0.08)", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
             <p className="text-2xl font-black" style={{ color }}>{value}</p>
-            <p className="text-xs mt-1 text-gray-400">{label}</p>
+            <p className="text-xs mt-1" style={{ color: "#888888" }}>{label}</p>
           </div>
         ))}
       </div>
 
       {/* Actions */}
       <div className="flex items-center justify-between mb-4">
-        <p className="text-gray-400 text-sm">{players.length} joueur{players.length !== 1 ? "s" : ""}</p>
+        <p className="text-sm" style={{ color: "#888888" }}>{players.length} joueur{players.length !== 1 ? "s" : ""}</p>
         <button onClick={openAdd}
-          className="px-4 py-2 rounded-xl text-sm font-bold text-black hover:opacity-90 transition"
-          style={{ backgroundColor: "white" }}>
+          className="px-4 py-2 rounded-xl text-sm font-bold transition hover:opacity-80"
+          style={{ backgroundColor: "#111111", color: "#ffffff" }}>
           + Ajouter un joueur
         </button>
       </div>
@@ -91,23 +91,24 @@ export default function EffectifClient({ players: initial }: Props) {
       {/* Liste */}
       {players.length === 0 ? (
         <div className="text-center py-16 rounded-2xl"
-          style={{ backgroundColor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+          style={{ backgroundColor: "#ffffff", border: "1px solid rgba(0,0,0,0.08)", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
           <p className="text-4xl mb-4">👥</p>
-          <p className="text-white font-bold mb-2">Aucun joueur</p>
-          <p className="text-gray-400 text-sm mb-6">Commence par ajouter tes joueurs</p>
+          <p className="font-bold mb-2" style={{ color: "#111111" }}>Aucun joueur</p>
+          <p className="text-sm mb-6" style={{ color: "#888888" }}>Commence par ajouter tes joueurs</p>
           <button onClick={openAdd}
-            className="px-5 py-2.5 rounded-xl text-sm font-bold text-black"
-            style={{ backgroundColor: "white" }}>
+            className="px-5 py-2.5 rounded-xl text-sm font-bold transition hover:opacity-80"
+            style={{ backgroundColor: "#111111", color: "#ffffff" }}>
             + Ajouter le premier joueur
           </button>
         </div>
       ) : (
-        <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid rgba(255,255,255,0.1)" }}>
+        <div className="rounded-2xl overflow-hidden"
+          style={{ border: "1px solid rgba(0,0,0,0.08)", backgroundColor: "#ffffff", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
           <table className="w-full text-sm">
             <thead>
-              <tr style={{ backgroundColor: "rgba(255,255,255,0.05)", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+              <tr style={{ backgroundColor: "rgba(0,0,0,0.03)", borderBottom: "1px solid rgba(0,0,0,0.08)" }}>
                 {["#", "Joueur", "Poste", "Statut", ""].map(h => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-400">{h}</th>
+                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold" style={{ color: "#888888" }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -116,9 +117,9 @@ export default function EffectifClient({ players: initial }: Props) {
                 const s   = STATUS_STYLES[p.status as keyof typeof STATUS_STYLES] ?? STATUS_STYLES.available
                 const pos = POS_COLORS[p.position as keyof typeof POS_COLORS]     ?? POS_COLORS.MIL
                 return (
-                  <tr key={p.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.05)", backgroundColor: i % 2 === 0 ? "transparent" : "rgba(255,255,255,0.02)" }}>
-                    <td className="px-4 py-3 text-xs text-gray-500">{p.number ?? "—"}</td>
-                    <td className="px-4 py-3 font-semibold text-white">{p.first_name} {p.last_name}</td>
+                  <tr key={p.id} style={{ borderBottom: "1px solid rgba(0,0,0,0.05)", backgroundColor: i % 2 === 0 ? "transparent" : "rgba(0,0,0,0.015)" }}>
+                    <td className="px-4 py-3 text-xs" style={{ color: "#aaaaaa" }}>{p.number ?? "—"}</td>
+                    <td className="px-4 py-3 font-semibold" style={{ color: "#111111" }}>{p.first_name} {p.last_name}</td>
                     <td className="px-4 py-3">
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded"
                         style={{ backgroundColor: pos.bg, color: pos.color }}>{p.position}</span>
@@ -137,11 +138,13 @@ export default function EffectifClient({ players: initial }: Props) {
                     <td className="px-4 py-3">
                       <div className="flex gap-2 justify-end">
                         <button onClick={() => openEdit(p)}
-                          className="text-xs px-2 py-1 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition">
+                          className="text-xs px-2 py-1 rounded-lg transition hover:bg-black/5"
+                          style={{ color: "#666666" }}>
                           Modifier
                         </button>
                         <button onClick={() => handleDelete(p.id)}
-                          className="text-xs px-2 py-1 rounded-lg text-gray-600 hover:text-red-400 hover:bg-red-400/10 transition">
+                          className="text-xs px-2 py-1 rounded-lg transition hover:text-red-500 hover:bg-red-50"
+                          style={{ color: "#aaaaaa" }}>
                           Suppr.
                         </button>
                       </div>
@@ -157,12 +160,12 @@ export default function EffectifClient({ players: initial }: Props) {
       {/* Modal formulaire */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ backgroundColor: "rgba(0,0,0,0.7)" }}
+          style={{ backgroundColor: "rgba(0,0,0,0.4)" }}
           onClick={e => { if (e.target === e.currentTarget) closeForm() }}>
           <div className="w-full max-w-md rounded-2xl p-6"
-            style={{ backgroundColor: "#1a1a2e", border: "1px solid rgba(255,255,255,0.15)" }}>
+            style={{ backgroundColor: "#ffffff", border: "1px solid rgba(0,0,0,0.08)", boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
 
-            <h2 className="text-lg font-black text-white mb-5">
+            <h2 className="text-lg font-black mb-5" style={{ color: "#111111" }}>
               {editing ? "Modifier le joueur" : "Ajouter un joueur"}
             </h2>
 
@@ -174,13 +177,11 @@ export default function EffectifClient({ players: initial }: Props) {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-gray-400 mb-1 block">Poste *</label>
+                  <label className="text-xs mb-1 block" style={{ color: "#888888" }}>Poste *</label>
                   <select name="position" required defaultValue={editing?.position ?? "MIL"}
-                    className="w-full px-3 py-2 rounded-xl text-white text-sm focus:outline-none cursor-pointer"
-                    style={{ backgroundColor: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.15)" }}>
-                    {POSITIONS.map(pos => (
-                      <option key={pos} value={pos} style={{ backgroundColor: "#1a1a2e" }}>{pos}</option>
-                    ))}
+                    className="w-full px-3 py-2 rounded-xl text-sm focus:outline-none cursor-pointer"
+                    style={{ backgroundColor: "rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.12)", color: "#111111" }}>
+                    {POSITIONS.map(pos => <option key={pos} value={pos}>{pos}</option>)}
                   </select>
                 </div>
                 <Field label="Numéro" name="number" type="number" min="1" max="99" defaultValue={editing?.number?.toString()} />
@@ -195,26 +196,26 @@ export default function EffectifClient({ players: initial }: Props) {
 
               {editing && (
                 <div>
-                  <label className="text-xs text-gray-400 mb-1 block">Statut</label>
+                  <label className="text-xs mb-1 block" style={{ color: "#888888" }}>Statut</label>
                   <select name="status" defaultValue={editing.status}
-                    className="w-full px-3 py-2 rounded-xl text-white text-sm focus:outline-none cursor-pointer"
-                    style={{ backgroundColor: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.15)" }}>
-                    <option value="available" style={{ backgroundColor: "#1a1a2e" }}>Disponible</option>
-                    <option value="injured"   style={{ backgroundColor: "#1a1a2e" }}>Blessé</option>
-                    <option value="suspended" style={{ backgroundColor: "#1a1a2e" }}>Suspendu</option>
+                    className="w-full px-3 py-2 rounded-xl text-sm focus:outline-none cursor-pointer"
+                    style={{ backgroundColor: "rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.12)", color: "#111111" }}>
+                    <option value="available">Disponible</option>
+                    <option value="injured">Blessé</option>
+                    <option value="suspended">Suspendu</option>
                   </select>
                 </div>
               )}
 
               <div className="flex gap-3 mt-2">
                 <button type="button" onClick={closeForm}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-400 transition"
-                  style={{ border: "1px solid rgba(255,255,255,0.1)" }}>
+                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition hover:bg-black/5"
+                  style={{ border: "1px solid rgba(0,0,0,0.12)", color: "#666666" }}>
                   Annuler
                 </button>
                 <button type="submit" disabled={pending}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-bold text-black transition hover:opacity-90 disabled:opacity-50"
-                  style={{ backgroundColor: "white" }}>
+                  className="flex-1 py-2.5 rounded-xl text-sm font-bold transition hover:opacity-80 disabled:opacity-40"
+                  style={{ backgroundColor: "#111111", color: "#ffffff" }}>
                   {pending ? "..." : editing ? "Enregistrer" : "Ajouter"}
                 </button>
               </div>
@@ -232,12 +233,12 @@ function Field({ label, name, type = "text", required, defaultValue, min, max }:
 }) {
   return (
     <div>
-      <label className="text-xs text-gray-400 mb-1 block">{label}</label>
+      <label className="text-xs mb-1 block" style={{ color: "#888888" }}>{label}</label>
       <input
         type={type} name={name} required={required}
         defaultValue={defaultValue} min={min} max={max}
-        className="w-full px-3 py-2 rounded-xl text-white text-sm focus:outline-none"
-        style={{ backgroundColor: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.15)" }}
+        className="w-full px-3 py-2 rounded-xl text-sm focus:outline-none"
+        style={{ backgroundColor: "rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.12)", color: "#111111" }}
       />
     </div>
   )

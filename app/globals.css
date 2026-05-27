@@ -1,26 +1,66 @@
 @import "tailwindcss";
 
+/* ── Tokens visuels Footboard ────────────────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Noir chaud — anthracite brun, pas un noir pur */
+  --bg:          #181812;
+  --bg-card:     #1f1f19;
+  --bg-card-hi:  #252520;
+  --bg-input:    #2a2a23;
+
+  /* Vert sauge — désaturé, mat, premium */
+  --sauge:       #7A9A82;
+  --sauge-dim:   rgba(122,154,130,0.15);
+  --sauge-border:rgba(122,154,130,0.30);
+  --sauge-dark:  #2e3e31;
+
+  /* Textes */
+  --text-primary: rgba(255,255,255,0.92);
+  --text-muted:   rgba(255,255,255,0.38);
+  --text-faint:   rgba(255,255,255,0.18);
+
+  /* Terrain */
+  --pitch-line:  rgba(122,154,130,0.55);
+  --pitch-fill:  #0d1a0e;
+  --pitch-stripe:#0f1d10;
+
+  /* Équipes */
+  --red:   #c0392b;
+  --red-glow: rgba(192,57,43,0.6);
+  --blue:  #2d5ea8;
+  --blue-glow: rgba(45,94,168,0.6);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-background: var(--bg);
+  --color-foreground: var(--text-primary);
+  --font-sans:    var(--font-body);
+  --font-mono:    var(--font-mono);
+  --font-display: var(--font-display);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-weight: 400;
+}
+
+/* Utilitaires typo moodboard */
+.font-display  { font-family: var(--font-display), system-ui, sans-serif; }
+.font-mono     { font-family: var(--font-mono), monospace; }
+.font-body     { font-family: var(--font-body), system-ui, sans-serif; }
+
+/* Pressing animation: tokens converge toward ball carrier and spring back */
+@keyframes press {
+  0%, 100%    { transform: translate(0, 0); }
+  55%, 72%    { transform: translate(var(--pdx), var(--pdy)); }
+}
+
+.hero-pitch {
+  container-type: size;
+}
+
+.press-token {
+  animation: press 3.6s ease-in-out infinite;
 }

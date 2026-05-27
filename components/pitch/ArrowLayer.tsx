@@ -56,14 +56,7 @@ export default function ArrowLayer({ arrows, ball }: Props) {
         )
       })}
 
-      {ball && (
-        <>
-          <circle cx={sx(ball.x)} cy={sy(ball.y)} r={10}
-            fill="white" style={{ filter: "drop-shadow(0 0 6px rgba(255,255,255,0.8))" }} />
-          <circle cx={sx(ball.x)} cy={sy(ball.y)} r={7}
-            fill="none" stroke="#666" strokeWidth={1.5} />
-        </>
-      )}
+      {/* Ball rendered by BallToken (above this SVG layer) */}
     </svg>
   )
 }
