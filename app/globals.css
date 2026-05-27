@@ -64,3 +64,12 @@ body {
 .press-token {
   animation: press 3.6s ease-in-out infinite;
 }
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.72; transform: scale(1.18); }
+}
+
+.token-pulse {
+  animation: pulse-glow 2.4s ease-in-out infinite;
+}

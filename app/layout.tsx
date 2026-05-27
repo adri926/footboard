@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Barlow_Condensed, Space_Mono, Barlow } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import Nav from "@/components/Nav";
+import Footer from "@/components/Footer";
 import "./globals.css";
 
 const barlowCondensed = Barlow_Condensed({
@@ -41,7 +42,8 @@ export default function RootLayout({
       >
         <body className="min-h-full flex flex-col" style={{ background: "#181812" }}>
           <Nav />
-          {children}
+          <div className="flex-1">{children}</div>
+          <Footer />
         </body>
       </html>
     </ClerkProvider>

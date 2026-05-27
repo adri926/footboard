@@ -37,9 +37,12 @@ const RED_HOLDING: [number, number][] = [
   [60, 26],
 ]
 
-function Token({ x, y, red, size }: { x: number; y: number; red: boolean; size: number }) {
+function Token({ x, y, red, size, className, animDelay }: {
+  x: number; y: number; red: boolean; size: number;
+  className?: string; animDelay?: string;
+}) {
   return (
-    <div style={{
+    <div className={className} style={{
       position: "absolute",
       left: `${x}%`, top: `${y}%`,
       marginLeft: -size / 2, marginTop: -size / 2,
@@ -49,6 +52,7 @@ function Token({ x, y, red, size }: { x: number; y: number; red: boolean; size: 
       border: `1.5px solid ${red ? RED_BDR : BLUE_BDR}`,
       boxShadow: `0 0 8px 3px ${red ? RED_GLOW : BLUE_GLOW}`,
       zIndex: 10,
+      animationDelay: animDelay,
     }} />
   )
 }
@@ -74,14 +78,16 @@ export default function HeroPitch() {
         zIndex: 5,
       }} />
 
-      {/* Red holding players (static, higher up) */}
+      {/* Red holding players (static, pulsing) */}
       {RED_HOLDING.map(([x, y], i) => (
-        <Token key={`rh${i}`} x={x} y={y} red={true} size={S} />
+        <Token key={`rh${i}`} x={x} y={y} red={true} size={S}
+          className="token-pulse" animDelay={`${i * 0.4}s`} />
       ))}
 
-      {/* Blue support players (static) */}
+      {/* Blue support players (static, pulsing) */}
       {BLUE_SUPPORT.map(([x, y], i) => (
-        <Token key={`bs${i}`} x={x} y={y} red={false} size={S} />
+        <Token key={`bs${i}`} x={x} y={y} red={false} size={S}
+          className="token-pulse" animDelay={`${i * 0.3 + 0.6}s`} />
       ))}
 
       {/* Ball carrier (blue, slightly larger) */}
