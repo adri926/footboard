@@ -1,20 +1,49 @@
 "use server"
 
 import { auth } from "@clerk/nextjs/server"
+import { z } from "zod"
 import { supabase } from "@/lib/supabase"
-import type { ZoneId, BuilderPlayer } from "@/lib/builder"
 
-export async function saveBuiltSituation(data: {
-  zone:        ZoneId
-  config:      string
-  finality:    string
-  description: string
-  players:     BuilderPlayer[]
-  ball:        { x: number; y: number }
-}): Promise<{ ok: true } | { ok: false; error: string }> {
+const ZONE_IDS = [
+  "def-left", "def-center", "def-right",
+  "mid-left", "mid-center", "mid-right",
+  "att-left", "att-center", "att-right",
+] as const
+
+const CONFIGS   = ["1v1","2v1","2v2","3v2","3v3","4v3","4v4","5v4"] as const
+const FINALITIES = [
+  "shot","chance","combine","keep",
+  "recover","press","clear","force-long",
+  "counter","build-out","fix",
+] as const
+
+const SaveSchema = z.object({
+  zone:        z.enum(ZONE_IDS),
+  config:      z.enum(CONFIGS),
+  finality:    z.enum(FINALITIES),
+  description: z.string().max(1000).default(""),
+  players: z.array(z.object({
+    id:   z.string().regex(/^[ha]\d+$/).max(4),
+    team: z.enum(["home", "away"]),
+    x:    z.number().min(0).max(100),
+    y:    z.number().min(0).max(100),
+  })).max(20),
+  ball: z.object({
+    x: z.number().min(0).max(100),
+    y: z.number().min(0).max(100),
+  }),
+})
+
+export async function saveBuiltSituation(
+  raw: unknown
+): Promise<{ ok: true } | { ok: false; error: string }> {
   const { userId } = await auth()
   if (!userId) return { ok: false, error: "Connecte-toi pour sauvegarder." }
 
+  const parsed = SaveSchema.safeParse(raw)
+  if (!parsed.success) return { ok: false, error: "Données invalides." }
+
+  const data = parsed.data
   const { error } = await supabase
     .from("built_situations")
     .insert({

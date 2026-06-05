@@ -147,3 +147,29 @@ export function zoneBallPosition(zone: PitchZone) {
 export function getZone(id: ZoneId): PitchZone {
   return PITCH_ZONES.find(z => z.id === id)!
 }
+
+/* ── Formation 4-3-3 (positions globales 0-100) ─────────── */
+const FORMATION_433 = {
+  home: [
+    { x: 50, y: 93 },                                                          // GK
+    { x: 18, y: 80 }, { x: 37, y: 78 }, { x: 63, y: 78 }, { x: 82, y: 80 }, // DEF
+    { x: 22, y: 62 }, { x: 50, y: 60 }, { x: 78, y: 62 },                    // MIL
+    { x: 18, y: 33 }, { x: 50, y: 30 }, { x: 82, y: 33 },                    // ATT
+  ],
+  away: [
+    { x: 50, y:  7 },
+    { x: 18, y: 20 }, { x: 37, y: 22 }, { x: 63, y: 22 }, { x: 82, y: 20 },
+    { x: 22, y: 38 }, { x: 50, y: 40 }, { x: 78, y: 38 },
+    { x: 18, y: 67 }, { x: 50, y: 70 }, { x: 82, y: 67 },
+  ],
+}
+
+/* Joueurs fantômes : formation complète moins ceux dans la zone active */
+export function getGhostPlayers(zone: PitchZone, homeCount: number, awayCount: number) {
+  const inZone = (p: { x: number; y: number }) =>
+    p.x >= zone.x1 && p.x <= zone.x2 && p.y >= zone.y1 && p.y <= zone.y2
+  return {
+    home: FORMATION_433.home.filter(p => !inZone(p)).slice(0, 11 - homeCount),
+    away: FORMATION_433.away.filter(p => !inZone(p)).slice(0, 11 - awayCount),
+  }
+}

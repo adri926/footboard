@@ -1,16 +1,18 @@
 import { createClient } from "@supabase/supabase-js"
 
-const URL          = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const ANON_KEY     = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY
+const SUPABASE_URL   = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const SERVICE_KEY    = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-// Client serveur (bypasse RLS, sécurité gérée par Clerk + filtres owner_id)
-// Si la service_role key n'est pas définie, retombe sur l'anon key
-export const supabase = createClient(
-  URL,
-  SERVICE_KEY ?? ANON_KEY,
-  { auth: { persistSession: false } }
-)
+if (!SERVICE_KEY) {
+  throw new Error("SUPABASE_SERVICE_ROLE_KEY manquante — vérifie tes variables d'environnement.")
+}
+
+// Client serveur uniquement — utilise la service_role key (jamais exposée côté client).
+// RLS activée sur toutes les tables : la service_role la bypasse légitimement.
+// Chaque action vérifie auth() Clerk AVANT d'appeler ce client.
+export const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
+  auth: { persistSession: false },
+})
 
 // ─── Types DB ─────────────────────────────────────────────────
 
