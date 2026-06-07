@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard/
+Disallow: /onboarding/
+Disallow: /sign-in/
+Disallow: /sign-up/
+
+Sitemap: https://footboard.fr/sitemap.xml

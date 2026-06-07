@@ -67,6 +67,6 @@ export async function updateClub(
     .eq("owner_id", userId)
 
   if (error) return { ok: false, error: error.message }
-  revalidatePath("/dashboard")
+  revalidatePath("/dashboard", "layout")
   return { ok: true }
 }

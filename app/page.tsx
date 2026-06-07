@@ -1,6 +1,17 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import HeroPitch from "@/components/HeroPitch"
 import PricingCard from "@/components/home/PricingCard"
+
+export const metadata: Metadata = {
+  title: "Footboard — Gérez votre club, dominez le terrain",
+  description: "La plateforme tout-en-un pour les coachs de football amateurs : effectif, matchs, entraînements, convocations et préparation tactique. Essayez gratuitement.",
+  openGraph: {
+    title: "Footboard — Gérez votre club, dominez le terrain",
+    description: "La plateforme tout-en-un pour les coachs de football amateurs. Effectif, matchs, convocations et tactique en un seul endroit.",
+    url: "https://footboard.fr",
+  },
+}
 
 const STATS = [
   { value: "50+", label: "Animations tactiques" },

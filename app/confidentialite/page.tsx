@@ -1,3 +1,10 @@
+import type { Metadata } from "next"
+
+export const metadata: Metadata = {
+  title: "Politique de confidentialité",
+  robots: { index: false, follow: false },
+}
+
 export default function Confidentialite() {
   return (
     <main style={{ maxWidth: 720, margin: "0 auto", padding: "64px 32px", color: "rgba(255,255,255,0.75)" }}>

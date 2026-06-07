@@ -25,8 +25,31 @@ const barlow = Barlow({
 });
 
 export const metadata: Metadata = {
-  title: "Footboard",
-  description: "Crée et analyse des tactiques football",
+  title: {
+    default: "Footboard — La plateforme des coachs de football",
+    template: "%s — Footboard",
+  },
+  description: "Gérez votre club, préparez vos matchs et créez des situations tactiques. L'outil tout-en-un pour les coachs de football amateurs.",
+  keywords: ["football", "coach", "tactique", "gestion club", "convocations", "entraînement", "amateur"],
+  authors: [{ name: "Footboard" }],
+  creator: "Footboard",
+  metadataBase: new URL("https://footboard.fr"),
+  openGraph: {
+    type: "website",
+    locale: "fr_FR",
+    siteName: "Footboard",
+    title: "Footboard — La plateforme des coachs de football",
+    description: "Gérez votre club, préparez vos matchs et créez des situations tactiques. L'outil tout-en-un pour les coachs de football amateurs.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Footboard — La plateforme des coachs de football",
+    description: "Gérez votre club, préparez vos matchs et créez des situations tactiques.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({
