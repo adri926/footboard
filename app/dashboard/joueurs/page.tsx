@@ -1,5 +1,6 @@
 import Link from "next/link"
 import PlayerStatusBadge from "@/components/dashboard/PlayerStatusBadge"
+import PageHeader from "@/components/dashboard/PageHeader"
 import { getPlayers } from "@/app/dashboard/effectif/actions"
 
 const POS_ORDER: Record<string, number> = { GK: 0, DEF: 1, MIL: 2, ATT: 3 }
@@ -13,29 +14,11 @@ export default async function JoueursPage() {
 
   return (
     <div style={{ padding: "32px 36px", maxWidth: 960 }}>
-      <div style={{ marginBottom: 28 }}>
-        <p style={{
-          fontFamily: "var(--font-mono), monospace",
-          fontSize: 9, fontWeight: 700, letterSpacing: "0.14em",
-          color: "rgba(122,154,130,0.5)", textTransform: "uppercase", marginBottom: 6,
-        }}>
-          Mon Club
-        </p>
-        <h1 style={{
-          fontFamily: "var(--font-display), system-ui, sans-serif",
-          fontWeight: 900, fontSize: 26, letterSpacing: "0.02em",
-          color: "rgba(255,255,255,0.95)",
-        }}>
-          Joueurs
-        </h1>
-        <p style={{
-          fontFamily: "var(--font-body), sans-serif",
-          fontWeight: 300, fontSize: 13,
-          color: "rgba(255,255,255,0.3)", marginTop: 4,
-        }}>
-          {players.length} joueur{players.length !== 1 ? "s" : ""} inscrits
-        </p>
-      </div>
+      <PageHeader
+        label="Mon Club"
+        title="Joueurs"
+        subtitle={`${players.length} joueur${players.length !== 1 ? "s" : ""} inscrits`}
+      />
 
       {players.length === 0 ? (
         <div style={{

@@ -1,6 +1,7 @@
 import Link from "next/link"
 import MetricCard from "@/components/dashboard/MetricCard"
 import PlayerStatusBadge from "@/components/dashboard/PlayerStatusBadge"
+import PageHeader from "@/components/dashboard/PageHeader"
 import { getPlayers } from "@/app/dashboard/effectif/actions"
 import { getMatches } from "@/app/dashboard/matchs/actions"
 import { getTrainings } from "@/app/dashboard/entrainements/actions"
@@ -151,30 +152,11 @@ export default async function DashboardPage() {
   return (
     <div style={{ padding: "32px 36px", maxWidth: 1100 }}>
 
-      {/* Header */}
-      <div style={{ marginBottom: 32 }}>
-        <p style={{
-          fontFamily: "var(--font-mono), monospace",
-          fontSize: 9, fontWeight: 700, letterSpacing: "0.14em",
-          color: "rgba(122,154,130,0.5)", textTransform: "uppercase", marginBottom: 6,
-        }}>
-          Tableau de bord
-        </p>
-        <h1 style={{
-          fontFamily: "var(--font-display), system-ui, sans-serif",
-          fontWeight: 900, fontSize: 28, letterSpacing: "0.02em",
-          color: "rgba(255,255,255,0.95)",
-        }}>
-          {club?.name ?? "Mon Club"}
-        </h1>
-        <p style={{
-          fontFamily: "var(--font-body), sans-serif",
-          fontWeight: 300, fontSize: 13,
-          color: "rgba(255,255,255,0.3)", marginTop: 4,
-        }}>
-          {[club?.level, "Saison 2025/2026"].filter(Boolean).join(" — ")}
-        </p>
-      </div>
+      <PageHeader
+        label="Tableau de bord"
+        title={club?.name ?? "Mon Club"}
+        subtitle={[club?.level, "Saison 2025/2026"].filter(Boolean).join(" — ")}
+      />
 
       {/* 4 metric cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 32 }}>

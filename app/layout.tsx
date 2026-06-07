@@ -3,6 +3,8 @@ import { Barlow_Condensed, Space_Mono, Barlow } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
+import CookieBanner from "@/components/CookieBanner";
+import GoogleAnalytics from "@/components/GoogleAnalytics";
 import "./globals.css";
 
 const barlowCondensed = Barlow_Condensed({
@@ -50,6 +52,9 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION,
+  },
 };
 
 export default function RootLayout({
@@ -67,6 +72,8 @@ export default function RootLayout({
           <Nav />
           <div className="flex-1">{children}</div>
           <Footer />
+          <CookieBanner />
+          <GoogleAnalytics />
         </body>
       </html>
     </ClerkProvider>

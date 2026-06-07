@@ -5,7 +5,7 @@ export const metadata = {
 const SECTIONS = [
   {
     title: "1. Objet",
-    content: `Les présentes Conditions Générales d'Utilisation (CGU) régissent l'accès et l'utilisation de la plateforme Footboard, accessible à l'adresse [URL DU SITE], éditée par [NOM / RAISON SOCIALE] (ci-après « l'Éditeur »).
+    content: `Les présentes Conditions Générales d'Utilisation (CGU) régissent l'accès et l'utilisation de la plateforme Footboard, accessible à l'adresse https://footboard.fr, éditée par Adrien Siméon (ci-après « l'Éditeur »).
 
 En créant un compte et en accédant au service, l'utilisateur accepte sans réserve les présentes CGU. Si vous n'acceptez pas ces conditions, vous ne devez pas utiliser le service.`,
   },
@@ -43,7 +43,7 @@ L'utilisateur (coach) agit en qualité de responsable de traitement pour les don
 
 L'Éditeur agit en qualité de sous-traitant pour ces données et s'engage à les traiter uniquement selon les instructions de l'utilisateur.
 
-Conformément au RGPD, chaque utilisateur peut exercer ses droits (accès, rectification, suppression, portabilité) via la page Paramètres de son compte ou en contactant [EMAIL DE CONTACT].`,
+Conformément au RGPD, chaque utilisateur peut exercer ses droits (accès, rectification, suppression, portabilité) via la page Paramètres de son compte ou en contactant contact@footboard.fr.`,
   },
   {
     title: "5. Données des joueurs — responsabilité de l'utilisateur",
@@ -97,7 +97,7 @@ La poursuite de l'utilisation du service après notification vaut acceptation de
   },
   {
     title: "12. Contact",
-    content: `Pour toute question relative aux présentes CGU : [EMAIL DE CONTACT]`,
+    content: `Pour toute question relative aux présentes CGU : contact@footboard.fr`,
   },
 ]
 

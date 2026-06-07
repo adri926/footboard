@@ -1,25 +1,25 @@
 "use client"
 
 import { useState, useRef, useCallback, useEffect, useMemo } from "react"
+import { useSearchParams } from "next/navigation"
 import Pitch from "./Pitch"
 import PlayerToken from "./PlayerToken"
 import ArrowLayer from "./ArrowLayer"
 import PlaybackControls from "./PlaybackControls"
 import { FORMATIONS, mirrorY } from "@/lib/formations"
-import { ANIMATIONS, CATEGORIES } from "@/lib/animations"
+import { ANIMATIONS } from "@/lib/animations"
 import { SITUATIONS, PHASES } from "@/lib/situations"
+import type { Situation } from "@/lib/situations"
 import { REACTIONS, BASE_POSITIONS, getZone } from "@/lib/reactions"
 import AppelLayer from "./AppelLayer"
 import ZoneOverlay from "./ZoneOverlay"
 import BallToken from "./BallToken"
 import type { Player } from "@/types"
-import type { TacticAnim } from "@/lib/animations"
+import type { TacticAnim, AnimStep } from "@/lib/animations"
 import type { Block, Zone } from "@/lib/reactions"
 import type { AppelArrow } from "./AppelLayer"
-import { computeTargetPositions, jitter, lerp, type PositionMap } from "@/lib/engine/engine"
+import { computeTargetPositions } from "@/lib/engine/engine"
 import type { PossessionState } from "@/lib/engine/rules"
-
-type DemoMode = "bloc-bas" | "bloc-median" | "bloc-haut" | "pressing" | "contre"
 
 function buildPlayers(formationId: string, team: "red" | "blue"): Player[] {
   const formation = FORMATIONS.find(f => f.id === formationId) ?? FORMATIONS[0]
@@ -28,6 +28,75 @@ function buildPlayers(formationId: string, team: "red" | "blue"): Player[] {
     id: `${team[0]}${i + 1}`, name: p.name, number: i + 1,
     position: "MID", x: p.x, y: p.y, team,
   }))
+}
+
+// Qui a le ballon pendant chaque catégorie d'animation — détermine si l'adversaire
+// (équipe non scriptée) défend, attaque ou conteste, donc comment il réagit au ballon.
+const ANIM_POSSESSION: Record<TacticAnim["phase"], PossessionState> = {
+  possession:   "red",       // avec le ballon — le rouge construit, le bleu défend
+  perte:        "blue",      // à la perte — le bleu vient de récupérer, le rouge presse pour le reprendre
+  defense:      "blue",      // sans le ballon — le bleu a le ballon, le rouge est organisé en bloc
+  recuperation: "red",       // à la récup — le rouge vient de récupérer et lance la transition
+}
+
+// Calcule la position de chaque joueur à une étape d'animation. Deux catégories :
+// — les joueurs « scriptés » (ceux que l'auteur déplace explicitement à un moment ou un
+//   autre de la séquence) suivent fidèlement leur tracé chorégraphié, étape après étape —
+//   les flèches de la séquence sont dessinées pour pointer exactement vers eux ;
+// — le reste de l'équipe (des deux côtés) se positionne selon la logique par poste du
+//   moteur tactique réactif, en fonction du ballon et de la possession — ce qui fait
+//   bouger l'équipe comme un collectif cohérent sans toucher à la chorégraphie précise.
+function computeAnimFrame(
+  anim: TacticAnim,
+  step: AnimStep,
+  ball: { x: number; y: number },
+  prev: Record<string, { x: number; y: number }>,
+): Record<string, { x: number; y: number }> {
+  const scripted = new Set<string>()
+  for (const s of anim.steps) {
+    if (s.moves) for (const id of Object.keys(s.moves)) scripted.add(id)
+  }
+
+  const possession = ANIM_POSSESSION[anim.phase] ?? "contested"
+  const reactive = computeTargetPositions(ball, possession)
+
+  const next: Record<string, { x: number; y: number }> = {}
+  for (const id of Object.keys(reactive)) {
+    next[id] = scripted.has(id) ? (prev[id] ?? reactive[id]) : reactive[id]
+  }
+  return { ...next, ...(step.moves ?? {}) }
+}
+
+// Calcule le placement des 22 joueurs pour une situation (schéma figé). Les deux équipes
+// sont positionnées par le moteur tactique réactif autour du même ballon — elles forment
+// donc un bloc cohérent l'une par rapport à l'autre (fini les « deux équipes chacune de
+// leur côté »). Les joueurs explicitement désignés par une flèche du schéma gardent leur
+// emplacement choisi par l'auteur, pour que la flèche reste fidèle à la scène pédagogique.
+function computeSituationFrame(situation: Situation): Record<string, { x: number; y: number }> {
+  const possession = ANIM_POSSESSION[situation.phase as TacticAnim["phase"]] ?? "contested"
+  const reactive = computeTargetPositions(situation.ball, possession)
+
+  const authored: Record<string, { x: number; y: number }> = {}
+  for (const p of [...situation.positions.red, ...situation.positions.blue]) {
+    authored[p.id] = { x: p.x, y: p.y }
+  }
+
+  const featured = new Set<string>()
+  for (const arrow of situation.arrows ?? []) {
+    for (const pt of [{ x: arrow.x1, y: arrow.y1 }, { x: arrow.x2, y: arrow.y2 }]) {
+      let bestId: string | null = null
+      let bestDist = Math.hypot(pt.x - situation.ball.x, pt.y - situation.ball.y)
+      for (const [id, p] of Object.entries(authored)) {
+        const d = Math.hypot(pt.x - p.x, pt.y - p.y)
+        if (d < bestDist) { bestDist = d; bestId = id }
+      }
+      if (bestId) featured.add(bestId)
+    }
+  }
+
+  const next = { ...reactive }
+  for (const id of featured) next[id] = authored[id]
+  return next
 }
 
 // Construit l'effectif rouge depuis les joueurs réels du club
@@ -127,9 +196,10 @@ export default function TacticBoard({ clubData }: Props = {}) {
   const [animPlayers,    setAnimPlayers]    = useState<Record<string, { x: number; y: number }>>({})
   const [activeArrows,   setActiveArrows]   = useState<TacticAnim["steps"][0]["arrows"]>([])
   const [activeBall,     setActiveBall]     = useState<{ x: number; y: number } | undefined>()
-  const [activeCategory, setActiveCategory] = useState<string>("pressing")
   const [activeSituation,setActiveSituationState]= useState<string | null>(null)
   const [activePhase,    setActivePhase]    = useState<string>("possession")
+
+  // ── Mode du board : un seul outil actif à la fois pour ne pas surcharger la sidebar ──
 
   // ── Mode Sparring ──
   const [sparring,        setSparring]        = useState(false)
@@ -138,16 +208,14 @@ export default function TacticBoard({ clubData }: Props = {}) {
   const [currentZone,     setCurrentZone]     = useState<Zone | null>(null)
   const [currentReaction, setCurrentReaction] = useState<{ label:string; description:string } | null>(null)
 
-  // ── Moteur de mouvement (sparring live) ──
-  const [demoMode,        setDemoMode]        = useState<DemoMode>("bloc-bas")
-  const [enginePositions, setEnginePositions] = useState<PositionMap>({})
-  const engineRef         = useRef<PositionMap>({})
-  const engineTimerRef    = useRef<ReturnType<typeof setInterval> | null>(null)
   const [activeAppels,    setActiveAppels]    = useState<AppelArrow[]>([])
   const [showZones,       setShowZones]       = useState(false)
 
   const containerRef       = useRef<HTMLDivElement>(null)
   const timerRef           = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Dernière position connue du ballon pendant une animation — sert de référence
+  // pour faire réagir l'équipe adverse même sur les étapes qui ne redéfinissent pas `ball`
+  const animBallRef        = useRef<{ x: number; y: number }>({ x: 50, y: 50 })
   const activeSituationRef = useRef<string | null>(null)
   const possessionRef      = useRef<"red" | "blue" | null>(null)
   // Wrapper qui garde le ref en sync — utilisé partout à la place du setter brut
@@ -162,7 +230,10 @@ export default function TacticBoard({ clubData }: Props = {}) {
   const applyStep = useCallback((anim: TacticAnim, stepIdx: number) => {
     const step = anim.steps[stepIdx]
     if (!step) return
-    setAnimPlayers(prev => ({ ...prev, ...(step.moves ?? {}) }))
+    // Le ballon de référence : celui de l'étape, sinon le dernier connu (étapes muettes)
+    const ball = step.ball ?? animBallRef.current
+    animBallRef.current = ball
+    setAnimPlayers(prev => computeAnimFrame(anim, step, ball, prev))
     setActiveArrows(step.arrows ?? [])
     // Only update ball when step defines it — keep previous position otherwise
     if (step.ball !== undefined) setActiveBall(step.ball)
@@ -171,13 +242,31 @@ export default function TacticBoard({ clubData }: Props = {}) {
 
   const startAnim = useCallback((anim: TacticAnim) => {
     if (timerRef.current) clearTimeout(timerRef.current)
-    const base = buildPlayers("4-3-3", "red")
+    const baseRed  = buildPlayers("4-3-3", "red")
+    const baseBlue = buildPlayers("4-4-2", "blue")
     const baseMap: Record<string, { x: number; y: number }> = {}
-    base.forEach(p => { baseMap[p.id] = { x: p.x, y: p.y } })
-    setAnimPlayers(baseMap)
+    baseRed.forEach(p  => { baseMap[p.id] = { x: p.x, y: p.y } })
+    baseBlue.forEach(p => { baseMap[p.id] = { x: p.x, y: p.y } })
+    const firstStep = anim.steps[0]
+    const ball = firstStep.ball ?? { x: 50, y: 50 }
+    animBallRef.current = ball
+    setAnimPlayers(computeAnimFrame(anim, firstStep, ball, baseMap))
     setActiveAnim(anim); setCurrentStep(0); setIsPlaying(false)
-    setActiveArrows(anim.steps[0].arrows ?? [])
-    setActiveBall(anim.steps[0].ball)
+    setActiveArrows(firstStep.arrows ?? [])
+    setActiveBall(firstStep.ball)
+  }, [])
+
+  // Deep-link : ?anim=<id> ouvre directement l'animation correspondante (ex. depuis un article Concepts)
+  const searchParams = useSearchParams()
+  useEffect(() => {
+    const animId = searchParams.get("anim")
+    if (!animId) return
+    const anim = ANIMATIONS.find(a => a.id === animId)
+    if (!anim) return
+    if (sparring) stopSparring()
+    setActivePhase(anim.phase)
+    startAnim(anim)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
@@ -234,10 +323,10 @@ export default function TacticBoard({ clubData }: Props = {}) {
     setActiveAnim(null)
     setAnimPlayers({})
 
-    const all = [...situation.positions.red, ...situation.positions.blue]
+    const frame = computeSituationFrame(situation)
     setPlayers(prev => prev.map(p => {
-      const ov = all.find(o => o.id === p.id)
-      return ov ? { ...p, x: ov.x, y: ov.y } : p
+      const pos = frame[p.id]
+      return pos ? { ...p, x: pos.x, y: pos.y } : p
     }))
 
     setActiveBall(situation.ball)
@@ -248,29 +337,6 @@ export default function TacticBoard({ clubData }: Props = {}) {
   const updatePosition = useCallback((id: string, x: number, y: number) => {
     setPlayers(prev => prev.map(p => p.id === id ? { ...p, x, y } : p))
   }, [])
-
-  // ── Engine tick — mouvement continu des deux équipes pendant le sparring ──
-  useEffect(() => {
-    if (!sparring) {
-      if (engineTimerRef.current) clearInterval(engineTimerRef.current)
-      return
-    }
-
-    const tick = () => {
-      const ball = sparringBall
-      const poss: PossessionState = possessionRef.current ?? "contested"
-
-      const target = jitter(computeTargetPositions(ball, poss), 1.0)
-      const blended = lerp(engineRef.current, target, 0.3)
-      engineRef.current = blended
-      setEnginePositions({ ...blended })
-    }
-
-    engineTimerRef.current = setInterval(tick, 1800)
-    return () => { if (engineTimerRef.current) clearInterval(engineTimerRef.current) }
-  // possessionRef.current est lu dans tick via closure — pas besoin de le lister ici
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sparring, sparringBall])
 
   // ── Réaction adversaire quand le ballon change de zone ──
   const handleSparringBall = useCallback((x: number, y: number) => {
@@ -300,62 +366,89 @@ export default function TacticBoard({ clubData }: Props = {}) {
     setTimeout(() => setTransitioning(false), 500)
   }, [currentZone, sparringBlock])
 
-  // Démarrer le sparring — reset les positions + init engine
-  const startSparring = useCallback(() => {
-    handleStop()
-    setActiveSituation(null)
-    const initBall = { x: 50, y: 50 }
-    setSparring(true)
-    setSparringBall(initBall)
+  // Replace l'équipe bleue sur les positions de base d'un bloc donné
+  const placeBlueBlock = useCallback((block: Block) => {
+    const base = BASE_POSITIONS[block]
+    setPlayers(prev => prev.map(p => {
+      const pos = base[p.id]
+      return pos && p.team === "blue" ? { ...p, x: pos.x, y: pos.y } : p
+    }))
+  }, [])
+
+  // Changer de bloc en cours de test : repositionne immédiatement et efface la dernière réaction
+  const changeSparringBlock = useCallback((block: Block) => {
+    setSparringBlock(block)
+    placeBlueBlock(block)
     setCurrentZone(null)
     setCurrentReaction(null)
     setActiveArrows([])
+  }, [placeBlueBlock])
 
-    // Seed engine positions from current player state
-    const initPos: PositionMap = {}
-    setPlayers(prev => {
-      prev.forEach(p => { initPos[p.id] = { x: p.x, y: p.y } })
-      return prev
-    })
-    engineRef.current = initPos
-    setEnginePositions(initPos)
-  }, [handleStop])
+  // Démarrer le test du bloc défensif — reset le ballon, place le bleu sur son bloc de départ
+  const startSparring = useCallback(() => {
+    handleStop()
+    setActiveSituation(null)
+    setSparring(true)
+    setSparringBall({ x: 50, y: 50 })
+    setCurrentZone(null)
+    setCurrentReaction(null)
+    setActiveArrows([])
+    setShowZones(true) // les zones expliquent le déclenchement des réactions — les afficher d'office
+    placeBlueBlock(sparringBlock)
+  }, [handleStop, sparringBlock, placeBlueBlock])
 
   const stopSparring = useCallback(() => {
     setSparring(false)
     setCurrentReaction(null)
     setActiveArrows([])
+    setShowZones(false)
     setSparringBall({ x: 50, y: 50 })
     setCurrentZone(null)
   }, [])
 
-  const displayPlayers = players.map(p => {
-    const eng = sparring ? enginePositions[p.id] : undefined
-    return {
-      ...p,
-      x: animPlayers[p.id]?.x ?? eng?.x ?? p.x,
-      y: animPlayers[p.id]?.y ?? eng?.y ?? p.y,
-    }
-  })
+  const displayPlayers = players.map(p => ({
+    ...p,
+    x: animPlayers[p.id]?.x ?? p.x,
+    y: animPlayers[p.id]?.y ?? p.y,
+  }))
 
   const activeStep    = activeAnim?.steps[currentStep]
-  const filteredAnims = ANIMATIONS.filter(a => a.category === activeCategory)
+  // Situations (figées) + animations (séquences) du moment de jeu actif, dans une seule liste —
+  // elles répondent toutes les deux à "choisis un scénario tactique et regarde-le sur le terrain"
+  const phaseSituations = SITUATIONS.filter(s => s.phase === activePhase)
+  const phaseAnims      = ANIMATIONS.filter(a => a.phase === activePhase)
   const activeSit     = activeSituation ? SITUATIONS.find(s => s.id === activeSituation) : null
   const activePhaseDef = activeSit ? PHASES.find(p => p.id === activeSit.phase) : null
 
-  // Possession auto : équipe dont le joueur est le plus proche de la balle
+  // Possession auto : le porteur du ballon est le joueur le plus proche de la balle —
+  // on identifie SON id (pas seulement son équipe) pour pouvoir le mettre en évidence sur le terrain
   const ballPos = sparring ? sparringBall : activeBall
-  const possession = useMemo((): "red" | "blue" | null => {
+  const ballCarrier = useMemo((): { team: "red" | "blue"; playerId: string } | null => {
     if (!ballPos) return null
     let minDist = Infinity
-    let closest: "red" | "blue" | null = null
+    let closest: { team: "red" | "blue"; playerId: string } | null = null
     for (const p of displayPlayers) {
       const d = Math.hypot(p.x - ballPos.x, p.y - ballPos.y)
-      if (d < minDist) { minDist = d; closest = p.team }
+      if (d < minDist) { minDist = d; closest = { team: p.team, playerId: p.id } }
     }
-    possessionRef.current = closest
+    possessionRef.current = closest?.team ?? null
     return closest
   }, [displayPlayers, ballPos])
+  const possession = ballCarrier?.team ?? null
+
+  // Joueurs clés / en mouvement à l'étape d'animation courante — donnée déjà présente
+  // dans les scénarios (step.highlight), désormais affichée comme un halo sur le terrain
+  const highlightedIds = useMemo(() => new Set(activeStep?.highlight ?? []), [activeStep])
+
+  // Durée du déplacement CSS : calée sur la durée réelle de l'étape pendant une animation
+  // pour que le mouvement soit continu (et non un saut suivi d'une pause) — sinon une
+  // transition fixe plus courte pour les changements de formation/situation/sparring
+  const playerTransitionMs = activeAnim
+    ? (activeStep?.duration ?? 450)
+    : (transitioning || sparring) ? 450 : undefined
+  const ballTransitionMs = activeAnim
+    ? (activeStep?.duration ?? 450)
+    : transitioning ? 450 : 350
 
   const teamAccent = (t: "red" | "blue") => t === "red"
     ? { border: "rgba(232,16,16,0.6)", bg: "rgba(232,16,16,0.15)", text: "#ff5555", dim: "rgba(232,16,16,0.35)" }
@@ -441,30 +534,13 @@ export default function TacticBoard({ clubData }: Props = {}) {
 
         <Divider />
 
-        {/* Toggle zones */}
-        <button
-          onClick={() => setShowZones(v => !v)}
-          className="shrink-0 py-1.5 px-3 rounded-lg transition"
-          style={{
-            fontFamily:"var(--font-mono),monospace", fontSize:10, letterSpacing:"0.06em",
-            backgroundColor: showZones ? "rgba(122,154,130,0.15)" : "transparent",
-            border: showZones ? "1px solid rgba(122,154,130,0.45)" : "1px solid rgba(122,154,130,0.15)",
-            color: showZones ? "#7A9A82" : "rgba(122,154,130,0.4)",
-          }}>
-          {showZones ? "⊟ MASQUER ZONES" : "⊞ 9 ZONES"}
-        </button>
-
-        <Divider />
-
-        {/* Phases de jeu */}
-        <Section label="Phase de jeu">
-          {/* Les 4 phases en 2×2 */}
+        <Section label="Moment de jeu">
           <div className="grid grid-cols-2 gap-1">
             {PHASES.map(phase => {
               const isActive = activePhase === phase.id
               return (
                 <button key={phase.id}
-                  onClick={() => setActivePhase(phase.id)}
+                  onClick={() => { if (sparring) stopSparring(); setActivePhase(phase.id) }}
                   className="py-2 px-2 rounded-lg text-left transition"
                   style={{
                     backgroundColor: isActive ? phase.dim : "rgba(255,255,255,0.04)",
@@ -482,159 +558,123 @@ export default function TacticBoard({ clubData }: Props = {}) {
               )
             })}
           </div>
-
-          {/* Situations de la phase active */}
-          <div className="flex flex-col gap-1 mt-1">
-            {SITUATIONS.filter(s => s.phase === activePhase).map(s => {
-              const isActive = activeSituation === s.id
-              return (
-                <button key={s.id} onClick={() => applySituation(s.id)}
-                  className="text-left px-3 py-2.5 rounded-xl transition"
-                  style={{
-                    backgroundColor: isActive ? "rgba(122,154,130,0.12)" : "rgba(122,154,130,0.03)",
-                    border: `1px solid ${isActive ? "rgba(122,154,130,0.4)" : "rgba(122,154,130,0.1)"}`,
-                  }}>
-                  <p style={{
-                    fontFamily:"var(--font-display),system-ui,sans-serif",
-                    fontWeight:700, fontSize:13, letterSpacing:"0.02em",
-                    color: isActive ? "#7A9A82" : "rgba(255,255,255,0.85)",
-                  }}>
-                    {s.label}
-                  </p>
-                  <p style={{ fontFamily:"var(--font-body),sans-serif", fontSize:10, marginTop:2, color:"rgba(122,154,130,0.5)", lineHeight:1.4 }}>
-                    {s.description}
-                  </p>
-                </button>
-              )
-            })}
-          </div>
         </Section>
 
-        <Divider />
+        {/* Playback — visible seulement quand une animation tourne */}
+        {!sparring && activeAnim && activeStep && (
+          <Section label={activeAnim.title}>
+            <PlaybackControls
+              currentStep={currentStep} totalSteps={activeAnim.steps.length}
+              isPlaying={isPlaying} stepLabel={activeStep.label} stepInfo={activeStep.info}
+              onPlay={handlePlay} onPause={handlePause}
+              onNext={handleNext} onPrev={handlePrev} onStop={handleStop}
+            />
+          </Section>
+        )}
 
-        {/* ── MODE SPARRING ── */}
-        <Section label="Sparring">
-          {!sparring ? (
+        {/* Schémas, animations et test du bloc défensif du moment de jeu actif — une seule liste,
+            le test du bloc défensif est une situation comme une autre (phase "Sans le ballon") */}
+        <Section label="Situations" className="flex-1">
+          {sparring ? (
             <div className="flex flex-col gap-2">
-              {/* Mode équipe démo */}
-              <div>
-                <label className="text-xs mb-1.5 block" style={{ color:"rgba(255,255,255,0.4)" }}>Mode équipe bleue (démo)</label>
-                <div className="grid grid-cols-2 gap-1">
-                  {(["bloc-bas","bloc-median","bloc-haut","pressing","contre"] as DemoMode[]).map(m => {
-                    const mLabels: Record<DemoMode, string> = {
-                      "bloc-bas":    "Bloc bas",
-                      "bloc-median": "Bloc médian",
-                      "bloc-haut":   "Bloc haut",
-                      "pressing":    "Pressing",
-                      "contre":      "Contre",
-                    }
-                    return (
-                      <button key={m} onClick={() => setDemoMode(m)}
-                        className="py-1.5 px-2 rounded-lg text-xs font-semibold transition text-left"
-                        style={{
-                          backgroundColor: demoMode === m ? "rgba(85,153,255,0.18)" : "rgba(255,255,255,0.04)",
-                          border: demoMode === m ? "1px solid rgba(85,153,255,0.4)" : "1px solid rgba(255,255,255,0.08)",
-                          color: demoMode === m ? "#5599ff" : "rgba(255,255,255,0.35)",
-                        }}>
-                        {mLabels[m]}
-                      </button>
-                    )
-                  })}
-                </div>
+              <p className="text-[11px] leading-relaxed" style={{ color:"rgba(255,255,255,0.4)" }}>
+                Glisse le ballon jaune sur le terrain — l'équipe bleue se replace en bloc selon la zone où il se trouve.
+              </p>
+              <div className="grid grid-cols-3 gap-1">
+                {(["bloc-bas","bloc-median","bloc-haut"] as Block[]).map(b => {
+                  const labels: Record<Block, string> = { "bloc-bas": "Bloc bas", "bloc-median": "Bloc médian", "bloc-haut": "Bloc haut" }
+                  return (
+                    <button key={b} onClick={() => changeSparringBlock(b)}
+                      className="py-1.5 px-1 rounded-lg text-xs font-semibold transition text-center"
+                      style={{
+                        backgroundColor: sparringBlock === b ? "rgba(85,153,255,0.18)" : "rgba(255,255,255,0.04)",
+                        border: sparringBlock === b ? "1px solid rgba(85,153,255,0.4)" : "1px solid rgba(255,255,255,0.08)",
+                        color: sparringBlock === b ? "#5599ff" : "rgba(255,255,255,0.35)",
+                      }}>
+                      {labels[b]}
+                    </button>
+                  )
+                })}
               </div>
-              <button onClick={startSparring}
-                className="w-full py-2 rounded-xl transition hover:opacity-90"
-                style={{
-                  fontFamily:"var(--font-mono),monospace", fontWeight:700, fontSize:11, letterSpacing:"0.08em",
-                  backgroundColor:"#7A9A82", color:"#181812",
-                }}>
-                ▶ LANCER
-              </button>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {/* Indicateur de direction */}
-              <div className="flex gap-1">
-                <div className="flex-1 p-2 rounded-lg text-center"
-                  style={{ backgroundColor:"rgba(232,16,16,0.12)", border:"1px solid rgba(232,16,16,0.25)" }}>
-                  <p className="text-[10px] font-bold" style={{ color:"#ff5555" }}>● Rouge</p>
-                  <p className="text-[9px] mt-0.5" style={{ color:"rgba(255,255,255,0.35)" }}>Tu diriges</p>
+              {currentReaction && (
+                <div className="p-2.5 rounded-lg"
+                  style={{ backgroundColor:"rgba(85,153,255,0.1)", border:"1px solid rgba(85,153,255,0.25)" }}>
+                  <p className="text-xs font-bold mb-0.5" style={{ color:"#5599ff" }}>{currentReaction.label}</p>
+                  <p className="text-[10px] leading-relaxed" style={{ color:"rgba(255,255,255,0.45)" }}>{currentReaction.description}</p>
                 </div>
-                <div className="flex-1 p-2 rounded-lg text-center"
-                  style={{ backgroundColor:"rgba(0,68,232,0.12)", border:"1px solid rgba(85,153,255,0.25)" }}>
-                  <p className="text-[10px] font-bold" style={{ color:"#5599ff" }}>● Bleu</p>
-                  <p className="text-[9px] mt-0.5" style={{ color:"rgba(255,255,255,0.35)" }}>Moteur IA</p>
-                </div>
-              </div>
-              <div className="p-2 rounded-lg text-center"
-                style={{ backgroundColor:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)" }}>
-                <p className="text-[10px]" style={{ color:"rgba(255,255,255,0.3)" }}>
-                  Glisse le ballon jaune sur le terrain
-                </p>
-              </div>
+              )}
               <button onClick={stopSparring}
                 className="w-full py-1.5 rounded-lg text-xs font-semibold transition"
                 style={{ border:"1px solid rgba(255,255,255,0.1)", color:"rgba(255,255,255,0.4)" }}>
-                ■ Arrêter
+                ■ Quitter le test du bloc
               </button>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-1">
+              {phaseSituations.map(s => {
+                const isActive = activeSituation === s.id
+                return (
+                  <button key={s.id} onClick={() => applySituation(s.id)}
+                    className="text-left px-3 py-2.5 rounded-xl transition"
+                    style={{
+                      backgroundColor: isActive ? "rgba(122,154,130,0.12)" : "rgba(122,154,130,0.03)",
+                      border: `1px solid ${isActive ? "rgba(122,154,130,0.4)" : "rgba(122,154,130,0.1)"}`,
+                    }}>
+                    <p style={{
+                      fontFamily:"var(--font-display),system-ui,sans-serif",
+                      fontWeight:700, fontSize:13, letterSpacing:"0.02em",
+                      color: isActive ? "#7A9A82" : "rgba(255,255,255,0.85)",
+                    }}>
+                      {s.label}
+                    </p>
+                    <p style={{ fontFamily:"var(--font-body),sans-serif", fontSize:10, marginTop:2, color:"rgba(122,154,130,0.5)", lineHeight:1.4 }}>
+                      {s.description}
+                    </p>
+                  </button>
+                )
+              })}
+              {phaseAnims.map(anim => {
+                const isActive = activeAnim?.id === anim.id
+                return (
+                  <button key={anim.id} onClick={() => startAnim(anim)}
+                    className="text-left px-3 py-2.5 rounded-xl transition"
+                    style={{
+                      backgroundColor: isActive ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.03)",
+                      border: `1px solid ${isActive ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.08)"}`,
+                      boxShadow: isActive ? "0 0 16px rgba(255,255,255,0.06)" : "none",
+                    }}>
+                    <p className="text-xs font-bold flex items-center gap-1.5"
+                      style={{ color: isActive ? "#fff" : "rgba(255,255,255,0.85)" }}>
+                      <span style={{ color:"#7A9A82" }}>▶</span>{anim.title}
+                    </p>
+                    <p style={{ fontFamily:"var(--font-body),sans-serif", fontSize:10, marginTop:2, color:"rgba(255,255,255,0.4)", lineHeight:1.4 }}>
+                      {anim.summary}
+                    </p>
+                  </button>
+                )
+              })}
+              {/* Test du bloc défensif — une situation interactive parmi les autres, pour la phase "Sans le ballon" */}
+              {activePhase === "defense" && (
+                <button onClick={() => { if (activeAnim) handleStop(); startSparring() }}
+                  className="text-left px-3 py-2.5 rounded-xl transition"
+                  style={{
+                    backgroundColor: "rgba(85,153,255,0.06)",
+                    border: "1px solid rgba(85,153,255,0.2)",
+                  }}>
+                  <p className="text-xs font-bold flex items-center gap-1.5" style={{ color: "#5599ff" }}>
+                    <span>⛊</span> Tester le replacement du bloc bleu
+                  </p>
+                  <p style={{ fontFamily:"var(--font-body),sans-serif", fontSize:10, marginTop:2, color:"rgba(255,255,255,0.4)", lineHeight:1.4 }}>
+                    Prends le contrôle du ballon et observe comment le bloc adverse se replace selon la zone
+                  </p>
+                </button>
+              )}
             </div>
           )}
         </Section>
 
-        <Divider />
-
-        {/* Playback */}
-        {activeAnim && activeStep && (
-          <>
-            <Section label={activeAnim.title}>
-              <PlaybackControls
-                currentStep={currentStep} totalSteps={activeAnim.steps.length}
-                isPlaying={isPlaying} stepLabel={activeStep.label} stepInfo={activeStep.info}
-                onPlay={handlePlay} onPause={handlePause}
-                onNext={handleNext} onPrev={handlePrev} onStop={handleStop}
-              />
-            </Section>
-            <Divider />
-          </>
-        )}
-
-        {/* Animations */}
-        <Section label="Animations" className="flex-1">
-          <div className="flex gap-1 flex-wrap mb-1">
-            {CATEGORIES.map(cat => (
-              <button key={cat} onClick={() => setActiveCategory(cat)}
-                className="px-2.5 py-0.5 rounded-full text-xs capitalize transition"
-                style={{
-                  backgroundColor: activeCategory === cat ? "#ffffff" : "transparent",
-                  color: activeCategory === cat ? "#000" : "rgba(255,255,255,0.4)",
-                  border: activeCategory === cat ? "none" : "1px solid rgba(255,255,255,0.12)",
-                  fontWeight: activeCategory === cat ? "700" : "400",
-                }}>
-                {cat}
-              </button>
-            ))}
-          </div>
-          <div className="flex flex-col gap-1">
-            {filteredAnims.map(anim => {
-              const active = activeAnim?.id === anim.id
-              return (
-                <button key={anim.id} onClick={() => startAnim(anim)}
-                  className="text-left px-3 py-2 rounded-xl transition"
-                  style={{
-                    backgroundColor: active ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.03)",
-                    border: `1px solid ${active ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.08)"}`,
-                    boxShadow: active ? "0 0 16px rgba(255,255,255,0.06)" : "none",
-                  }}>
-                  <p className="text-white text-xs font-semibold">{anim.title}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{anim.summary}</p>
-                </button>
-              )
-            })}
-          </div>
-        </Section>
-
         {/* Reset */}
-        {!activeAnim && (
+        {!activeAnim && !sparring && (
           <button
             onClick={() => {
               setPlayers([...buildPlayers(redFormation, "red"), ...buildPlayers(blueFormation, "blue")])
@@ -669,7 +709,7 @@ export default function TacticBoard({ clubData }: Props = {}) {
           }}
         >
           <Pitch />
-          <ZoneOverlay visible={showZones} />
+          <ZoneOverlay visible={showZones} activeZone={sparring ? currentZone : null} />
           <ArrowLayer
             arrows={activeArrows ?? []}
             ball={sparring ? undefined : activeBall}
@@ -679,7 +719,9 @@ export default function TacticBoard({ clubData }: Props = {}) {
             <PlayerToken
               key={player.id} id={player.id} label={player.name}
               x={player.x} y={player.y} team={player.team}
-              transitioning={transitioning || !!activeAnim || sparring}
+              transitionMs={playerTransitionMs}
+              hasBall={!!ballPos && ballCarrier?.playerId === player.id}
+              highlighted={highlightedIds.has(player.id)}
               containerRef={containerRef} onPositionUpdate={updatePosition}
             />
           ))}
@@ -689,7 +731,6 @@ export default function TacticBoard({ clubData }: Props = {}) {
               x={sparringBall.x}
               y={sparringBall.y}
               draggable={true}
-              transitioning={false}
               possession={possession}
               containerRef={containerRef}
               onPositionUpdate={handleSparringBall}
@@ -701,7 +742,7 @@ export default function TacticBoard({ clubData }: Props = {}) {
               x={activeBall.x}
               y={activeBall.y}
               draggable={false}
-              transitioning={!!activeAnim || transitioning}
+              transitionMs={ballTransitionMs}
               possession={possession}
               containerRef={containerRef}
               onPositionUpdate={() => {}}

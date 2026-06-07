@@ -95,9 +95,32 @@ const PLANS = [
   },
 ]
 
+const STRUCTURED_DATA = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "Footboard",
+  applicationCategory: "SportsApplication",
+  operatingSystem: "Web",
+  description: "La plateforme tout-en-un pour les coachs de football amateurs : effectif, matchs, entraînements, convocations et préparation tactique.",
+  url: "https://footboard.fr",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "EUR",
+  },
+  author: {
+    "@type": "Person",
+    name: "Adrien Siméon",
+  },
+}
+
 export default function Home() {
   return (
     <main style={{ background: "#181812", color: "rgba(255,255,255,0.92)" }}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(STRUCTURED_DATA) }}
+      />
       <div className="max-w-5xl mx-auto px-6">
 
         {/* ── 1. HERO ── */}

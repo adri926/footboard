@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react"
 import { updateClub } from "@/app/dashboard/club/actions"
 import { deleteAccount } from "./actions"
+import PageHeader from "@/components/dashboard/PageHeader"
 import type { Club } from "@/app/dashboard/club/actions"
 
 const LEVELS = [
@@ -78,20 +79,7 @@ export default function CompteClient({ club }: Props) {
   return (
     <div style={{ padding: "32px 36px", maxWidth: 600 }}>
 
-      {/* Header */}
-      <p style={{
-        fontFamily: "var(--font-mono), monospace",
-        fontSize: 9, fontWeight: 700, letterSpacing: "0.14em",
-        color: "rgba(122,154,130,0.5)", textTransform: "uppercase", marginBottom: 6,
-      }}>
-        Mon compte
-      </p>
-      <h1 style={{
-        fontFamily: "var(--font-display), system-ui, sans-serif",
-        fontWeight: 900, fontSize: 24, color: "rgba(255,255,255,0.95)", marginBottom: 28,
-      }}>
-        Paramètres
-      </h1>
+      <PageHeader label="Mon compte" title="Paramètres" />
 
       {/* Section club */}
       <div style={{ ...SECTION, marginBottom: 16 }}>

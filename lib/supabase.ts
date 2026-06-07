@@ -73,17 +73,6 @@ export interface Match {
   created_at: string
 }
 
-export interface SavedSituation {
-  id:          string
-  owner_id:    string
-  phase:       string
-  style:       string
-  zone:        string
-  label:       string
-  description: string
-  created_at:  string
-}
-
 export interface MatchStat {
   id: string
   match_id: string

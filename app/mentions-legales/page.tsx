@@ -18,7 +18,7 @@ export default function MentionsLegales() {
       {[
         {
           title: "Éditeur du site",
-          content: `Footboard est édité par [NOM / RAISON SOCIALE], [ADRESSE], [VILLE], France.\nEmail : [EMAIL DE CONTACT]\nSIRET : [NUMÉRO SIRET si applicable]`,
+          content: `Footboard est édité par Adrien Siméon, Paris, France.\nEmail : contact@footboard.fr\nSIRET : [À COMPLÉTER AU LANCEMENT]`,
         },
         {
           title: "Hébergement",
@@ -26,7 +26,7 @@ export default function MentionsLegales() {
         },
         {
           title: "Directeur de la publication",
-          content: `[PRÉNOM NOM]`,
+          content: `Adrien Siméon`,
         },
         {
           title: "Propriété intellectuelle",

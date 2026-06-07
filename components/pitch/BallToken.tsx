@@ -7,13 +7,15 @@ interface Props {
   x: number
   y: number
   draggable: boolean
-  transitioning?: boolean
+  // Durée (ms) du déplacement CSS — synchronisée sur la durée de l'étape d'animation
+  transitionMs?: number
   possession?: "red" | "blue" | null
   containerRef: RefObject<HTMLDivElement | null>
   onPositionUpdate: (x: number, y: number) => void
 }
 
 const SIZE = 28
+const EASE = "cubic-bezier(0.4,0,0.2,1)"
 
 function BallSvg({ possession }: { possession?: "red" | "blue" | null }) {
   const glowColor = possession === "red"
@@ -53,12 +55,9 @@ function BallSvg({ possession }: { possession?: "red" | "blue" | null }) {
   )
 }
 
-export default function BallToken({ x, y, draggable, transitioning = false, possession, containerRef, onPositionUpdate }: Props) {
+export default function BallToken({ x, y, draggable, transitionMs, possession, containerRef, onPositionUpdate }: Props) {
   const mx = useMotionValue(0)
   const my = useMotionValue(0)
-
-  const duration = transitioning ? "0.45" : "0.35"
-  const ease = "cubic-bezier(0.4,0,0.2,1)"
 
   // Non-draggable: plain div — CSS transition guaranteed (no Framer Motion conflict)
   if (!draggable) {
@@ -70,7 +69,7 @@ export default function BallToken({ x, y, draggable, transitioning = false, poss
         width: SIZE, height: SIZE,
         zIndex: 30,
         pointerEvents: "none",
-        transition: `left ${duration}s ${ease}, top ${duration}s ${ease}`,
+        ...(transitionMs && { transition: `left ${transitionMs}ms ${EASE}, top ${transitionMs}ms ${EASE}` }),
       }}>
         <BallSvg possession={possession} />
       </div>

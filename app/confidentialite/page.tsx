@@ -18,7 +18,7 @@ export default function Confidentialite() {
       {[
         {
           title: "Responsable du traitement",
-          content: `[NOM / RAISON SOCIALE], [EMAIL DE CONTACT].\nEn utilisant Footboard, vous acceptez les pratiques décrites dans cette politique.`,
+          content: `Adrien Siméon, contact@footboard.fr.\nEn utilisant Footboard, vous acceptez les pratiques décrites dans cette politique.`,
         },
         {
           title: "Données collectées",
@@ -42,7 +42,7 @@ export default function Confidentialite() {
         },
         {
           title: "Vos droits (RGPD)",
-          content: `Conformément au RGPD, vous disposez des droits suivants :\n• Accès à vos données\n• Rectification\n• Effacement (suppression de compte disponible dans Paramètres)\n• Portabilité\n• Opposition\n\nPour exercer ces droits : [EMAIL DE CONTACT]`,
+          content: `Conformément au RGPD, vous disposez des droits suivants :\n• Accès à vos données\n• Rectification\n• Effacement (suppression de compte disponible dans Paramètres)\n• Portabilité\n• Opposition\n\nPour exercer ces droits : contact@footboard.fr`,
         },
         {
           title: "Cookies",

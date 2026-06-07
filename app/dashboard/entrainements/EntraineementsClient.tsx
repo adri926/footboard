@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react"
 import TrainingForm from "@/components/dashboard/TrainingForm"
+import PageHeader from "@/components/dashboard/PageHeader"
 import { deleteTraining } from "./actions"
 import { TRAINING_TYPES } from "@/lib/training-types"
 import type { Training } from "./actions"
@@ -147,60 +148,39 @@ export default function EntraineementsClient({ trainings }: Props) {
 
   return (
     <>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 24 }}>
-        <div>
-          <p style={{
-            fontFamily: "var(--font-mono), monospace",
-            fontSize: 9, fontWeight: 700, letterSpacing: "0.14em",
-            color: "rgba(122,154,130,0.5)", textTransform: "uppercase", marginBottom: 6,
-          }}>
-            Mon Club
-          </p>
-          <h1 style={{
-            fontFamily: "var(--font-display), system-ui, sans-serif",
-            fontWeight: 900, fontSize: 26, color: "rgba(255,255,255,0.95)",
-          }}>
-            Entraînements
-          </h1>
-          <p style={{
-            fontFamily: "var(--font-body), sans-serif",
-            fontWeight: 300, fontSize: 13,
-            color: "rgba(255,255,255,0.3)", marginTop: 4,
-          }}>
-            {trainings.length} séance{trainings.length !== 1 ? "s" : ""}
-          </p>
-        </div>
-
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          {/* Toggle vue */}
-          <div style={{
-            display: "flex", borderRadius: 8,
-            border: "1px solid rgba(122,154,130,0.15)", overflow: "hidden",
-          }}>
-            {(["list", "calendar"] as const).map(v => (
-              <button key={v} onClick={() => setView(v)} style={{
-                padding: "8px 14px", cursor: "pointer", border: "none",
-                fontFamily: "var(--font-mono), monospace",
-                fontSize: 8, fontWeight: 700, letterSpacing: "0.08em",
-                backgroundColor: view === v ? "rgba(122,154,130,0.15)" : "transparent",
-                color: view === v ? "#7A9A82" : "rgba(255,255,255,0.25)",
-              }}>
-                {v === "list" ? "LISTE" : "CALENDRIER"}
-              </button>
-            ))}
+      <PageHeader
+        label="Mon Club"
+        title="Entraînements"
+        subtitle={`${trainings.length} séance${trainings.length !== 1 ? "s" : ""}`}
+        action={
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <div style={{
+              display: "flex", borderRadius: 8,
+              border: "1px solid rgba(122,154,130,0.15)", overflow: "hidden",
+            }}>
+              {(["list", "calendar"] as const).map(v => (
+                <button key={v} onClick={() => setView(v)} style={{
+                  padding: "8px 14px", cursor: "pointer", border: "none",
+                  fontFamily: "var(--font-mono), monospace",
+                  fontSize: 8, fontWeight: 700, letterSpacing: "0.08em",
+                  backgroundColor: view === v ? "rgba(122,154,130,0.15)" : "transparent",
+                  color: view === v ? "#7A9A82" : "rgba(255,255,255,0.25)",
+                }}>
+                  {v === "list" ? "LISTE" : "CALENDRIER"}
+                </button>
+              ))}
+            </div>
+            <button onClick={openAdd} style={{
+              fontFamily: "var(--font-mono), monospace",
+              fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
+              padding: "10px 20px", borderRadius: 10, cursor: "pointer",
+              backgroundColor: "#7A9A82", color: "#181812", border: "none",
+            }}>
+              + AJOUTER
+            </button>
           </div>
-
-          <button onClick={openAdd} style={{
-            fontFamily: "var(--font-mono), monospace",
-            fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
-            padding: "10px 20px", borderRadius: 10, cursor: "pointer",
-            backgroundColor: "#7A9A82", color: "#181812", border: "none",
-          }}>
-            + AJOUTER
-          </button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Vide */}
       {trainings.length === 0 && (

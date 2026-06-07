@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react"
 import PlayerStatusBadge from "@/components/dashboard/PlayerStatusBadge"
 import PlayerForm from "@/components/dashboard/PlayerForm"
+import PageHeader from "@/components/dashboard/PageHeader"
 import { deletePlayer } from "./actions"
 import type { Player } from "./actions"
 
@@ -44,41 +45,21 @@ export default function EffectifClient({ players }: Props) {
 
   return (
     <>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 28 }}>
-        <div>
-          <p style={{
+      <PageHeader
+        label="Mon Club"
+        title="Effectif"
+        subtitle={`${players.length} joueur${players.length !== 1 ? "s" : ""}`}
+        action={
+          <button onClick={openAdd} style={{
             fontFamily: "var(--font-mono), monospace",
-            fontSize: 9, fontWeight: 700, letterSpacing: "0.14em",
-            color: "rgba(122,154,130,0.5)", textTransform: "uppercase", marginBottom: 6,
+            fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
+            padding: "10px 20px", borderRadius: 10, cursor: "pointer",
+            backgroundColor: "#7A9A82", color: "#181812", border: "none",
           }}>
-            Mon Club
-          </p>
-          <h1 style={{
-            fontFamily: "var(--font-display), system-ui, sans-serif",
-            fontWeight: 900, fontSize: 26,
-            color: "rgba(255,255,255,0.95)",
-          }}>
-            Effectif
-          </h1>
-          <p style={{
-            fontFamily: "var(--font-body), sans-serif",
-            fontWeight: 300, fontSize: 13,
-            color: "rgba(255,255,255,0.3)", marginTop: 4,
-          }}>
-            {players.length} joueur{players.length !== 1 ? "s" : ""}
-          </p>
-        </div>
-
-        <button onClick={openAdd} style={{
-          fontFamily: "var(--font-mono), monospace",
-          fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
-          padding: "10px 20px", borderRadius: 10, cursor: "pointer",
-          backgroundColor: "#7A9A82", color: "#181812", border: "none",
-        }}>
-          + AJOUTER UN JOUEUR
-        </button>
-      </div>
+            + AJOUTER UN JOUEUR
+          </button>
+        }
+      />
 
       {/* Liste vide */}
       {players.length === 0 && (

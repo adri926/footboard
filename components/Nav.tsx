@@ -19,8 +19,10 @@ const NAV = [
     label: "Tactique",
     href: "/tactique",
     children: [
+      { href: "/tactique/animations",     label: "Animations",          available: true  },
       { href: "/tactique/creer",          label: "Créer une situation", available: true  },
       { href: "/tactique/mes-situations", label: "Mes situations",      available: true  },
+      { href: "/tactique/concepts",       label: "Concepts",            available: true  },
     ],
   },
   { label: "Blog",   href: "#", children: [], soon: true },

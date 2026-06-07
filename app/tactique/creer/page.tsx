@@ -13,6 +13,31 @@ import { saveBuiltSituation } from "./actions"
 
 type Step = 1 | 2 | 3 | 4 | 5
 
+const CONFIG_HINTS: Record<string, string> = {
+  "1v1": "Duel individuel",
+  "2v1": "Supériorité offensive simple",
+  "2v2": "Égalité numérique",
+  "3v2": "Supériorité numérique",
+  "3v3": "Bloc équilibré",
+  "4v3": "Avantage collectif",
+  "4v4": "Phase de jeu organisée",
+  "5v4": "Forte densité dans le dernier tiers",
+}
+
+const FINALITY_HINTS: Record<string, string> = {
+  shot:       "Conclure l'action par une frappe cadrée",
+  chance:     "Construire une situation de tir",
+  combine:    "Avancer par des combinaisons courtes",
+  keep:       "Garder la possession sous pression",
+  recover:    "Reprendre le ballon à l'adversaire",
+  press:      "Empêcher la relance adverse",
+  clear:      "Repousser le danger sans prendre de risque",
+  "force-long": "Orienter l'adversaire vers le jeu long",
+  counter:    "Exploiter l'espace après la récupération",
+  "build-out": "Relancer proprement depuis l'arrière",
+  fix:        "Attirer l'adversaire pour jouer dans son dos",
+}
+
 /* ── Helpers UI ─────────────────────────────────────────── */
 function StepBadge({ n, active, done }: { n: number; active: boolean; done: boolean }) {
   return (
@@ -183,17 +208,28 @@ export default function CreerPage() {
               <div className="flex flex-wrap gap-2">
                 {PLAYER_CONFIGS.map(cfg => (
                   <button key={cfg.label} onClick={() => selectConfig(cfg.label)} style={{
-                    fontFamily: "var(--font-mono), monospace",
-                    fontWeight: 700, fontSize: 11, letterSpacing: "0.06em",
-                    padding: "7px 14px", borderRadius: 8, cursor: "pointer",
+                    display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2,
+                    padding: "7px 14px", borderRadius: 8, cursor: "pointer", textAlign: "left",
                     backgroundColor: configLabel === cfg.label
                       ? "rgba(122,154,130,0.2)" : "rgba(255,255,255,0.04)",
                     border: `1px solid ${configLabel === cfg.label
                       ? "rgba(122,154,130,0.5)" : "rgba(255,255,255,0.08)"}`,
-                    color: configLabel === cfg.label ? "#7A9A82" : "rgba(255,255,255,0.45)",
                     transition: "all 0.2s",
                   }}>
-                    {cfg.label}
+                    <span style={{
+                      fontFamily: "var(--font-mono), monospace",
+                      fontWeight: 700, fontSize: 11, letterSpacing: "0.06em",
+                      color: configLabel === cfg.label ? "#7A9A82" : "rgba(255,255,255,0.45)",
+                    }}>
+                      {cfg.label}
+                    </span>
+                    <span style={{
+                      fontFamily: "var(--font-body), sans-serif",
+                      fontWeight: 300, fontSize: 9,
+                      color: "rgba(255,255,255,0.25)",
+                    }}>
+                      {CONFIG_HINTS[cfg.label]}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -246,12 +282,21 @@ export default function CreerPage() {
                     transition: "all 0.2s",
                   }}>
                     <span style={{ fontSize: 14 }}>{f.emoji}</span>
-                    <span style={{
-                      fontFamily: "var(--font-body), sans-serif",
-                      fontWeight: finality === f.id ? 500 : 300, fontSize: 13,
-                      color: finality === f.id ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.5)",
-                    }}>
-                      {f.label}
+                    <span style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                      <span style={{
+                        fontFamily: "var(--font-body), sans-serif",
+                        fontWeight: finality === f.id ? 500 : 300, fontSize: 13,
+                        color: finality === f.id ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.5)",
+                      }}>
+                        {f.label}
+                      </span>
+                      <span style={{
+                        fontFamily: "var(--font-body), sans-serif",
+                        fontWeight: 300, fontSize: 10,
+                        color: "rgba(255,255,255,0.25)",
+                      }}>
+                        {FINALITY_HINTS[f.id]}
+                      </span>
                     </span>
                   </button>
                 ))}

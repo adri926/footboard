@@ -1,4 +1,4 @@
-import type { PlayerStatus } from "@/lib/mock-data"
+export type PlayerStatus = "available" | "injured" | "uncertain"
 
 const CONFIG = {
   available: { label: "Disponible", color: "#7A9A82",  bg: "rgba(122,154,130,0.1)",  border: "rgba(122,154,130,0.25)" },

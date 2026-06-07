@@ -88,10 +88,13 @@ function attackTarget(id: string, ctx: EngineCtx): { x: number; y: number } {
         : (depth === "high" ? clamp(bx < 50 ? 28 : 18, 10, 40) : 16)
       ty = clamp(baseY + depthPush + (depth === "high" ? 8 : 0), 44, 74)
       break
-    case "ST":
-      tx = clamp(50 + (ballSide === "right" ? 6 : ballSide === "left" ? -6 : 0), 38, 62)
+    case "ST": {
+      // En attaque à deux pointes, le binôme s'écarte pour ne pas se superposer
+      const stOffset = side === "right" ? 9 : side === "left" ? -9 : 0
+      tx = clamp(50 + stOffset + (ballSide === "right" ? 6 : ballSide === "left" ? -6 : 0), 30, 70)
       ty = clamp(baseY + depthPush + (depth === "high" ? 12 : 0), 48, 82)
       break
+    }
   }
 
   if (isBlue) {
@@ -137,10 +140,13 @@ function defendTarget(id: string, ctx: EngineCtx): { x: number; y: number } {
       tx = clamp(50 + (ballSide === "right" ? 10 : ballSide === "left" ? -10 : 0), 32, 68)
       ty = clamp(30 + depthPull * 0.6, 22, 44)
       break
-    case "CM":
-      tx = clamp(BASE_WIDTH[role][side] + (ballSide === side ? 10 : -6), 20, 80)
+    case "CM": {
+      // Garde un écart latéral entre les trois milieux quel que soit le côté du ballon
+      const cmOffset = side === "right" ? 6 : side === "left" ? -6 : 0
+      tx = clamp(BASE_WIDTH[role][side] + cmOffset + (ballSide === side ? 10 : -6), 18, 82)
       ty = clamp(ty + depthPull, 28, 50)
       break
+    }
     case "CAM":
       // CAM drops to press in defense
       tx = clamp(50 + (ballSide === "right" ? 12 : ballSide === "left" ? -12 : 0), 28, 72)
@@ -153,10 +159,12 @@ function defendTarget(id: string, ctx: EngineCtx): { x: number; y: number } {
                             : clamp(24 + (depth === "deep" ? 10 : 0), 14, 46)
       ty = clamp(ty + depthPull + 4, 34, 56)
       break
-    case "ST":
-      // ST presses high, doesn't track deep
-      tx = clamp(50 + (ballSide === "right" ? 8 : ballSide === "left" ? -8 : 0), 36, 64)
+    case "ST": {
+      // ST presses high, doesn't track deep — le binôme s'écarte pour couvrir plus large
+      const stOffset = side === "right" ? 9 : side === "left" ? -9 : 0
+      tx = clamp(50 + stOffset + (ballSide === "right" ? 8 : ballSide === "left" ? -8 : 0), 28, 72)
       ty = clamp(depth === "deep" ? 42 : depth === "mid" ? 36 : 28, 22, 48)
+    }
       break
   }
 
@@ -188,15 +196,21 @@ function contestedTarget(id: string, ctx: EngineCtx): { x: number; y: number } {
     case "RB": case "LB":
       tx = side === "right" ? 76 : 24
       ty = clamp(by * 0.35 + 12, 18, 40); break
-    case "DM": case "CM":
-      tx = clamp(50 + (ballSide === "right" ? 12 : ballSide === "left" ? -12 : 0), 28, 72)
+    case "DM": case "CM": {
+      // Écart latéral entre milieux pour ne pas se superposer sur un second ballon central
+      const lateral = side === "right" ? 14 : side === "left" ? -14 : 0
+      tx = clamp(50 + lateral + (ballSide === "right" ? 8 : ballSide === "left" ? -8 : 0), 22, 78)
       ty = clamp(by * 0.55 + 14, 26, 54); break
+    }
     case "CAM": case "RW": case "LW":
       tx = BASE_WIDTH[role][side]
       ty = clamp(by * 0.65 + 12, 32, 62); break
-    case "ST":
-      tx = clamp(50 + (ballSide === "right" ? 6 : ballSide === "left" ? -6 : 0), 38, 62)
-      ty = clamp(by * 0.7 + 16, 38, 68); break
+    case "ST": {
+      const stOffset = side === "right" ? 9 : side === "left" ? -9 : 0
+      tx = clamp(50 + stOffset + (ballSide === "right" ? 6 : ballSide === "left" ? -6 : 0), 28, 72)
+      ty = clamp(by * 0.7 + 16, 38, 68)
+      break
+    }
   }
 
   if (isBlue) {
@@ -233,9 +247,12 @@ function transitionTarget(id: string, ctx: EngineCtx): { x: number; y: number } 
     case "CAM": case "RW": case "LW":
       tx = BASE_WIDTH[role][side]
       ty = clamp(by * 0.5 + 18, 32, 52); break
-    case "ST":
-      tx = clamp(50 + (ballSide === "right" ? 6 : ballSide === "left" ? -6 : 0), 38, 62)
-      ty = clamp(by * 0.5 + 20, 36, 54); break
+    case "ST": {
+      const stOffset = side === "right" ? 9 : side === "left" ? -9 : 0
+      tx = clamp(50 + stOffset + (ballSide === "right" ? 6 : ballSide === "left" ? -6 : 0), 28, 72)
+      ty = clamp(by * 0.5 + 20, 36, 54)
+      break
+    }
   }
 
   if (isBlue) {

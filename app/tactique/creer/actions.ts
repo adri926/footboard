@@ -3,6 +3,7 @@
 import { auth } from "@clerk/nextjs/server"
 import { z } from "zod"
 import { supabase } from "@/lib/supabase"
+import type { BuiltSituation } from "@/lib/builder"
 
 const ZONE_IDS = [
   "def-left", "def-center", "def-right",
@@ -55,6 +56,36 @@ export async function saveBuiltSituation(
       players:     data.players,
       ball:        data.ball,
     })
+
+  if (error) return { ok: false, error: error.message }
+  return { ok: true }
+}
+
+export async function getBuiltSituations(): Promise<BuiltSituation[]> {
+  const { userId } = await auth()
+  if (!userId) return []
+
+  const { data, error } = await supabase
+    .from("built_situations")
+    .select("id, zone, config, finality, description, players, ball, created_at")
+    .eq("owner_id", userId)
+    .order("created_at", { ascending: false })
+
+  if (error || !data) return []
+  return data as BuiltSituation[]
+}
+
+export async function deleteBuiltSituation(
+  id: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { userId } = await auth()
+  if (!userId) return { ok: false, error: "Connecte-toi pour supprimer." }
+
+  const { error } = await supabase
+    .from("built_situations")
+    .delete()
+    .eq("id", id)
+    .eq("owner_id", userId)
 
   if (error) return { ok: false, error: error.message }
   return { ok: true }

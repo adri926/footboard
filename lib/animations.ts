@@ -23,6 +23,9 @@ export interface TacticAnim {
   id: string
   title: string
   category: "pressing" | "transition" | "attaque" | "défense" | "scénario"
+  // Moment du jeu (taxonomie DTN) — relie l'animation aux mêmes 4 phases que les situations,
+  // pour qu'elles apparaissent ensemble dans le même classement côté board.
+  phase: "possession" | "perte" | "defense" | "recuperation"
   summary: string
   steps: AnimStep[]
 }
@@ -35,6 +38,7 @@ const gegenpressing: TacticAnim = {
   id: "gegenpressing",
   title: "Gegenpressing",
   category: "pressing",
+  phase: "perte",
   summary: "Pression immédiate après perte de balle au milieu",
   steps: [
     {
@@ -100,6 +104,7 @@ const pressingHaut: TacticAnim = {
   id: "pressing-haut",
   title: "Pressing haut 4-3-3",
   category: "pressing",
+  phase: "defense",
   summary: "Pressing organisé dans la moitié adverse",
   steps: [
     {
@@ -171,6 +176,7 @@ const contraAttaque: TacticAnim = {
   id: "contre-attaque",
   title: "Contre-attaque",
   category: "transition",
+  phase: "recuperation",
   summary: "Récupération + transition verticale rapide",
   steps: [
     {
@@ -242,6 +248,7 @@ const retourDefensif: TacticAnim = {
   id: "retour-defensif",
   title: "Retour défensif",
   category: "transition",
+  phase: "perte",
   summary: "Récupération défensive organisée après perte",
   steps: [
     {
@@ -308,6 +315,7 @@ const constructionArriere: TacticAnim = {
   id: "construction-arriere",
   title: "Construction depuis l'arrière",
   category: "attaque",
+  phase: "possession",
   summary: "Sortie du gardien en jeu court, possession basse",
   steps: [
     {
@@ -381,6 +389,7 @@ const blocBas: TacticAnim = {
   id: "bloc-bas",
   title: "Bloc bas défensif",
   category: "défense",
+  phase: "defense",
   summary: "4-4-2 défensif, deux lignes de 4 très compactes",
   steps: [
     {
@@ -441,6 +450,7 @@ const triangleAile: TacticAnim = {
   id: "triangle-aile-droite",
   title: "Triangle aile droite",
   category: "scénario",
+  phase: "possession",
   summary: "Combinaison RB + CM + RW dans le couloir droit",
   steps: [
     {
@@ -507,6 +517,7 @@ const triangleMilieu: TacticAnim = {
   id: "triangle-milieu",
   title: "Triangle central milieu",
   category: "scénario",
+  phase: "possession",
   summary: "Possession par les trois milieux — tiki-taka central",
   steps: [
     {
@@ -572,6 +583,7 @@ const triangleZoneCentrale: TacticAnim = {
   id: "triangle-zone-centrale",
   title: "Triangle zone centrale",
   category: "scénario",
+  phase: "possession",
   summary: "Combinaison ST + CAM + LW dans la zone de finition",
   steps: [
     {
@@ -635,6 +647,84 @@ const triangleZoneCentrale: TacticAnim = {
   ],
 }
 
+const fauxNeuf: TacticAnim = {
+  id: "faux-9",
+  title: "Faux numéro 9",
+  category: "attaque",
+  phase: "possession",
+  summary: "L'attaquant décroche pour attirer son marqueur et ouvrir l'espace dans son dos",
+  steps: [
+    {
+      duration: 1100,
+      label: "Position avancée",
+      info: "ST (r10) tient la ligne comme un attaquant de pointe classique",
+      moves: {
+        r10: { x: 50, y: 30 },
+        r9:  { x: 78, y: 33 },
+        r11: { x: 22, y: 33 },
+        r6:  { x: 70, y: 42 },
+        r7:  { x: 50, y: 40 },
+        r8:  { x: 30, y: 42 },
+      },
+      ball: { x: 50, y: 50 },
+      highlight: ["r10"],
+    },
+    {
+      duration: 1300,
+      label: "Décrochage du faux 9",
+      info: "r10 quitte la ligne d'attaque et vient chercher le ballon entre les lignes",
+      moves: {
+        r10: { x: 50, y: 42 },
+      },
+      arrows: [
+        { x1: 50, y1: 30, x2: 50, y2: 42, type: "run" },
+      ],
+      ball: { x: 50, y: 42 },
+      highlight: ["r10"],
+    },
+    {
+      duration: 1400,
+      label: "Le marqueur suit — l'espace s'ouvre",
+      info: "Le défenseur central adverse sort de sa ligne pour le suivre : un couloir énorme se libère dans son dos",
+      moves: {
+        r10: { x: 50, y: 45 },
+      },
+      ball: { x: 50, y: 45 },
+      highlight: ["r10"],
+    },
+    {
+      duration: 1400,
+      label: "Appels dans l'espace libéré",
+      info: "RW et LW (r9, r11) sprintent dans la zone laissée vide par le défenseur déplacé",
+      moves: {
+        r9:  { x: 68, y: 52 },
+        r11: { x: 32, y: 52 },
+      },
+      arrows: [
+        { x1: 78, y1: 33, x2: 68, y2: 52, type: "run" },
+        { x1: 22, y1: 33, x2: 32, y2: 52, type: "run" },
+      ],
+      ball: { x: 50, y: 45 },
+      highlight: ["r9", "r11"],
+    },
+    {
+      duration: 1400,
+      label: "Passe filtrée et finition",
+      info: "r10 trouve r9 dans l'intervalle — situation de but franche",
+      moves: {
+        r9:  { x: 74, y: 68 },
+        r10: { x: 50, y: 58 },
+      },
+      arrows: [
+        { x1: 50, y1: 45, x2: 74, y2: 68, type: "pass" },
+        { x1: 68, y1: 52, x2: 74, y2: 68, type: "run" },
+      ],
+      ball: { x: 74, y: 68 },
+      highlight: ["r9", "r10"],
+    },
+  ],
+}
+
 export const ANIMATIONS: TacticAnim[] = [
   gegenpressing,
   pressingHaut,
@@ -645,6 +735,7 @@ export const ANIMATIONS: TacticAnim[] = [
   triangleAile,
   triangleMilieu,
   triangleZoneCentrale,
+  fauxNeuf,
 ]
 
 export const CATEGORIES = ["pressing", "transition", "attaque", "défense", "scénario"] as const

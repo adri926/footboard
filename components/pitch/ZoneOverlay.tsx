@@ -12,26 +12,26 @@ const X_RIGHT  = 65   // right = x > 65
 const Y_DEEP   = 33   // deep  = y < 33
 const Y_HIGH   = 66   // high  = y > 66
 
-type Zone = { label: string; x: number; y: number; w: number; h: number; color: string }
+type Zone = { id: string; label: string; x: number; y: number; w: number; h: number; color: string }
 
 const ZONES: Zone[] = [
   // Profond
-  { label: "Couloir G\nProfond", x: 0,        y: 0,        w: X_LEFT,          h: Y_DEEP,           color: "rgba(96,165,250,0.08)"  },
-  { label: "Axe\nProfond",       x: X_LEFT,    y: 0,        w: X_RIGHT-X_LEFT,  h: Y_DEEP,           color: "rgba(96,165,250,0.12)"  },
-  { label: "Couloir D\nProfond", x: X_RIGHT,   y: 0,        w: 100-X_RIGHT,     h: Y_DEEP,           color: "rgba(96,165,250,0.08)"  },
+  { id: "top-left",    label: "Couloir G\nProfond", x: 0,        y: 0,        w: X_LEFT,          h: Y_DEEP,           color: "rgba(96,165,250,0.08)"  },
+  { id: "top-center",  label: "Axe\nProfond",       x: X_LEFT,    y: 0,        w: X_RIGHT-X_LEFT,  h: Y_DEEP,           color: "rgba(96,165,250,0.12)"  },
+  { id: "top-right",   label: "Couloir D\nProfond", x: X_RIGHT,   y: 0,        w: 100-X_RIGHT,     h: Y_DEEP,           color: "rgba(96,165,250,0.08)"  },
   // Médian
-  { label: "Couloir G\nMédian",  x: 0,         y: Y_DEEP,   w: X_LEFT,          h: Y_HIGH-Y_DEEP,    color: "rgba(251,191,36,0.06)"  },
-  { label: "Axe\nMédian",        x: X_LEFT,    y: Y_DEEP,   w: X_RIGHT-X_LEFT,  h: Y_HIGH-Y_DEEP,    color: "rgba(251,191,36,0.10)"  },
-  { label: "Couloir D\nMédian",  x: X_RIGHT,   y: Y_DEEP,   w: 100-X_RIGHT,     h: Y_HIGH-Y_DEEP,    color: "rgba(251,191,36,0.06)"  },
+  { id: "mid-left",    label: "Couloir G\nMédian",  x: 0,         y: Y_DEEP,   w: X_LEFT,          h: Y_HIGH-Y_DEEP,    color: "rgba(251,191,36,0.06)"  },
+  { id: "mid-center",  label: "Axe\nMédian",        x: X_LEFT,    y: Y_DEEP,   w: X_RIGHT-X_LEFT,  h: Y_HIGH-Y_DEEP,    color: "rgba(251,191,36,0.10)"  },
+  { id: "mid-right",   label: "Couloir D\nMédian",  x: X_RIGHT,   y: Y_DEEP,   w: 100-X_RIGHT,     h: Y_HIGH-Y_DEEP,    color: "rgba(251,191,36,0.06)"  },
   // Haut (zone adverse)
-  { label: "Couloir G\nHaut",    x: 0,         y: Y_HIGH,   w: X_LEFT,          h: 100-Y_HIGH,       color: "rgba(74,222,128,0.08)"  },
-  { label: "Axe\nHaut",          x: X_LEFT,    y: Y_HIGH,   w: X_RIGHT-X_LEFT,  h: 100-Y_HIGH,       color: "rgba(74,222,128,0.12)"  },
-  { label: "Couloir D\nHaut",    x: X_RIGHT,   y: Y_HIGH,   w: 100-X_RIGHT,     h: 100-Y_HIGH,       color: "rgba(74,222,128,0.08)"  },
+  { id: "bot-left",    label: "Couloir G\nHaut",    x: 0,         y: Y_HIGH,   w: X_LEFT,          h: 100-Y_HIGH,       color: "rgba(74,222,128,0.08)"  },
+  { id: "bot-center",  label: "Axe\nHaut",          x: X_LEFT,    y: Y_HIGH,   w: X_RIGHT-X_LEFT,  h: 100-Y_HIGH,       color: "rgba(74,222,128,0.12)"  },
+  { id: "bot-right",   label: "Couloir D\nHaut",    x: X_RIGHT,   y: Y_HIGH,   w: 100-X_RIGHT,     h: 100-Y_HIGH,       color: "rgba(74,222,128,0.08)"  },
 ]
 
-interface Props { visible: boolean }
+interface Props { visible: boolean; activeZone?: string | null }
 
-export default function ZoneOverlay({ visible }: Props) {
+export default function ZoneOverlay({ visible, activeZone }: Props) {
   if (!visible) return null
 
   return (
@@ -49,18 +49,22 @@ export default function ZoneOverlay({ visible }: Props) {
       <line x1="0" y1={Y_DEEP/100*H}  x2={W} y2={Y_DEEP/100*H}  stroke="rgba(255,255,255,0.15)" strokeWidth="1.5" strokeDasharray="6 4" />
       <line x1="0" y1={Y_HIGH/100*H}  x2={W} y2={Y_HIGH/100*H}  stroke="rgba(255,255,255,0.15)" strokeWidth="1.5" strokeDasharray="6 4" />
 
-      {/* Cellules colorées */}
-      {ZONES.map((z, i) => (
-        <rect
-          key={i}
-          x={z.x / 100 * W}
-          y={z.y / 100 * H}
-          width={z.w / 100 * W}
-          height={z.h / 100 * H}
-          fill={z.color}
-          stroke="none"
-        />
-      ))}
+      {/* Cellules colorées — la zone active (où se trouve le ballon) ressort du lot */}
+      {ZONES.map((z, i) => {
+        const active = activeZone === z.id
+        return (
+          <rect
+            key={i}
+            x={z.x / 100 * W}
+            y={z.y / 100 * H}
+            width={z.w / 100 * W}
+            height={z.h / 100 * H}
+            fill={active ? "rgba(122,154,130,0.22)" : z.color}
+            stroke={active ? "rgba(122,154,130,0.7)" : "none"}
+            strokeWidth={active ? 2 : 0}
+          />
+        )
+      })}
 
       {/* Labels */}
       {ZONES.map((z, i) => {

@@ -4,6 +4,7 @@ import { useState, useMemo } from "react"
 import type { Match } from "@/app/dashboard/matchs/actions"
 import type { Training } from "@/app/dashboard/entrainements/actions"
 import { TRAINING_TYPES } from "@/lib/training-types"
+import PageHeader from "@/components/dashboard/PageHeader"
 
 type SelectedEvent = CalEvent & { dateStr: string }
 
@@ -77,44 +78,30 @@ export default function CalendrierClient({ matches, trainings }: Props) {
 
   return (
     <>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 28 }}>
-        <div>
-          <p style={{
-            fontFamily: "var(--font-mono), monospace",
-            fontSize: 9, fontWeight: 700, letterSpacing: "0.14em",
-            color: "rgba(122,154,130,0.5)", textTransform: "uppercase", marginBottom: 6,
-          }}>
-            Mon Club
-          </p>
-          <h1 style={{
-            fontFamily: "var(--font-display), system-ui, sans-serif",
-            fontWeight: 900, fontSize: 26, color: "rgba(255,255,255,0.95)",
-          }}>
-            Calendrier
-          </h1>
-        </div>
-
-        {/* Légende */}
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <span style={{
-            fontFamily: "var(--font-mono), monospace", fontSize: 7, fontWeight: 700,
-            letterSpacing: "0.05em", color: "#7A9A82",
-            backgroundColor: "rgba(122,154,130,0.15)", border: "1px solid rgba(122,154,130,0.35)",
-            padding: "3px 8px", borderRadius: 4,
-          }}>
-            ENTRAÎNEMENT
-          </span>
-          <span style={{
-            fontFamily: "var(--font-mono), monospace", fontSize: 7, fontWeight: 700,
-            letterSpacing: "0.05em", color: "#d4a847",
-            backgroundColor: "rgba(212,168,71,0.12)", border: "1px solid rgba(212,168,71,0.3)",
-            padding: "3px 8px", borderRadius: 4,
-          }}>
-            MATCH
-          </span>
-        </div>
-      </div>
+      <PageHeader
+        label="Mon Club"
+        title="Calendrier"
+        action={
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <span style={{
+              fontFamily: "var(--font-mono), monospace", fontSize: 7, fontWeight: 700,
+              letterSpacing: "0.05em", color: "#7A9A82",
+              backgroundColor: "rgba(122,154,130,0.15)", border: "1px solid rgba(122,154,130,0.35)",
+              padding: "3px 8px", borderRadius: 4,
+            }}>
+              ENTRAÎNEMENT
+            </span>
+            <span style={{
+              fontFamily: "var(--font-mono), monospace", fontSize: 7, fontWeight: 700,
+              letterSpacing: "0.05em", color: "#d4a847",
+              backgroundColor: "rgba(212,168,71,0.12)", border: "1px solid rgba(212,168,71,0.3)",
+              padding: "3px 8px", borderRadius: 4,
+            }}>
+              MATCH
+            </span>
+          </div>
+        }
+      />
 
       {/* Navigation mois */}
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>

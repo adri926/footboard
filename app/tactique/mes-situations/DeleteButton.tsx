@@ -2,7 +2,7 @@
 
 import { useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { deleteSituation } from "@/app/tactique/situations/actions"
+import { deleteBuiltSituation } from "@/app/tactique/creer/actions"
 
 export default function DeleteButton({ id }: { id: string }) {
   const [isPending, startTransition] = useTransition()
@@ -10,7 +10,7 @@ export default function DeleteButton({ id }: { id: string }) {
 
   function handleDelete() {
     startTransition(async () => {
-      await deleteSituation(id)
+      await deleteBuiltSituation(id)
       router.refresh()
     })
   }

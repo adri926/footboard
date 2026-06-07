@@ -10,12 +10,28 @@ const sections = [
     cta: "Ouvrir →",
   },
   {
+    href: "/tactique/creer",
+    icon: "✏️",
+    title: "Créer une situation",
+    desc: "Place une zone, des joueurs et une finalité pour construire ta propre situation tactique.",
+    status: "live",
+    cta: "Créer →",
+  },
+  {
+    href: "/tactique/mes-situations",
+    icon: "⭐",
+    title: "Mes situations",
+    desc: "Retrouve et gère toutes les situations que tu as sauvegardées.",
+    status: "live",
+    cta: "Voir →",
+  },
+  {
     href: "/tactique/concepts",
     icon: "📖",
     title: "Concepts",
     desc: "Articles et schémas pour comprendre les systèmes de jeu, le pressing, les transitions.",
-    status: "soon",
-    cta: null,
+    status: "live",
+    cta: "Lire →",
   },
 ]
 

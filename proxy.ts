@@ -1,10 +1,18 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server"
 
-// Tout le site nécessite une connexion sauf les pages sign-in/sign-up
-const isPublic = createRouteMatcher(["/sign-in(.*)", "/sign-up(.*)"])
+const isPublic = createRouteMatcher([
+  "/",
+  "/sign-in(.*)",
+  "/sign-up(.*)",
+  "/onboarding(.*)",
+  "/tactique(.*)",
+  "/api/webhook(.*)",
+])
 
 export default clerkMiddleware(async (auth, req) => {
-  if (!isPublic(req)) await auth.protect()
+  if (!isPublic(req)) {
+    await auth.protect()
+  }
 })
 
 export const config = {
