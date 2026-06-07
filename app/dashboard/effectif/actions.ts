@@ -103,6 +103,52 @@ export async function updatePlayer(
   return { ok: true }
 }
 
+const ImportRowSchema = z.object({
+  first_name: z.string().min(1).max(50).trim(),
+  last_name:  z.string().min(1).max(50).trim(),
+  number:     z.coerce.number().int().min(1).max(99).nullable().optional(),
+})
+
+const PositionSchema = z.enum(["GK", "DEF", "MIL", "ATT"])
+
+// Import en masse depuis un fichier d'export FFF/Footclubs (CSV) — les
+// joueurs sont créés avec le poste choisi par le coach et un statut par
+// défaut "disponible" ; à affiner ensuite via l'édition individuelle.
+export async function importPlayers(
+  rawRows: unknown[],
+  rawPosition: unknown
+): Promise<{ ok: true; count: number } | { ok: false; error: string }> {
+  const userId = await requireUserId()
+
+  const position = PositionSchema.safeParse(rawPosition)
+  if (!position.success) return { ok: false, error: "Poste invalide." }
+
+  if (!Array.isArray(rawRows) || rawRows.length === 0) {
+    return { ok: false, error: "Aucune ligne à importer." }
+  }
+  if (rawRows.length > 60) {
+    return { ok: false, error: "Trop de lignes (60 maximum par import)." }
+  }
+
+  const rows = rawRows.map(r => ImportRowSchema.safeParse(r))
+  if (rows.some(r => !r.success)) {
+    return { ok: false, error: "Certaines lignes sont invalides (nom/prénom manquant)." }
+  }
+
+  const toInsert = rows.map(r => ({
+    ...(r as { success: true; data: z.infer<typeof ImportRowSchema> }).data,
+    position:    position.data,
+    status:      "available" as const,
+    owner_id:    userId,
+  }))
+
+  const { error } = await supabase.from("players").insert(toInsert)
+  if (error) return { ok: false, error: error.message }
+
+  revalidatePath("/dashboard/effectif")
+  return { ok: true, count: toInsert.length }
+}
+
 export async function deletePlayer(
   id: string
 ): Promise<{ ok: true } | { ok: false; error: string }> {

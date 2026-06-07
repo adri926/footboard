@@ -1,8 +1,10 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 import { useState, useTransition } from "react"
 import PlayerStatusBadge from "@/components/dashboard/PlayerStatusBadge"
 import PlayerForm from "@/components/dashboard/PlayerForm"
+import ImportPlayersModal from "@/components/dashboard/ImportPlayersModal"
 import PageHeader from "@/components/dashboard/PageHeader"
 import { deletePlayer } from "./actions"
 import type { Player } from "./actions"
@@ -17,9 +19,11 @@ const POSITION_LABELS: Record<Position, string> = {
 interface Props { players: Player[] }
 
 export default function EffectifClient({ players }: Props) {
-  const [showForm, setShowForm]   = useState(false)
-  const [editing, setEditing]     = useState<Player | undefined>(undefined)
-  const [deleting, startDelete]   = useTransition()
+  const router = useRouter()
+  const [showForm, setShowForm]     = useState(false)
+  const [showImport, setShowImport] = useState(false)
+  const [editing, setEditing]       = useState<Player | undefined>(undefined)
+  const [deleting, startDelete]     = useTransition()
 
   function openAdd() {
     setEditing(undefined)
@@ -50,14 +54,25 @@ export default function EffectifClient({ players }: Props) {
         title="Effectif"
         subtitle={`${players.length} joueur${players.length !== 1 ? "s" : ""}`}
         action={
-          <button onClick={openAdd} style={{
-            fontFamily: "var(--font-mono), monospace",
-            fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
-            padding: "10px 20px", borderRadius: 10, cursor: "pointer",
-            backgroundColor: "#7A9A82", color: "#181812", border: "none",
-          }}>
-            + AJOUTER UN JOUEUR
-          </button>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={() => setShowImport(true)} style={{
+              fontFamily: "var(--font-mono), monospace",
+              fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
+              padding: "10px 18px", borderRadius: 10, cursor: "pointer",
+              backgroundColor: "transparent", color: "rgba(122,154,130,0.7)",
+              border: "1px solid rgba(122,154,130,0.25)",
+            }}>
+              IMPORTER UN EFFECTIF
+            </button>
+            <button onClick={openAdd} style={{
+              fontFamily: "var(--font-mono), monospace",
+              fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
+              padding: "10px 20px", borderRadius: 10, cursor: "pointer",
+              backgroundColor: "#7A9A82", color: "#181812", border: "none",
+            }}>
+              + AJOUTER UN JOUEUR
+            </button>
+          </div>
         }
       />
 
@@ -206,6 +221,13 @@ export default function EffectifClient({ players }: Props) {
         <PlayerForm
           player={editing}
           onClose={() => setShowForm(false)}
+        />
+      )}
+
+      {showImport && (
+        <ImportPlayersModal
+          onClose={() => setShowImport(false)}
+          onImported={() => router.refresh()}
         />
       )}
     </>
