@@ -1,11 +1,11 @@
 import Link from "next/link"
-import type { MockPlayer } from "@/lib/mock/medical"
+import type { RosterPlayer } from "@/lib/mock/medical"
 import type { PlayerStats } from "@/types/stats"
 
 const POS_ORDER: Record<string, number> = { GK: 0, DEF: 1, MIL: 2, ATT: 3 }
 
 interface Row {
-  player: MockPlayer
+  player: RosterPlayer
   stats: PlayerStats
 }
 

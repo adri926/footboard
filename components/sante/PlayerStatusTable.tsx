@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import StatusBadge from "@/components/sante/StatusBadge"
-import type { MockPlayer } from "@/lib/mock/medical"
+import type { RosterPlayer } from "@/lib/mock/medical"
 import type { MedicalRecord, PlayerMedicalStatus } from "@/types/medical"
 
 const FILTERS: { value: PlayerMedicalStatus | "tous"; label: string }[] = [
@@ -15,7 +15,7 @@ const FILTERS: { value: PlayerMedicalStatus | "tous"; label: string }[] = [
 ]
 
 interface Row {
-  player: MockPlayer
+  player: RosterPlayer
   record: MedicalRecord
 }
 

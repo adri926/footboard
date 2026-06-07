@@ -1,33 +1,35 @@
-// Données mockées du module Suivi médical — 15 joueurs fictifs avec
-// statuts, historiques de blessures et charges d'entraînement réalistes.
+// Génération de données mockées du module Suivi médical, à partir du
+// vrai effectif du club (table Supabase `players`). Statuts, blessures
+// et charges d'entraînement sont dérivés de manière déterministe de
+// l'identifiant de chaque joueur, pour rester stables entre les rendus.
 // À remplacer par des requêtes Supabase une fois les tables créées.
 
+import type { Player } from "@/app/dashboard/effectif/actions"
 import type { Injury, MedicalRecord, PlayerMedicalStatus, TrainingLoad } from "@/types/medical"
 
-export interface MockPlayer {
+export interface RosterPlayer {
   id: string
   name: string
   number: number
   position: "GK" | "DEF" | "MIL" | "ATT"
 }
 
-export const MOCK_PLAYERS: MockPlayer[] = [
-  { id: "p01", name: "Lucas Bernard",   number: 1,  position: "GK"  },
-  { id: "p02", name: "Karim Haddad",    number: 2,  position: "DEF" },
-  { id: "p03", name: "Théo Lefebvre",   number: 3,  position: "DEF" },
-  { id: "p04", name: "Noah Girard",     number: 4,  position: "DEF" },
-  { id: "p05", name: "Yanis Moreau",    number: 5,  position: "DEF" },
-  { id: "p06", name: "Hugo Lambert",    number: 6,  position: "MIL" },
-  { id: "p07", name: "Adam Roussel",    number: 7,  position: "MIL" },
-  { id: "p08", name: "Enzo Faure",      number: 8,  position: "MIL" },
-  { id: "p09", name: "Rayan Dubois",    number: 9,  position: "ATT" },
-  { id: "p10", name: "Mathis Picard",   number: 10, position: "ATT" },
-  { id: "p11", name: "Sacha Renault",   number: 11, position: "ATT" },
-  { id: "p12", name: "Léo Marchand",    number: 12, position: "GK"  },
-  { id: "p13", name: "Nathan Garcia",   number: 14, position: "MIL" },
-  { id: "p14", name: "Ilyes Benamar",   number: 16, position: "DEF" },
-  { id: "p15", name: "Tom Lacroix",     number: 17, position: "ATT" },
-]
+export function toRosterPlayer(p: Player): RosterPlayer {
+  return {
+    id: p.id,
+    name: `${p.first_name} ${p.last_name}`,
+    number: p.number ?? 0,
+    position: p.position,
+  }
+}
+
+// Hash simple et stable d'un identifiant (uuid) vers un entier positif —
+// sert de graine pour générer des données pseudo-aléatoires reproductibles.
+export function hashSeed(id: string): number {
+  let h = 0
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0
+  return h
+}
 
 // Une semaine = lundi au format ISO. Génère les 8 dernières semaines glissantes.
 function lastWeeks(count: number): string[] {
@@ -94,8 +96,10 @@ function buildInjuries(playerId: string, seed: number, count: number, ongoing: b
   return injuries
 }
 
-// Statuts répartis sur les 15 joueurs : majorité disponible, quelques cas
-// de blessure / incertitude / reprise pour rendre la vue d'ensemble réaliste.
+// Profils de statuts à répartir sur l'effectif : majorité disponible, quelques
+// cas de blessure / incertitude / reprise pour rendre la vue d'ensemble réaliste.
+// Le profil appliqué à chaque joueur dépend de son rang dans le tri par poste,
+// pour rester stable d'un rendu à l'autre.
 const STATUS_PLAN: { status: PlayerMedicalStatus; returnDate: string | null; injuryCount: number; notes: string }[] = [
   { status: "disponible", returnDate: null,         injuryCount: 0, notes: "RAS — aucune restriction." },
   { status: "disponible", returnDate: null,         injuryCount: 1, notes: "RAS — bilan post-saison dernière prévu en juillet." },
@@ -114,18 +118,21 @@ const STATUS_PLAN: { status: PlayerMedicalStatus; returnDate: string | null; inj
   { status: "reprise",    returnDate: "2026-06-09", injuryCount: 1, notes: "Dernière séance individuelle avant réintégration au groupe." },
 ]
 
-export const MEDICAL_RECORDS: MedicalRecord[] = MOCK_PLAYERS.map((player, i) => {
-  const plan = STATUS_PLAN[i]
-  const ongoing = plan.status === "blesse" || plan.status === "reprise"
-  return {
-    playerId: player.id,
-    status: plan.status,
-    returnDate: plan.returnDate,
-    injuries: buildInjuries(player.id, i + 1, plan.injuryCount, ongoing),
-    loads: buildLoads(player.id, plan.status, i + 1),
-    notes: plan.notes,
-  }
-})
+export function buildMedicalRecords(players: RosterPlayer[]): MedicalRecord[] {
+  return players.map((player, i) => {
+    const plan = STATUS_PLAN[i % STATUS_PLAN.length]
+    const seed = hashSeed(player.id)
+    const ongoing = plan.status === "blesse" || plan.status === "reprise"
+    return {
+      playerId: player.id,
+      status: plan.status,
+      returnDate: plan.returnDate,
+      injuries: buildInjuries(player.id, seed, plan.injuryCount, ongoing),
+      loads: buildLoads(player.id, plan.status, seed),
+      notes: plan.notes,
+    }
+  })
+}
 
 // Prochain match mocké — sert uniquement à illustrer l'alerte "joueurs
 // indisponibles avant match" sans dépendre du calendrier réel (Supabase).
@@ -134,10 +141,6 @@ export const MOCK_NEXT_MATCH = {
   date: "2026-06-13",
 }
 
-export function getMedicalRecord(playerId: string): MedicalRecord | undefined {
-  return MEDICAL_RECORDS.find(r => r.playerId === playerId)
-}
-
-export function getPlayerName(playerId: string): string {
-  return MOCK_PLAYERS.find(p => p.id === playerId)?.name ?? "Joueur inconnu"
+export function getMedicalRecord(records: MedicalRecord[], playerId: string): MedicalRecord | undefined {
+  return records.find(r => r.playerId === playerId)
 }

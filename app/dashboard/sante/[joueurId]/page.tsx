@@ -4,7 +4,8 @@ import PageHeader from "@/components/dashboard/PageHeader"
 import StatusBadge from "@/components/sante/StatusBadge"
 import InjuryHistory from "@/components/sante/InjuryHistory"
 import TrainingLoadChart from "@/components/sante/TrainingLoadChart"
-import { MOCK_PLAYERS, getMedicalRecord } from "@/lib/mock/medical"
+import { getPlayers } from "@/app/dashboard/effectif/actions"
+import { toRosterPlayer, buildMedicalRecords, getMedicalRecord } from "@/lib/mock/medical"
 
 interface Props {
   params: Promise<{ joueurId: string }>
@@ -31,8 +32,10 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 export default async function FicheMedicalePage({ params }: Props) {
   const { joueurId } = await params
-  const player = MOCK_PLAYERS.find(p => p.id === joueurId)
-  const record = getMedicalRecord(joueurId)
+  const players = await getPlayers()
+  const roster = players.map(toRosterPlayer)
+  const player = roster.find(p => p.id === joueurId)
+  const record = getMedicalRecord(buildMedicalRecords(roster), joueurId)
   if (!player || !record) notFound()
 
   return (

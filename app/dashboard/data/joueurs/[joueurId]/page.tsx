@@ -2,8 +2,9 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import PageHeader from "@/components/dashboard/PageHeader"
 import PlayerProgressionChart from "@/components/data/PlayerProgressionChart"
-import { MOCK_PLAYERS } from "@/lib/mock/medical"
-import { getPlayerStats, getPlayerProgression } from "@/lib/mock/stats"
+import { getPlayers } from "@/app/dashboard/effectif/actions"
+import { toRosterPlayer } from "@/lib/mock/medical"
+import { buildPlayerStats, getPlayerStats, getPlayerProgression } from "@/lib/mock/stats"
 
 interface Props {
   params: Promise<{ joueurId: string }>
@@ -38,11 +39,14 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 export default async function ProfilStatsPage({ params }: Props) {
   const { joueurId } = await params
-  const player = MOCK_PLAYERS.find(p => p.id === joueurId)
-  const stats = getPlayerStats(joueurId)
+  const players = await getPlayers()
+  const roster = players.map(toRosterPlayer)
+  const player = roster.find(p => p.id === joueurId)
+  const playerStats = buildPlayerStats(roster)
+  const stats = getPlayerStats(playerStats, joueurId)
   if (!player || !stats) notFound()
 
-  const progression = getPlayerProgression(joueurId)
+  const progression = getPlayerProgression(playerStats, joueurId)
 
   return (
     <div style={{ padding: "32px 36px", maxWidth: 760 }}>

@@ -1,5 +1,5 @@
 import Link from "next/link"
-import type { MockPlayer } from "@/lib/mock/medical"
+import type { RosterPlayer } from "@/lib/mock/medical"
 import type { PlayerStats } from "@/types/stats"
 
 interface Category {
@@ -15,7 +15,7 @@ const CATEGORIES: Category[] = [
 ]
 
 interface Props {
-  players: MockPlayer[]
+  players: RosterPlayer[]
   stats: PlayerStats[]
 }
 

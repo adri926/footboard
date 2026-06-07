@@ -3,8 +3,9 @@ import PageHeader from "@/components/dashboard/PageHeader"
 import ClubStatsCards from "@/components/data/ClubStatsCards"
 import TopPlayers from "@/components/data/TopPlayers"
 import ResultsChart from "@/components/data/ResultsChart"
-import { MOCK_PLAYERS } from "@/lib/mock/medical"
-import { CLUB_STATS, PLAYER_STATS, SEASON_RESULTS } from "@/lib/mock/stats"
+import { getPlayers } from "@/app/dashboard/effectif/actions"
+import { toRosterPlayer } from "@/lib/mock/medical"
+import { CLUB_STATS, SEASON_RESULTS, buildPlayerStats } from "@/lib/mock/stats"
 
 function SectionTitle({ children, action }: { children: React.ReactNode; action?: React.ReactNode }) {
   return (
@@ -20,7 +21,11 @@ function SectionTitle({ children, action }: { children: React.ReactNode; action?
   )
 }
 
-export default function DataPage() {
+export default async function DataPage() {
+  const players = await getPlayers()
+  const roster = players.map(toRosterPlayer)
+  const playerStats = buildPlayerStats(roster)
+
   return (
     <div style={{ padding: "32px 36px", maxWidth: 960 }}>
       <PageHeader
@@ -55,7 +60,17 @@ export default function DataPage() {
         }>
           Top joueurs de la saison
         </SectionTitle>
-        <TopPlayers players={MOCK_PLAYERS} stats={PLAYER_STATS} />
+        {roster.length === 0 ? (
+          <p style={{
+            fontFamily: "var(--font-body), sans-serif", fontWeight: 300,
+            fontSize: 13, color: "rgba(255,255,255,0.3)",
+            padding: "12px 0",
+          }}>
+            Aucun joueur dans l'effectif pour le moment.
+          </p>
+        ) : (
+          <TopPlayers players={roster} stats={playerStats} />
+        )}
       </div>
     </div>
   )
