@@ -50,6 +50,7 @@ export default function PlayerForm({ player, onClose }: Props) {
     position:    player?.position    ?? "DEF",
     status:      player?.status      ?? "available",
     injury_note: player?.injury_note ?? "",
+    email:       player?.email       ?? "",
   })
 
   function set(field: string, value: string | number) {
@@ -64,6 +65,7 @@ export default function PlayerForm({ player, onClose }: Props) {
       ...form,
       number:      form.number !== "" ? Number(form.number) : null,
       injury_note: form.injury_note || null,
+      email:       form.email || null,
     }
 
     startTransition(async () => {
@@ -188,6 +190,19 @@ export default function PlayerForm({ player, onClose }: Props) {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Email */}
+          <div>
+            <label style={LABEL}>Email (pour les convocations)</label>
+            <input
+              type="email"
+              value={form.email}
+              onChange={e => set("email", e.target.value)}
+              placeholder="lucas.moreau@email.com"
+              style={INPUT}
+              maxLength={200}
+            />
           </div>
 
           {/* Note blessure */}

@@ -32,7 +32,7 @@ export default function TrainingForm({ training, onClose }: Props) {
   const [error, setError]         = useState<string | null>(null)
 
   const [form, setForm] = useState({
-    date:     training?.date     ?? new Date().toISOString().slice(0, 10),
+    date:     training?.date?.slice(0,10) ?? (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}` })(),
     type:     training?.type     ?? "",
     theme:    training?.theme    ?? "",
     location: training?.location ?? "",

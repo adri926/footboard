@@ -7,7 +7,9 @@ import { TRAINING_TYPES } from "@/lib/training-types"
 import type { Training } from "./actions"
 
 function formatDate(dateStr: string) {
-  const d = new Date(dateStr + "T12:00:00")
+  const m = dateStr.match(/(\d{4})-(\d{2})-(\d{2})/)
+  if (!m) return dateStr
+  const d = new Date(parseInt(m[1]), parseInt(m[2]) - 1, parseInt(m[3]))
   return d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })
 }
 
@@ -43,8 +45,8 @@ const MONTHS = ["Jan","Fév","Mar","Avr","Mai","Juin","Juil","Aoû","Sep","Oct",
 const DAYS   = ["L","M","M","J","V","S","D"]
 
 function CalendarView({ trainings, year, onEdit }: { trainings: Training[]; year: number; onEdit: (t: Training) => void }) {
-  const trainingDates = new Set(trainings.map(t => t.date))
-  const trainingByDate = Object.fromEntries(trainings.map(t => [t.date, t]))
+  const trainingDates  = new Set(trainings.map(t => t.date.slice(0, 10)))
+  const trainingByDate = Object.fromEntries(trainings.map(t => [t.date.slice(0, 10), t]))
 
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>

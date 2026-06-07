@@ -14,6 +14,7 @@ export interface Player {
   position:       "GK" | "DEF" | "MIL" | "ATT"
   status:         "available" | "injured" | "uncertain"
   injury_note:    string | null
+  email:          string | null
   goals:          number
   assists:        number
   matches_played: number
@@ -28,12 +29,26 @@ const PlayerSchema = z.object({
   position:    z.enum(["GK", "DEF", "MIL", "ATT"]),
   status:      z.enum(["available", "injured", "uncertain"]),
   injury_note: z.string().max(300).nullable().optional(),
+  email:       z.string().email().max(200).nullable().optional(),
 })
 
 async function requireUserId() {
   const { userId } = await auth()
   if (!userId) throw new Error("Non authentifié")
   return userId
+}
+
+export async function getPlayerById(id: string): Promise<Player | null> {
+  const userId = await requireUserId()
+  if (!/^[0-9a-f-]{36}$/.test(id)) return null
+  const { data, error } = await supabase
+    .from("players")
+    .select("*")
+    .eq("id", id)
+    .eq("owner_id", userId)
+    .single()
+  if (error) return null
+  return data
 }
 
 export async function getPlayers(): Promise<Player[]> {

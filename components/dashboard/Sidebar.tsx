@@ -13,7 +13,8 @@ const NAV_GROUPS = [
   {
     label: "Mon Équipe",
     items: [
-      { href: "/dashboard/effectif",      label: "Effectif",        icon: "◻" },
+      { href: "/dashboard/calendrier",     label: "Calendrier",      icon: "▦" },
+      { href: "/dashboard/effectif",       label: "Effectif",        icon: "◻" },
       { href: "/dashboard/joueurs",        label: "Joueurs",         icon: "◎" },
       { href: "/dashboard/matchs",         label: "Matchs",          icon: "◷" },
       { href: "/dashboard/entrainements",  label: "Entraînements",   icon: "◈" },
@@ -28,114 +29,165 @@ const NAV_GROUPS = [
   },
 ]
 
-export default function Sidebar() {
+interface Props {
+  clubName:  string
+  clubLevel: string | null
+  userName:  string
+}
+
+export default function Sidebar({ clubName, clubLevel, userName }: Props) {
   const pathname = usePathname()
 
   return (
-    <aside style={{
-      width: 240, flexShrink: 0,
-      backgroundColor: "#181812",
-      borderRight: "1px solid rgba(122,154,130,0.1)",
-      display: "flex", flexDirection: "column",
-      height: "100vh", position: "sticky", top: 0, overflowY: "auto",
-    }}>
-      {/* Logo */}
-      <div style={{
-        padding: "20px 20px 16px",
-        borderBottom: "1px solid rgba(122,154,130,0.08)",
-      }}>
-        <Link href="/" style={{
-          fontFamily: "var(--font-display), system-ui, sans-serif",
-          fontWeight: 900, fontSize: 16, letterSpacing: "0.06em",
-          color: "rgba(255,255,255,0.95)",
-        }}>
-          FOOTBOARD
-        </Link>
-        <p style={{
-          fontFamily: "var(--font-mono), monospace",
-          fontSize: 8, letterSpacing: "0.1em",
-          color: "rgba(122,154,130,0.5)", marginTop: 4,
-        }}>
-          AS POINCARÉ — R2
-        </p>
-      </div>
+    <>
+      {/* Spacer CSS pour la sidebar — injecté inline pour garantir le chargement */}
+      <style>{`
+        @media (max-width: 1024px) and (min-width: 768px) {
+          .sb { width: 64px !important; }
+          .sb-label, .sb-group, .sb-sub, .sb-avtext { display: none !important; }
+          .sb-logoicon { display: inline !important; }
+          .sb-item { justify-content: center !important; padding: 10px !important; gap: 0 !important; position: relative; }
+          .sb-item:hover::after {
+            content: attr(data-label);
+            position: absolute;
+            left: calc(100% + 8px); top: 50%;
+            transform: translateY(-50%);
+            background: #252520;
+            color: rgba(255,255,255,0.85);
+            border: 1px solid rgba(122,154,130,0.2);
+            border-radius: 6px;
+            padding: 5px 10px;
+            font-size: 11px;
+            font-family: inherit;
+            white-space: nowrap;
+            z-index: 100;
+            pointer-events: none;
+          }
+          .sb-av { justify-content: center !important; padding: 14px 0 !important; }
+          .sb-logo { padding: 20px 0 16px !important; justify-content: center !important; }
+        }
+        @media (max-width: 767px) {
+          .sb { display: none !important; }
+        }
+      `}</style>
 
-      {/* Navigation */}
-      <nav style={{ flex: 1, padding: "16px 12px", display: "flex", flexDirection: "column", gap: 24 }}>
-        {NAV_GROUPS.map(group => (
-          <div key={group.label}>
+      <aside className="sb" style={{
+        width: 240, flexShrink: 0,
+        backgroundColor: "#181812",
+        borderRight: "1px solid rgba(122,154,130,0.1)",
+        display: "flex", flexDirection: "column",
+        height: "100vh", position: "sticky", top: 0, overflowY: "auto",
+        transition: "width 0.2s ease",
+      }}>
+        {/* Logo */}
+        <div className="sb-logo" style={{
+          padding: "18px 20px 14px",
+          borderBottom: "1px solid rgba(122,154,130,0.08)",
+          display: "flex", flexDirection: "column",
+        }}>
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <Link href="/" className="sb-label" style={{
+              fontFamily: "var(--font-display), system-ui, sans-serif",
+              fontWeight: 900, fontSize: 16, letterSpacing: "0.06em",
+              color: "rgba(255,255,255,0.95)",
+            }}>
+              FOOTBOARD
+            </Link>
+            <span className="sb-logoicon" style={{
+              display: "none",
+              fontFamily: "var(--font-display), system-ui, sans-serif",
+              fontWeight: 900, fontSize: 16, letterSpacing: "0.06em",
+              color: "rgba(255,255,255,0.95)",
+            }}>
+              F
+            </span>
+          </div>
+          <p className="sb-sub" style={{
+            fontFamily: "var(--font-mono), monospace",
+            fontSize: 8, letterSpacing: "0.1em",
+            color: "rgba(122,154,130,0.55)", marginTop: 5,
+          }}>
+            {clubName.toUpperCase()}{clubLevel ? ` — ${clubLevel}` : ""}
+          </p>
+        </div>
+
+        {/* Navigation */}
+        <nav style={{ flex: 1, padding: "16px 12px", display: "flex", flexDirection: "column", gap: 24 }}>
+          {NAV_GROUPS.map(group => (
+            <div key={group.label}>
+              <p className="sb-group" style={{
+                fontFamily: "var(--font-mono), monospace",
+                fontSize: 8, fontWeight: 700, letterSpacing: "0.14em",
+                color: "rgba(122,154,130,0.4)",
+                textTransform: "uppercase", marginBottom: 6, paddingLeft: 8,
+              }}>
+                {group.label}
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                {group.items.map(item => {
+                  const active = item.href === "/dashboard"
+                    ? pathname === "/dashboard"
+                    : pathname.startsWith(item.href)
+                  return (
+                    <Link key={item.href} href={item.href}
+                      className="sb-item"
+                      data-label={item.label}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 8,
+                        padding: "7px 10px", borderRadius: 8,
+                        fontFamily: "var(--font-body), sans-serif",
+                        fontWeight: active ? 500 : 300, fontSize: 13,
+                        color: active ? "#7A9A82" : "rgba(255,255,255,0.5)",
+                        backgroundColor: active ? "rgba(122,154,130,0.08)" : "transparent",
+                        border: active ? "1px solid rgba(122,154,130,0.15)" : "1px solid transparent",
+                        transition: "all 0.15s",
+                      }}
+                    >
+                      <span style={{ fontSize: 11, opacity: 0.7, flexShrink: 0 }}>{item.icon}</span>
+                      <span className="sb-label">{item.label}</span>
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
+        </nav>
+
+        {/* Avatar coach */}
+        <Link href="/dashboard/compte" className="sb-av" style={{
+          padding: "14px 16px",
+          borderTop: "1px solid rgba(122,154,130,0.08)",
+          display: "flex", alignItems: "center", gap: 10,
+          textDecoration: "none",
+        }}>
+          <div style={{
+            width: 32, height: 32, borderRadius: "50%",
+            backgroundColor: "rgba(122,154,130,0.15)",
+            border: "1px solid rgba(122,154,130,0.3)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontFamily: "var(--font-mono), monospace",
+            fontSize: 11, fontWeight: 700, color: "#7A9A82",
+            flexShrink: 0,
+          }}>
+            {userName[0].toUpperCase()}
+          </div>
+          <div className="sb-avtext" style={{ flex: 1, minWidth: 0 }}>
+            <p style={{
+              fontFamily: "var(--font-body), sans-serif",
+              fontWeight: 500, fontSize: 12, color: "rgba(255,255,255,0.7)",
+              whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+            }}>
+              {userName}
+            </p>
             <p style={{
               fontFamily: "var(--font-mono), monospace",
-              fontSize: 8, fontWeight: 700, letterSpacing: "0.14em",
-              color: "rgba(122,154,130,0.4)",
-              textTransform: "uppercase", marginBottom: 6, paddingLeft: 8,
+              fontSize: 8, letterSpacing: "0.06em", color: "rgba(255,255,255,0.2)",
             }}>
-              {group.label}
+              COACH PRINCIPAL
             </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              {group.items.map(item => {
-                const active = item.href === "/dashboard"
-                  ? pathname === "/dashboard"
-                  : pathname.startsWith(item.href)
-                return (
-                  <Link key={item.href} href={item.href}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 8,
-                      padding: "7px 10px", borderRadius: 8,
-                      fontFamily: "var(--font-body), sans-serif",
-                      fontWeight: active ? 500 : 300, fontSize: 13,
-                      color: active ? "#7A9A82" : "rgba(255,255,255,0.5)",
-                      backgroundColor: active ? "rgba(122,154,130,0.08)" : "transparent",
-                      border: active ? "1px solid rgba(122,154,130,0.15)" : "1px solid transparent",
-                      transition: "all 0.15s",
-                    }}
-                    className="hover:text-white"
-                  >
-                    <span style={{ fontSize: 11, opacity: 0.7 }}>{item.icon}</span>
-                    {item.label}
-                  </Link>
-                )
-              })}
-            </div>
           </div>
-        ))}
-      </nav>
-
-      {/* Avatar coach */}
-      <div style={{
-        padding: "14px 16px",
-        borderTop: "1px solid rgba(122,154,130,0.08)",
-        display: "flex", alignItems: "center", gap: 10,
-      }}>
-        <div style={{
-          width: 32, height: 32, borderRadius: "50%",
-          backgroundColor: "rgba(122,154,130,0.15)",
-          border: "1px solid rgba(122,154,130,0.3)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontFamily: "var(--font-mono), monospace",
-          fontSize: 11, fontWeight: 700, color: "#7A9A82",
-          flexShrink: 0,
-        }}>
-          A
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{
-            fontFamily: "var(--font-body), sans-serif",
-            fontWeight: 500, fontSize: 12,
-            color: "rgba(255,255,255,0.7)",
-            whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-          }}>
-            Adrien
-          </p>
-          <p style={{
-            fontFamily: "var(--font-mono), monospace",
-            fontSize: 8, letterSpacing: "0.06em",
-            color: "rgba(255,255,255,0.2)",
-          }}>
-            COACH PRINCIPAL
-          </p>
-        </div>
-      </div>
-    </aside>
+        </Link>
+      </aside>
+    </>
   )
 }

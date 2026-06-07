@@ -35,9 +35,10 @@ export default function MatchForm({ match, onClose }: Props) {
 
   const [form, setForm] = useState({
     opponent:     match?.opponent     ?? "",
-    date:         match?.date         ?? new Date().toISOString().slice(0, 10),
+    date:         match?.date?.slice(0,10) ?? (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}` })(),
     home_away:    match?.home_away    ?? "home",
     competition:  match?.competition  ?? "",
+    venue:        match?.venue        ?? "",
     goals_for:    match?.goals_for    ?? "",
     goals_against: match?.goals_against ?? "",
     notes:        match?.notes        ?? "",
@@ -56,6 +57,7 @@ export default function MatchForm({ match, onClose }: Props) {
       date:          form.date,
       home_away:     form.home_away,
       competition:   form.competition || null,
+      venue:         form.venue || null,
       goals_for:     withScore && form.goals_for !== "" ? Number(form.goals_for) : null,
       goals_against: withScore && form.goals_against !== "" ? Number(form.goals_against) : null,
       notes:         form.notes || null,
@@ -145,15 +147,26 @@ export default function MatchForm({ match, onClose }: Props) {
             </div>
           </div>
 
-          {/* Compétition */}
-          <div>
-            <label style={LABEL}>Compétition (optionnel)</label>
-            <input
-              value={form.competition}
-              onChange={e => set("competition", e.target.value)}
-              placeholder="Régional 2"
-              style={INPUT}
-            />
+          {/* Compétition + Lieu */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div>
+              <label style={LABEL}>Compétition (optionnel)</label>
+              <input
+                value={form.competition}
+                onChange={e => set("competition", e.target.value)}
+                placeholder="Régional 2"
+                style={INPUT}
+              />
+            </div>
+            <div>
+              <label style={LABEL}>Adresse / stade (optionnel)</label>
+              <input
+                value={form.venue}
+                onChange={e => set("venue", e.target.value)}
+                placeholder="Stade Poincaré, Paris 16"
+                style={INPUT}
+              />
+            </div>
           </div>
 
           {/* Score */}

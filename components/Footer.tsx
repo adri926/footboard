@@ -23,9 +23,9 @@ const COLS = [
   {
     title: "Légal",
     links: [
-      { label: "Mentions légales",          href: "#", available: false },
-      { label: "CGU",                       href: "#", available: false },
-      { label: "Politique de confidentialité", href: "#", available: false },
+      { label: "Mentions légales",             href: "/mentions-legales",  available: true },
+      { label: "CGU",                          href: "#",                  available: false },
+      { label: "Politique de confidentialité", href: "/confidentialite",   available: true },
     ],
   },
 ]

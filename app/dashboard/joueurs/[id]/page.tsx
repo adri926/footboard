@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import PlayerStatusBadge from "@/components/dashboard/PlayerStatusBadge"
-import { MOCK_PLAYERS } from "@/lib/mock-data"
+import { getPlayerById } from "@/app/dashboard/effectif/actions"
 
 const POSITION_LABELS: Record<string, string> = {
   GK: "Gardien", DEF: "Défenseur", MIL: "Milieu", ATT: "Attaquant",
@@ -9,11 +9,11 @@ const POSITION_LABELS: Record<string, string> = {
 
 export default async function JoueurPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const player = MOCK_PLAYERS.find(p => p.id === id)
+  const player  = await getPlayerById(id)
   if (!player) notFound()
 
-  const minutesPerMatch = player.matchesPlayed > 0
-    ? Math.round(player.minutesPlayed / player.matchesPlayed)
+  const minutesPerMatch = player.matches_played > 0
+    ? Math.round(player.minutes_played / player.matches_played)
     : 0
 
   return (
@@ -33,7 +33,6 @@ export default async function JoueurPage({ params }: { params: Promise<{ id: str
         marginBottom: 32,
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-          {/* Avatar */}
           <div style={{
             width: 64, height: 64, borderRadius: "50%",
             backgroundColor: "rgba(122,154,130,0.1)",
@@ -43,7 +42,7 @@ export default async function JoueurPage({ params }: { params: Promise<{ id: str
             fontWeight: 900, fontSize: 24, color: "#7A9A82",
             flexShrink: 0,
           }}>
-            {player.number}
+            {player.number ?? "?"}
           </div>
           <div>
             <p style={{
@@ -51,29 +50,27 @@ export default async function JoueurPage({ params }: { params: Promise<{ id: str
               fontSize: 9, letterSpacing: "0.1em",
               color: "rgba(122,154,130,0.5)", marginBottom: 4,
             }}>
-              {POSITION_LABELS[player.position]} · AS POINCARÉ
+              {POSITION_LABELS[player.position]}
             </p>
             <h1 style={{
               fontFamily: "var(--font-display), system-ui, sans-serif",
               fontWeight: 900, fontSize: 28, letterSpacing: "0.02em",
               color: "rgba(255,255,255,0.95)",
             }}>
-              {player.firstName} {player.lastName.toUpperCase()}
+              {player.first_name} {player.last_name.toUpperCase()}
             </h1>
           </div>
         </div>
         <PlayerStatusBadge status={player.status} />
       </div>
 
-      {/* Stats grid */}
-      <div style={{
-        display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 24,
-      }}>
+      {/* Stats */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 24 }}>
         {[
-          { label: "Matchs joués", value: player.matchesPlayed },
-          { label: "Minutes", value: player.minutesPlayed },
-          { label: "Buts", value: player.goals },
-          { label: "Passes déc.", value: player.assists },
+          { label: "Matchs joués", value: player.matches_played },
+          { label: "Minutes",      value: player.minutes_played },
+          { label: "Buts",         value: player.goals },
+          { label: "Passes déc.",  value: player.assists },
         ].map(stat => (
           <div key={stat.label} style={{
             padding: "16px 18px", borderRadius: 10,
@@ -98,7 +95,7 @@ export default async function JoueurPage({ params }: { params: Promise<{ id: str
         ))}
       </div>
 
-      {/* Info complémentaires */}
+      {/* Détails */}
       <div style={{
         padding: "20px 22px", borderRadius: 12,
         backgroundColor: "#1f1f19",
@@ -114,10 +111,10 @@ export default async function JoueurPage({ params }: { params: Promise<{ id: str
         </p>
 
         {[
-          { label: "Minutes par match", value: `${minutesPerMatch} min` },
-          { label: "Poste", value: POSITION_LABELS[player.position] },
-          { label: "Numéro", value: `#${player.number}` },
-          { label: "Statut", value: <PlayerStatusBadge status={player.status} /> },
+          { label: "Poste",              value: POSITION_LABELS[player.position] },
+          { label: "Numéro",             value: player.number ? `#${player.number}` : "—" },
+          { label: "Minutes par match",  value: `${minutesPerMatch} min` },
+          { label: "Statut",             value: <PlayerStatusBadge status={player.status} /> },
         ].map(({ label, value }) => (
           <div key={label} style={{
             display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -143,7 +140,7 @@ export default async function JoueurPage({ params }: { params: Promise<{ id: str
           </div>
         ))}
 
-        {player.injuryNote && (
+        {player.injury_note && (
           <div style={{
             padding: "12px 14px", borderRadius: 8,
             backgroundColor: "rgba(224,112,112,0.06)",
@@ -161,7 +158,7 @@ export default async function JoueurPage({ params }: { params: Promise<{ id: str
               fontWeight: 300, fontSize: 13, lineHeight: 1.5,
               color: "rgba(255,255,255,0.5)",
             }}>
-              {player.injuryNote}
+              {player.injury_note}
             </p>
           </div>
         )}
