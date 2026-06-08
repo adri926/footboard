@@ -110,6 +110,17 @@ export default async function MesSituationsPage() {
 
                   {/* Actions */}
                   <div className="flex gap-2 shrink-0">
+                    <Link href={`/tactique/mes-situations/${s.id}`} style={{
+                      fontFamily: "var(--font-mono), monospace",
+                      fontWeight: 700, fontSize: 10, letterSpacing: "0.08em",
+                      backgroundColor: "rgba(122,154,130,0.12)",
+                      border: "1px solid rgba(122,154,130,0.3)",
+                      color: "#7A9A82",
+                      padding: "8px 14px", borderRadius: 8,
+                      display: "inline-flex", alignItems: "center", gap: 6,
+                    }}>
+                      ▶ Revoir
+                    </Link>
                     <DeleteButton id={s.id!} />
                   </div>
                 </div>

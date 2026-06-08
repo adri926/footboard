@@ -75,6 +75,21 @@ export async function getBuiltSituations(): Promise<BuiltSituation[]> {
   return data as BuiltSituation[]
 }
 
+export async function getBuiltSituation(id: string): Promise<BuiltSituation | null> {
+  const { userId } = await auth()
+  if (!userId) return null
+
+  const { data, error } = await supabase
+    .from("built_situations")
+    .select("id, zone, config, finality, description, players, ball, created_at")
+    .eq("owner_id", userId)
+    .eq("id", id)
+    .maybeSingle()
+
+  if (error || !data) return null
+  return data as BuiltSituation
+}
+
 export async function deleteBuiltSituation(
   id: string
 ): Promise<{ ok: true } | { ok: false; error: string }> {

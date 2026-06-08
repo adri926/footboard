@@ -19,34 +19,3 @@ export function computeTargetPositions(
   }
   return result
 }
-
-// Add small jitter so players don't freeze in identical positions tick-to-tick
-export function jitter(pos: PositionMap, amplitude = 1.2): PositionMap {
-  const out: PositionMap = {}
-  for (const [id, p] of Object.entries(pos)) {
-    out[id] = {
-      x: Math.max(4, Math.min(96, p.x + (Math.random() - 0.5) * amplitude)),
-      y: Math.max(4, Math.min(96, p.y + (Math.random() - 0.5) * amplitude)),
-    }
-  }
-  return out
-}
-
-// Blend current positions toward target (smooth movement)
-export function lerp(
-  current: PositionMap,
-  target: PositionMap,
-  t = 0.35,
-): PositionMap {
-  const out: PositionMap = {}
-  for (const id of ALL_IDS) {
-    const c = current[id]
-    const tg = target[id]
-    if (!c || !tg) { out[id] = tg ?? c; continue }
-    out[id] = {
-      x: c.x + (tg.x - c.x) * t,
-      y: c.y + (tg.y - c.y) * t,
-    }
-  }
-  return out
-}

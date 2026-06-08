@@ -8,14 +8,13 @@ import ArrowLayer from "./ArrowLayer"
 import PlaybackControls from "./PlaybackControls"
 import { FORMATIONS, mirrorY } from "@/lib/formations"
 import { ANIMATIONS } from "@/lib/animations"
-import { SITUATIONS, PHASES } from "@/lib/situations"
-import type { Situation } from "@/lib/situations"
+import { PHASES } from "@/lib/situations"
 import { REACTIONS, BASE_POSITIONS, getZone } from "@/lib/reactions"
 import AppelLayer from "./AppelLayer"
 import ZoneOverlay from "./ZoneOverlay"
 import BallToken from "./BallToken"
 import type { Player } from "@/types"
-import type { TacticAnim, AnimStep } from "@/lib/animations"
+import type { TacticAnim, AnimStep, Arrow } from "@/lib/animations"
 import type { Block, Zone } from "@/lib/reactions"
 import type { AppelArrow } from "./AppelLayer"
 import { computeTargetPositions } from "@/lib/engine/engine"
@@ -72,33 +71,6 @@ function computeAnimFrame(
 // donc un bloc cohérent l'une par rapport à l'autre (fini les « deux équipes chacune de
 // leur côté »). Les joueurs explicitement désignés par une flèche du schéma gardent leur
 // emplacement choisi par l'auteur, pour que la flèche reste fidèle à la scène pédagogique.
-function computeSituationFrame(situation: Situation): Record<string, { x: number; y: number }> {
-  const possession = ANIM_POSSESSION[situation.phase as TacticAnim["phase"]] ?? "contested"
-  const reactive = computeTargetPositions(situation.ball, possession)
-
-  const authored: Record<string, { x: number; y: number }> = {}
-  for (const p of [...situation.positions.red, ...situation.positions.blue]) {
-    authored[p.id] = { x: p.x, y: p.y }
-  }
-
-  const featured = new Set<string>()
-  for (const arrow of situation.arrows ?? []) {
-    for (const pt of [{ x: arrow.x1, y: arrow.y1 }, { x: arrow.x2, y: arrow.y2 }]) {
-      let bestId: string | null = null
-      let bestDist = Math.hypot(pt.x - situation.ball.x, pt.y - situation.ball.y)
-      for (const [id, p] of Object.entries(authored)) {
-        const d = Math.hypot(pt.x - p.x, pt.y - p.y)
-        if (d < bestDist) { bestDist = d; bestId = id }
-      }
-      if (bestId) featured.add(bestId)
-    }
-  }
-
-  const next = { ...reactive }
-  for (const id of featured) next[id] = authored[id]
-  return next
-}
-
 // Construit l'effectif rouge depuis les joueurs réels du club
 // Assigne automatiquement les joueurs aux slots de la formation par poste
 function buildClubPlayers(formationId: string, clubPlayers: ClubPlayerLite[]): Player[] {
@@ -140,9 +112,9 @@ function buildClubPlayers(formationId: string, clubPlayers: ClubPlayerLite[]): P
 }
 
 function inferPosition(slotName: string): string {
-  if (slotName === "GK") return "GK"
-  if (["RB","LB","CB","RWB","LWB"].includes(slotName)) return "DEF"
-  if (["RW","LW","ST","SS","CF"].includes(slotName)) return "ATT"
+  if (slotName === "GB") return "GK"
+  if (["DD","DG","DC","PD","PG"].includes(slotName)) return "DEF"
+  if (["AD","AG","BU","SO","AC"].includes(slotName)) return "ATT"
   return "MIL"
 }
 
@@ -164,17 +136,17 @@ const DEFAULT_RED  = "4-3-3"
 const DEFAULT_BLUE = "4-4-2"
 
 export default function TacticBoard({ clubData }: Props = {}) {
-  // Mode joueurs : "demo" (génériques) ou "club" (vrais joueurs)
+  // Équipe rouge : joueurs réels du club si disponibles, sinon placeholders génériques —
+  // toujours les vrais joueurs quand on en a, pas de bascule à choisir
   const hasClub = !!clubData && clubData.players.length > 0
-  const [mode, setMode] = useState<"demo" | "club">(hasClub ? "club" : "demo")
   const [showRoster, setShowRoster] = useState(false)
   const [redFormation,   setRedFormation]   = useState(DEFAULT_RED)
   const [blueFormation,  setBlueFormation]  = useState(DEFAULT_BLUE)
   const buildRed = useCallback((fId: string) => {
-    return hasClub && mode === "club"
+    return hasClub
       ? buildClubPlayers(fId, clubData!.players)
       : buildPlayers(fId, "red")
-  }, [hasClub, mode, clubData])
+  }, [hasClub, clubData])
   const [players,        setPlayers]        = useState<Player[]>([
     ...buildPlayers(DEFAULT_RED, "red"),
     ...buildPlayers(DEFAULT_BLUE, "blue"),
@@ -182,13 +154,13 @@ export default function TacticBoard({ clubData }: Props = {}) {
 
   // Au montage, si le club est dispo, remplace l'équipe rouge par les vrais joueurs
   useEffect(() => {
-    if (hasClub && mode === "club") {
+    if (hasClub) {
       setPlayers(prev => [
         ...buildClubPlayers(redFormation, clubData!.players),
         ...prev.filter(p => p.team === "blue"),
       ])
     }
-  }, [mode, hasClub])
+  }, [hasClub])
   const [transitioning,  setTransitioning]  = useState(false)
   const [activeAnim,     setActiveAnim]     = useState<TacticAnim | null>(null)
   const [currentStep,    setCurrentStep]    = useState(0)
@@ -196,8 +168,11 @@ export default function TacticBoard({ clubData }: Props = {}) {
   const [animPlayers,    setAnimPlayers]    = useState<Record<string, { x: number; y: number }>>({})
   const [activeArrows,   setActiveArrows]   = useState<TacticAnim["steps"][0]["arrows"]>([])
   const [activeBall,     setActiveBall]     = useState<{ x: number; y: number } | undefined>()
-  const [activeSituation,setActiveSituationState]= useState<string | null>(null)
   const [activePhase,    setActivePhase]    = useState<string>("possession")
+  // Réglages d'équipe (formations) : on les règle une fois en
+  // début de séance puis on enchaîne les situations — repliés par défaut pour
+  // garder le flux principal (moment de jeu → situation → lecture) au premier plan
+  const [showTeamConfig, setShowTeamConfig] = useState(false)
 
   // ── Mode du board : un seul outil actif à la fois pour ne pas surcharger la sidebar ──
 
@@ -211,18 +186,20 @@ export default function TacticBoard({ clubData }: Props = {}) {
   const [activeAppels,    setActiveAppels]    = useState<AppelArrow[]>([])
   const [showZones,       setShowZones]       = useState(false)
 
+  // ── Tableau Velleda : le coach trace ses propres flèches en direct pour expliquer
+  // — comme un schéma effacé/redessiné à chaque idée, on repart de zéro à chaque étape ──
+  const [presentation,    setPresentation]    = useState(false)
+  const [drawMode,        setDrawMode]        = useState(false)
+  const [liveArrows,      setLiveArrows]      = useState<Arrow[]>([])
+  const [drawFrom,        setDrawFrom]        = useState<{ x: number; y: number } | null>(null)
+  const clearLiveDrawing = useCallback(() => { setLiveArrows([]); setDrawFrom(null) }, [])
+
   const containerRef       = useRef<HTMLDivElement>(null)
   const timerRef           = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Dernière position connue du ballon pendant une animation — sert de référence
   // pour faire réagir l'équipe adverse même sur les étapes qui ne redéfinissent pas `ball`
   const animBallRef        = useRef<{ x: number; y: number }>({ x: 50, y: 50 })
-  const activeSituationRef = useRef<string | null>(null)
   const possessionRef      = useRef<"red" | "blue" | null>(null)
-  // Wrapper qui garde le ref en sync — utilisé partout à la place du setter brut
-  const setActiveSituation = useCallback((v: string | null) => {
-    activeSituationRef.current = v
-    setActiveSituationState(v)
-  }, [])
 
   const [isMobile,           setIsMobile]           = useState(false)
   const [mobileCtrlOpen,     setMobileCtrlOpen]     = useState(false)
@@ -238,7 +215,8 @@ export default function TacticBoard({ clubData }: Props = {}) {
     // Only update ball when step defines it — keep previous position otherwise
     if (step.ball !== undefined) setActiveBall(step.ball)
     setCurrentStep(stepIdx)
-  }, [])
+    clearLiveDrawing() // on passe à l'idée suivante — le tableau s'efface
+  }, [clearLiveDrawing])
 
   const startAnim = useCallback((anim: TacticAnim) => {
     if (timerRef.current) clearTimeout(timerRef.current)
@@ -254,7 +232,8 @@ export default function TacticBoard({ clubData }: Props = {}) {
     setActiveAnim(anim); setCurrentStep(0); setIsPlaying(false)
     setActiveArrows(firstStep.arrows ?? [])
     setActiveBall(firstStep.ball)
-  }, [])
+    clearLiveDrawing()
+  }, [clearLiveDrawing])
 
   // Deep-link : ?anim=<id> ouvre directement l'animation correspondante (ex. depuis un article Concepts)
   const searchParams = useSearchParams()
@@ -294,13 +273,10 @@ export default function TacticBoard({ clubData }: Props = {}) {
   const handleStop  = useCallback(() => {
     setIsPlaying(false); setActiveAnim(null); setAnimPlayers({})
     if (timerRef.current) clearTimeout(timerRef.current)
-    // Restore situation context (arrows + ball) without stale closure
-    const sit = activeSituationRef.current
-      ? SITUATIONS.find(s => s.id === activeSituationRef.current)
-      : null
-    setActiveArrows(sit?.arrows ?? [])
-    setActiveBall(sit?.ball)
-  }, [])
+    setActiveArrows([])
+    setActiveBall(undefined)
+    clearLiveDrawing()
+  }, [clearLiveDrawing])
 
   const changeFormation = useCallback((team: "red" | "blue", formationId: string) => {
     setTransitioning(true)
@@ -308,35 +284,31 @@ export default function TacticBoard({ clubData }: Props = {}) {
     else setBlueFormation(formationId)
     const newTeam = team === "red" ? buildRed(formationId) : buildPlayers(formationId, "blue")
     setPlayers(prev => [...prev.filter(p => p.team !== team), ...newTeam])
-    setActiveSituation(null)
     setActiveBall(undefined)
+    clearLiveDrawing()
     setTimeout(() => setTransitioning(false), 500)
-  }, [buildRed])
-
-  // ── Applique la situation choisie (22 joueurs + balle + flèches de contexte) ──
-  const applySituation = useCallback((situationId: string) => {
-    const situation = SITUATIONS.find(s => s.id === situationId)
-    if (!situation) return
-
-    setTransitioning(true)
-    setActiveSituation(situationId)
-    setActiveAnim(null)
-    setAnimPlayers({})
-
-    const frame = computeSituationFrame(situation)
-    setPlayers(prev => prev.map(p => {
-      const pos = frame[p.id]
-      return pos ? { ...p, x: pos.x, y: pos.y } : p
-    }))
-
-    setActiveBall(situation.ball)
-    setActiveArrows(situation.arrows ?? [])
-    setTimeout(() => setTransitioning(false), 500)
-  }, [])
+  }, [buildRed, clearLiveDrawing])
 
   const updatePosition = useCallback((id: string, x: number, y: number) => {
     setPlayers(prev => prev.map(p => p.id === id ? { ...p, x, y } : p))
   }, [])
+
+  // ── Tableau Velleda : deux clics tracent une flèche (point de départ, puis arrivée) —
+  // fonctionne aussi bien à la souris qu'au doigt sur tablette ──
+  const handleDrawClick = useCallback((e: React.MouseEvent) => {
+    if (!drawMode) return
+    const rect = containerRef.current?.getBoundingClientRect()
+    if (!rect) return
+    const point = {
+      x: Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width)  * 100)),
+      y: Math.max(0, Math.min(100, ((e.clientY - rect.top)  / rect.height) * 100)),
+    }
+    setDrawFrom(prev => {
+      if (!prev) return point
+      setLiveArrows(arrows => [...arrows, { x1: prev.x, y1: prev.y, x2: point.x, y2: point.y, type: "run" }])
+      return null
+    })
+  }, [drawMode])
 
   // ── Réaction adversaire quand le ballon change de zone ──
   const handleSparringBall = useCallback((x: number, y: number) => {
@@ -362,9 +334,10 @@ export default function TacticBoard({ clubData }: Props = {}) {
 
     if (reaction.arrows?.length) setActiveArrows(reaction.arrows)
     else setActiveArrows([])
+    clearLiveDrawing()
 
     setTimeout(() => setTransitioning(false), 500)
-  }, [currentZone, sparringBlock])
+  }, [currentZone, sparringBlock, clearLiveDrawing])
 
   // Replace l'équipe bleue sur les positions de base d'un bloc donné
   const placeBlueBlock = useCallback((block: Block) => {
@@ -382,12 +355,12 @@ export default function TacticBoard({ clubData }: Props = {}) {
     setCurrentZone(null)
     setCurrentReaction(null)
     setActiveArrows([])
-  }, [placeBlueBlock])
+    clearLiveDrawing()
+  }, [placeBlueBlock, clearLiveDrawing])
 
   // Démarrer le test du bloc défensif — reset le ballon, place le bleu sur son bloc de départ
   const startSparring = useCallback(() => {
     handleStop()
-    setActiveSituation(null)
     setSparring(true)
     setSparringBall({ x: 50, y: 50 })
     setCurrentZone(null)
@@ -395,7 +368,8 @@ export default function TacticBoard({ clubData }: Props = {}) {
     setActiveArrows([])
     setShowZones(true) // les zones expliquent le déclenchement des réactions — les afficher d'office
     placeBlueBlock(sparringBlock)
-  }, [handleStop, sparringBlock, placeBlueBlock])
+    clearLiveDrawing()
+  }, [handleStop, sparringBlock, placeBlueBlock, clearLiveDrawing])
 
   const stopSparring = useCallback(() => {
     setSparring(false)
@@ -404,7 +378,8 @@ export default function TacticBoard({ clubData }: Props = {}) {
     setShowZones(false)
     setSparringBall({ x: 50, y: 50 })
     setCurrentZone(null)
-  }, [])
+    clearLiveDrawing()
+  }, [clearLiveDrawing])
 
   const displayPlayers = players.map(p => ({
     ...p,
@@ -413,12 +388,9 @@ export default function TacticBoard({ clubData }: Props = {}) {
   }))
 
   const activeStep    = activeAnim?.steps[currentStep]
-  // Situations (figées) + animations (séquences) du moment de jeu actif, dans une seule liste —
-  // elles répondent toutes les deux à "choisis un scénario tactique et regarde-le sur le terrain"
-  const phaseSituations = SITUATIONS.filter(s => s.phase === activePhase)
-  const phaseAnims      = ANIMATIONS.filter(a => a.phase === activePhase)
-  const activeSit     = activeSituation ? SITUATIONS.find(s => s.id === activeSituation) : null
-  const activePhaseDef = activeSit ? PHASES.find(p => p.id === activeSit.phase) : null
+  // Animations (séquences scriptées et jouées par le moteur) du moment de jeu actif —
+  // les schémas figés n'ont plus leur place ici, ils restent l'apanage de l'onglet Concepts
+  const phaseAnims = ANIMATIONS.filter(a => a.phase === activePhase)
 
   // Possession auto : le porteur du ballon est le joueur le plus proche de la balle —
   // on identifie SON id (pas seulement son équipe) pour pouvoir le mettre en évidence sur le terrain
@@ -459,7 +431,8 @@ export default function TacticBoard({ clubData }: Props = {}) {
       className="flex flex-col md:flex-row h-screen overflow-hidden"
       style={{ background: "#181812" }}
     >
-      {/* ── GAUCHE : contrôles ── */}
+      {/* ── GAUCHE : contrôles (masqués en mode présentation — le terrain prend toute la place) ── */}
+      {!presentation && (
       <aside
         className="md:w-64 md:h-full shrink-0 flex flex-col border-b md:border-b-0 md:border-r"
         style={{
@@ -499,37 +472,29 @@ export default function TacticBoard({ clubData }: Props = {}) {
 
         <Divider />
 
-        {/* Toggle Démo / Mon Club */}
-        {hasClub && (
-          <>
-            <Section label="Équipe rouge">
-              <div className="flex gap-1 p-1 rounded-lg" style={{ backgroundColor:"rgba(255,255,255,0.04)" }}>
-                <button onClick={() => setMode("club")}
-                  className="flex-1 py-1.5 rounded-md text-xs font-semibold transition"
-                  style={{
-                    backgroundColor: mode === "club" ? "rgba(239,68,68,0.25)" : "transparent",
-                    color: mode === "club" ? "#fca5a5" : "rgba(255,255,255,0.4)",
-                  }}>
-                  {clubData!.club.name}
-                </button>
-                <button onClick={() => setMode("demo")}
-                  className="flex-1 py-1.5 rounded-md text-xs font-semibold transition"
-                  style={{
-                    backgroundColor: mode === "demo" ? "rgba(255,255,255,0.1)" : "transparent",
-                    color: mode === "demo" ? "white" : "rgba(255,255,255,0.4)",
-                  }}>
-                  Démo
-                </button>
-              </div>
-            </Section>
-            <Divider />
-          </>
-        )}
-
-        {/* Formations */}
-        <Section label="Formations">
-          <FormSelect team="red"  value={redFormation}  onChange={v => changeFormation("red", v)} />
-          <FormSelect team="blue" value={blueFormation} onChange={v => changeFormation("blue", v)} />
+        {/* Réglages d'équipe — repliés par défaut, on les règle une fois puis on enchaîne les situations */}
+        <Section label="Configuration">
+          <button onClick={() => setShowTeamConfig(o => !o)}
+            className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition"
+            style={{
+              backgroundColor: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              color: "rgba(255,255,255,0.6)",
+            }}>
+            <span>⚙ Équipes & formations</span>
+            <span style={{ color: "rgba(255,255,255,0.3)" }}>{showTeamConfig ? "▲" : "▼"}</span>
+          </button>
+          {showTeamConfig && (
+            <div className="flex flex-col gap-2 mt-1.5">
+              {hasClub && (
+                <p className="px-1 text-[10px]" style={{ color: "rgba(122,154,130,0.5)" }}>
+                  ● Équipe rouge : {clubData!.club.name}
+                </p>
+              )}
+              <FormSelect team="red"  value={redFormation}  onChange={v => changeFormation("red", v)} />
+              <FormSelect team="blue" value={blueFormation} onChange={v => changeFormation("blue", v)} />
+            </div>
+          )}
         </Section>
 
         <Divider />
@@ -572,9 +537,9 @@ export default function TacticBoard({ clubData }: Props = {}) {
           </Section>
         )}
 
-        {/* Schémas, animations et test du bloc défensif du moment de jeu actif — une seule liste,
+        {/* Animations et test du bloc défensif du moment de jeu actif — une seule liste,
             le test du bloc défensif est une situation comme une autre (phase "Sans le ballon") */}
-        <Section label="Situations" className="flex-1">
+        <Section label="Animations" className="flex-1">
           {sparring ? (
             <div className="flex flex-col gap-2">
               <p className="text-[11px] leading-relaxed" style={{ color:"rgba(255,255,255,0.4)" }}>
@@ -611,28 +576,6 @@ export default function TacticBoard({ clubData }: Props = {}) {
             </div>
           ) : (
             <div className="flex flex-col gap-1">
-              {phaseSituations.map(s => {
-                const isActive = activeSituation === s.id
-                return (
-                  <button key={s.id} onClick={() => applySituation(s.id)}
-                    className="text-left px-3 py-2.5 rounded-xl transition"
-                    style={{
-                      backgroundColor: isActive ? "rgba(122,154,130,0.12)" : "rgba(122,154,130,0.03)",
-                      border: `1px solid ${isActive ? "rgba(122,154,130,0.4)" : "rgba(122,154,130,0.1)"}`,
-                    }}>
-                    <p style={{
-                      fontFamily:"var(--font-display),system-ui,sans-serif",
-                      fontWeight:700, fontSize:13, letterSpacing:"0.02em",
-                      color: isActive ? "#7A9A82" : "rgba(255,255,255,0.85)",
-                    }}>
-                      {s.label}
-                    </p>
-                    <p style={{ fontFamily:"var(--font-body),sans-serif", fontSize:10, marginTop:2, color:"rgba(122,154,130,0.5)", lineHeight:1.4 }}>
-                      {s.description}
-                    </p>
-                  </button>
-                )
-              })}
               {phaseAnims.map(anim => {
                 const isActive = activeAnim?.id === anim.id
                 return (
@@ -678,7 +621,7 @@ export default function TacticBoard({ clubData }: Props = {}) {
           <button
             onClick={() => {
               setPlayers([...buildPlayers(redFormation, "red"), ...buildPlayers(blueFormation, "blue")])
-              setActiveSituation(null); setActiveBall(undefined)
+              setActiveBall(undefined)
             }}
             className="shrink-0 text-xs py-1.5 rounded-lg transition text-gray-600 hover:text-gray-300"
             style={{ border: "1px solid rgba(255,255,255,0.08)" }}>
@@ -688,32 +631,76 @@ export default function TacticBoard({ clubData }: Props = {}) {
 
         </div>{/* end content wrapper */}
       </aside>
+      )}
 
       {/* ── DROITE : terrain ── */}
       <main className="flex-1 flex items-center justify-center p-3 md:p-5 order-first md:order-none">
         <div
           ref={containerRef}
+          onClick={handleDrawClick}
           className="relative rounded-2xl overflow-hidden"
           style={{
             height: isMobile
               ? undefined
-              : hasClub && mode === "club"
-                ? "min(calc(100vh - 2.5rem), calc((100vw - 32rem) * 1.5))"
-                : "min(calc(100vh - 2.5rem), calc((100vw - 17rem) * 1.5))",
+              : presentation
+                ? "min(calc(100vh - 2.5rem), calc(100vw * 1.5))"
+                : hasClub
+                  ? "min(calc(100vh - 2.5rem), calc((100vw - 32rem) * 1.5))"
+                  : "min(calc(100vh - 2.5rem), calc((100vw - 17rem) * 1.5))",
             width: isMobile
               ? `min(calc(100vw - 24px), calc((100vh - ${mobileCtrlOpen ? 225 : 92}px) / 1.5))`
               : undefined,
             aspectRatio: "600 / 900",
             boxShadow: "0 0 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.08)",
             touchAction: "none",
+            cursor: drawMode ? "crosshair" : undefined,
           }}
         >
           <Pitch />
           <ZoneOverlay visible={showZones} activeZone={sparring ? currentZone : null} />
           <ArrowLayer
-            arrows={activeArrows ?? []}
+            arrows={[...(activeArrows ?? []), ...liveArrows]}
             ball={sparring ? undefined : activeBall}
           />
+          {/* ── Tableau Velleda : le coach trace ses propres flèches en direct pour expliquer ── */}
+          <div className="absolute top-3 left-3 z-30 flex gap-1.5" onClick={e => e.stopPropagation()}>
+            <button
+              onClick={() => { setDrawMode(m => !m); setDrawFrom(null) }}
+              className="px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition"
+              style={{
+                backdropFilter: "blur(12px)",
+                backgroundColor: drawMode ? "rgba(122,154,130,0.35)" : "rgba(255,255,255,0.1)",
+                color: drawMode ? "#7A9A82" : "white",
+                border: `1px solid ${drawMode ? "rgba(122,154,130,0.6)" : "rgba(255,255,255,0.2)"}`,
+              }}>
+              ✏️ Dessiner
+            </button>
+            {liveArrows.length > 0 && (
+              <button
+                onClick={clearLiveDrawing}
+                className="px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition"
+                style={{
+                  backdropFilter: "blur(12px)",
+                  backgroundColor: "rgba(255,255,255,0.1)",
+                  color: "white",
+                  border: "1px solid rgba(255,255,255,0.2)",
+                }}>
+                🧹 Effacer
+              </button>
+            )}
+            <button
+              onClick={() => setPresentation(p => !p)}
+              className="px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition"
+              style={{
+                backdropFilter: "blur(12px)",
+                backgroundColor: presentation ? "rgba(122,154,130,0.35)" : "rgba(255,255,255,0.1)",
+                color: presentation ? "#7A9A82" : "white",
+                border: `1px solid ${presentation ? "rgba(122,154,130,0.6)" : "rgba(255,255,255,0.2)"}`,
+              }}>
+              {presentation ? "⛶ Quitter" : "⛶ Présentation"}
+            </button>
+          </div>
+
           <AppelLayer appels={activeAppels} />
           {displayPlayers.map(player => (
             <PlayerToken
@@ -782,8 +769,8 @@ export default function TacticBoard({ clubData }: Props = {}) {
             </div>
           )}
 
-          {/* ── Overlay : label étape (animation) ── */}
-          {activeAnim && activeStep && (
+          {/* ── Overlay : label étape (animation, hors présentation — fusionné avec les commandes en présentation) ── */}
+          {activeAnim && activeStep && !presentation && (
             <div className="absolute bottom-3 left-3 right-3 z-20 pointer-events-none">
               <div style={{
                 backgroundColor: "rgba(4,6,10,0.78)",
@@ -808,41 +795,38 @@ export default function TacticBoard({ clubData }: Props = {}) {
             </div>
           )}
 
-          {/* ── Overlay : phase + situation (pas d'animation active) ── */}
-          {activeSit && activePhaseDef && !activeAnim && (
-            <div className="absolute bottom-3 left-3 right-3 z-20 pointer-events-none">
-              <div style={{
-                backgroundColor: "rgba(4,6,10,0.78)",
-                backdropFilter: "blur(14px)",
-                WebkitBackdropFilter: "blur(14px)",
-                borderRadius: 12,
-                padding: "10px 14px",
-                border: `1px solid ${activePhaseDef.color}33`,
-              }}>
-                <div className="flex items-center gap-2 mb-1">
-                  <span style={{
-                    width: 7, height: 7, borderRadius: "50%",
-                    backgroundColor: activePhaseDef.color,
-                    display: "inline-block", flexShrink: 0,
-                  }} />
-                  <span style={{ color: activePhaseDef.color, fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                    {activePhaseDef.sublabel}
+          {/* ── Mode présentation : étape + commandes flottantes minimales (sidebar masquée) ── */}
+          {presentation && !sparring && activeAnim && activeStep && (
+            <div className="absolute bottom-3 left-3 right-3 z-30" onClick={e => e.stopPropagation()}>
+              <div className="rounded-xl px-3.5 py-2.5"
+                style={{
+                  backgroundColor: "rgba(4,6,10,0.78)",
+                  backdropFilter: "blur(14px)",
+                  WebkitBackdropFilter: "blur(14px)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                }}>
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <p style={{ color: "#ffffff", fontWeight: 700, fontSize: 13, lineHeight: 1.3 }}>{activeStep.label}</p>
+                  <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, whiteSpace: "nowrap", flexShrink: 0 }}>
+                    {currentStep + 1} / {activeAnim.steps.length}
                   </span>
                 </div>
-                <p style={{ color: "#ffffff", fontWeight: 700, fontSize: 13, lineHeight: 1.3 }}>
-                  {activeSit.label}
-                </p>
-                <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 11, marginTop: 3, lineHeight: 1.4 }}>
-                  {activeSit.description}
-                </p>
+                <div className="flex items-center justify-center gap-1.5">
+                  <button onClick={handlePrev} className="px-3 py-1.5 rounded-lg text-sm text-white/70 hover:text-white transition">⏮</button>
+                  {isPlaying
+                    ? <button onClick={handlePause} className="px-4 py-1.5 rounded-lg text-sm font-bold transition" style={{ color: "#7A9A82" }}>⏸ Pause</button>
+                    : <button onClick={handlePlay}  className="px-4 py-1.5 rounded-lg text-sm font-bold transition" style={{ color: "#7A9A82" }}>▶ Lecture</button>}
+                  <button onClick={handleNext} className="px-3 py-1.5 rounded-lg text-sm text-white/70 hover:text-white transition">⏭</button>
+                  <button onClick={handleStop} className="px-3 py-1.5 rounded-lg text-sm text-white/40 hover:text-white/70 transition">⏹</button>
+                </div>
               </div>
             </div>
           )}
         </div>
       </main>
 
-      {/* ── DROITE : effectif COLLAPSIBLE (uniquement si club + mode club) ── */}
-      {hasClub && mode === "club" && (
+      {/* ── DROITE : effectif COLLAPSIBLE (uniquement si club disponible, masqué en présentation) ── */}
+      {hasClub && !presentation && (
         <>
           {/* Bouton flottant pour ouvrir */}
           {!showRoster && (
