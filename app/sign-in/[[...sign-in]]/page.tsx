@@ -59,7 +59,7 @@ export default function SignInPage() {
       />
 
       <p className="text-xs text-gray-600 text-center max-w-xs">
-        En te connectant, tu accèdes à l'ensemble de la plateforme : animations, données, Mon Club.
+        En te connectant, tu accèdes à l'ensemble de la plateforme : Digiboard, données, Mon Club.
       </p>
     </main>
   )

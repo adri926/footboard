@@ -2,10 +2,10 @@ import Link from "next/link"
 
 const sections = [
   {
-    href: "/tactique/animations",
+    href: "/tactique/digiboard",
     icon: "⚽",
-    title: "Animations",
-    desc: "Terrain interactif — positionne les joueurs, simule des situations, anime les tactiques.",
+    title: "Digiboard",
+    desc: "Tableau tactique digital — dessine, positionne les joueurs et explique tes schémas en direct.",
     status: "live",
     cta: "Ouvrir →",
   },
