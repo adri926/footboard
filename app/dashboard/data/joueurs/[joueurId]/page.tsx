@@ -84,7 +84,7 @@ export default async function ProfilStatsPage({ params }: Props) {
       <Section title="Statistiques de la saison">
         {history.length === 0 ? (
           <p style={{
-            fontFamily: "var(--font-body), sans-serif", fontWeight: 300,
+            fontFamily: "var(--font-body), sans-serif", fontWeight: 400,
             fontSize: 13, color: "rgba(255,255,255,0.3)",
           }}>
             Aucune statistique enregistrée pour ce joueur cette saison.
@@ -114,7 +114,7 @@ export default async function ProfilStatsPage({ params }: Props) {
       <Section title="Historique des matchs">
         {history.length === 0 ? (
           <p style={{
-            fontFamily: "var(--font-body), sans-serif", fontWeight: 300,
+            fontFamily: "var(--font-body), sans-serif", fontWeight: 400,
             fontSize: 13, color: "rgba(255,255,255,0.3)",
           }}>
             Ce joueur n'apparaît dans aucune composition pour le moment.

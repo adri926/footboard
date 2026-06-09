@@ -61,7 +61,7 @@ export default function ZonePitch({ selected, onSelect }: Props) {
             {isSelected && (
               <span style={{
                 fontFamily: "var(--font-body), sans-serif",
-                fontWeight: 300, fontSize: 8,
+                fontWeight: 400, fontSize: 8,
                 color: "rgba(122,154,130,0.7)",
                 textAlign: "center",
                 lineHeight: 1.2,

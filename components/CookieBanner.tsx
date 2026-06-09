@@ -31,7 +31,7 @@ export default function CookieBanner() {
     }}>
       <p style={{
         fontFamily: "var(--font-body), sans-serif",
-        fontWeight: 300, fontSize: 13, lineHeight: 1.6,
+        fontWeight: 400, fontSize: 13, lineHeight: 1.6,
         color: "rgba(255,255,255,0.55)", flex: "1 1 280px", margin: 0,
       }}>
         Footboard utilise uniquement des cookies strictement nécessaires à l'authentification (Clerk). Aucun cookie publicitaire ou de suivi tiers.{" "}

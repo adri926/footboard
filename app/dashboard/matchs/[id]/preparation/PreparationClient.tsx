@@ -147,7 +147,7 @@ export default function PreparationClient({ match, players, initialStarters, ini
           </div>
 
           {available.length === 0 ? (
-            <p style={{ fontFamily: "var(--font-body), sans-serif", fontWeight: 300, fontSize: 13, color: "rgba(255,255,255,0.25)", textAlign: "center", padding: "24px 0" }}>
+            <p style={{ fontFamily: "var(--font-body), sans-serif", fontWeight: 400, fontSize: 13, color: "rgba(255,255,255,0.25)", textAlign: "center", padding: "24px 0" }}>
               Aucun joueur disponible.
             </p>
           ) : (
@@ -208,7 +208,7 @@ export default function PreparationClient({ match, players, initialStarters, ini
                 </span>
               </div>
               {starters.length === 0 ? (
-                <p style={{ fontFamily: "var(--font-body), sans-serif", fontWeight: 300, fontSize: 12, color: "rgba(255,255,255,0.2)" }}>Aucun sélectionné</p>
+                <p style={{ fontFamily: "var(--font-body), sans-serif", fontWeight: 400, fontSize: 12, color: "rgba(255,255,255,0.2)" }}>Aucun sélectionné</p>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
                   {starters.map(p => (
@@ -227,7 +227,7 @@ export default function PreparationClient({ match, players, initialStarters, ini
                 Remplaçants ({substitutes.length})
               </p>
               {substitutes.length === 0 ? (
-                <p style={{ fontFamily: "var(--font-body), sans-serif", fontWeight: 300, fontSize: 12, color: "rgba(255,255,255,0.2)" }}>Aucun sélectionné</p>
+                <p style={{ fontFamily: "var(--font-body), sans-serif", fontWeight: 400, fontSize: 12, color: "rgba(255,255,255,0.2)" }}>Aucun sélectionné</p>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
                   {substitutes.map(p => (
@@ -290,7 +290,7 @@ export default function PreparationClient({ match, players, initialStarters, ini
             <p style={{ fontFamily: "var(--font-mono), monospace", fontSize: 9, fontWeight: 700, letterSpacing: "0.14em", color: "#7A9A82", textTransform: "uppercase", marginBottom: 6 }}>
               Préparer une situation
             </p>
-            <p style={{ fontFamily: "var(--font-body), sans-serif", fontWeight: 300, fontSize: 12, lineHeight: 1.5, color: "rgba(255,255,255,0.3)", marginBottom: 12 }}>
+            <p style={{ fontFamily: "var(--font-body), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: 1.5, color: "rgba(255,255,255,0.3)", marginBottom: 12 }}>
               Créez une situation tactique pour votre causerie d'avant-match.
             </p>
             <Link href="/tactique/creer" style={{

@@ -54,7 +54,7 @@ export default function Sidebar({ clubName, clubLevel, userName }: Props) {
             position: absolute;
             left: calc(100% + 8px); top: 50%;
             transform: translateY(-50%);
-            background: #252520;
+            background: #24221a;
             color: rgba(255,255,255,0.85);
             border: 1px solid rgba(122,154,130,0.2);
             border-radius: 6px;
@@ -75,7 +75,7 @@ export default function Sidebar({ clubName, clubLevel, userName }: Props) {
 
       <aside className="sb" style={{
         width: 240, flexShrink: 0,
-        backgroundColor: "#181812",
+        backgroundColor: "#17160f",
         borderRight: "1px solid rgba(122,154,130,0.1)",
         display: "flex", flexDirection: "column",
         height: "100vh", position: "sticky", top: 0, overflowY: "auto",

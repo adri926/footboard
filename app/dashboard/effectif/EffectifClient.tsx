@@ -85,7 +85,7 @@ export default function EffectifClient({ players }: Props) {
         }}>
           <p style={{
             fontFamily: "var(--font-body), sans-serif",
-            fontWeight: 300, fontSize: 14,
+            fontWeight: 400, fontSize: 14,
             color: "rgba(255,255,255,0.3)", marginBottom: 8,
           }}>
             Aucun joueur pour l'instant.
@@ -143,7 +143,7 @@ export default function EffectifClient({ players }: Props) {
                     {p.injury_note && (
                       <p style={{
                         fontFamily: "var(--font-body), sans-serif",
-                        fontWeight: 300, fontSize: 11,
+                        fontWeight: 400, fontSize: 11,
                         color: "rgba(255,255,255,0.25)", marginTop: 2,
                       }}>
                         {p.injury_note}

@@ -128,7 +128,7 @@ export default function CGUPage() {
           </h2>
           <p style={{
             fontFamily: "var(--font-body), sans-serif",
-            fontWeight: 300, fontSize: 14, lineHeight: 1.8, whiteSpace: "pre-line",
+            fontWeight: 400, fontSize: 14, lineHeight: 1.8, whiteSpace: "pre-line",
           }}>
             {content}
           </p>

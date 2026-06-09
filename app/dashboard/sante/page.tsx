@@ -39,7 +39,7 @@ export default async function SantePage() {
           backgroundColor: "#1f1f19", border: "1px dashed rgba(122,154,130,0.2)",
         }}>
           <p style={{
-            fontFamily: "var(--font-body), sans-serif", fontWeight: 300,
+            fontFamily: "var(--font-body), sans-serif", fontWeight: 400,
             fontSize: 14, color: "rgba(255,255,255,0.3)", marginBottom: 8,
           }}>
             Aucun joueur dans l'effectif pour le moment.
@@ -54,7 +54,7 @@ export default async function SantePage() {
       ) : (
         <>
           <p style={{
-            fontFamily: "var(--font-body), sans-serif", fontWeight: 300,
+            fontFamily: "var(--font-body), sans-serif", fontWeight: 400,
             fontSize: 12, color: "rgba(255,255,255,0.3)", lineHeight: 1.6, marginBottom: 20,
           }}>
             Statuts et notes issus de la fiche de chaque joueur — modifiables à tout moment depuis{" "}

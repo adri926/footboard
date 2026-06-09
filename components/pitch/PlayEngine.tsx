@@ -103,7 +103,7 @@ export default function PlayEngine({ play, zone, autoPlay = true }: Props) {
         </p>
         <p style={{
           fontFamily: "var(--font-body), sans-serif",
-          fontWeight: 300, fontSize: 13, lineHeight: 1.4,
+          fontWeight: 400, fontSize: 13, lineHeight: 1.4,
           color: "rgba(255,255,255,0.65)",
         }}>
           {frame.label}

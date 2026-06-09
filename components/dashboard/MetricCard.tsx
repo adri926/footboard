@@ -33,7 +33,7 @@ export default function MetricCard({ label, value, sub, accent, warn }: Props) {
       {sub && (
         <p style={{
           fontFamily: "var(--font-body), sans-serif",
-          fontWeight: 300, fontSize: 11, lineHeight: 1.4,
+          fontWeight: 400, fontSize: 11, lineHeight: 1.4,
           color: "rgba(255,255,255,0.3)",
         }}>
           {sub}

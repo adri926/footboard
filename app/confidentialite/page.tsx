@@ -53,7 +53,7 @@ export default function Confidentialite() {
           <h2 style={{ fontFamily: "var(--font-mono), monospace", fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", color: "rgba(122,154,130,0.7)", textTransform: "uppercase", marginBottom: 10 }}>
             {title}
           </h2>
-          <p style={{ fontFamily: "var(--font-body), sans-serif", fontWeight: 300, fontSize: 14, lineHeight: 1.7, whiteSpace: "pre-line" }}>
+          <p style={{ fontFamily: "var(--font-body), sans-serif", fontWeight: 400, fontSize: 14, lineHeight: 1.7, whiteSpace: "pre-line" }}>
             {content}
           </p>
         </section>

@@ -113,7 +113,7 @@ function CalendarView({ trainings, year, onEdit }: { trainings: Training[]; year
                       color: hasTraining ? color : "rgba(255,255,255,0.3)",
                       border: hasTraining ? `1px solid ${color}50` : "1px solid transparent",
                       cursor: hasTraining ? "pointer" : "default",
-                      fontWeight: hasTraining ? 700 : 300,
+                      fontWeight: hasTraining ? 700 : 400,
                       transition: "opacity 0.15s",
                     }}
                   >
@@ -188,7 +188,7 @@ export default function EntraineementsClient({ trainings }: Props) {
           padding: "48px 32px", borderRadius: 12, textAlign: "center",
           backgroundColor: "#1f1f19", border: "1px dashed rgba(122,154,130,0.2)",
         }}>
-          <p style={{ fontFamily: "var(--font-body), sans-serif", fontWeight: 300, fontSize: 14, color: "rgba(255,255,255,0.3)", marginBottom: 8 }}>
+          <p style={{ fontFamily: "var(--font-body), sans-serif", fontWeight: 400, fontSize: 14, color: "rgba(255,255,255,0.3)", marginBottom: 8 }}>
             Aucune séance enregistrée.
           </p>
           <p style={{ fontFamily: "var(--font-mono), monospace", fontSize: 9, letterSpacing: "0.08em", color: "rgba(122,154,130,0.35)" }}>
@@ -254,7 +254,7 @@ export default function EntraineementsClient({ trainings }: Props) {
                   {t.location && (
                     <p style={{
                       fontFamily: "var(--font-body), sans-serif",
-                      fontWeight: 300, fontSize: 12,
+                      fontWeight: 400, fontSize: 12,
                       color: "rgba(255,255,255,0.3)", marginTop: 4,
                     }}>
                       {t.location}
@@ -263,7 +263,7 @@ export default function EntraineementsClient({ trainings }: Props) {
                   {t.notes && (
                     <p style={{
                       fontFamily: "var(--font-body), sans-serif",
-                      fontWeight: 300, fontSize: 12, lineHeight: 1.5,
+                      fontWeight: 400, fontSize: 12, lineHeight: 1.5,
                       color: "rgba(255,255,255,0.25)", marginTop: 6,
                       borderLeft: "2px solid rgba(122,154,130,0.15)",
                       paddingLeft: 10,

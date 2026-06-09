@@ -24,7 +24,7 @@ const FEATURES = [
     icon: "⬡", tag: "TERRAIN TACTIQUE",
     title: "Construis tes systèmes. Anime les situations.",
     desc: "Terrain interactif, 16 formations, 50+ animations, situations DTN en 4 phases.",
-    href: "/tactique/creer", cta: "OUVRIR →", available: true,
+    href: "/tactique", cta: "OUVRIR →", available: true,
   },
   {
     icon: "⊞", tag: "GESTION DE CLUB",
@@ -116,7 +116,7 @@ const STRUCTURED_DATA = {
 
 export default function Home() {
   return (
-    <main style={{ background: "#181812", color: "rgba(255,255,255,0.92)" }}>
+    <main style={{ background: "var(--bg)", color: "rgba(255,255,255,0.92)" }}>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(STRUCTURED_DATA) }}
@@ -126,13 +126,18 @@ export default function Home() {
         {/* ── 1. HERO ── */}
         <div className="pt-16 pb-20 flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
           <div className="flex-1 min-w-0">
-            <p style={{
-              fontFamily: "var(--font-mono), monospace",
-              fontSize: 10, fontWeight: 700, letterSpacing: "0.14em",
-              color: "#7A9A82", marginBottom: 16,
-            }}>
-              FOOTBOARD · PLATEFORME TACTIQUE
-            </p>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+              <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--sauge)", display: "inline-block" }} />
+              <span style={{
+                fontFamily: "var(--font-mono), monospace",
+                fontSize: 9, fontWeight: 700, letterSpacing: "0.14em",
+                color: "var(--sauge)", background: "var(--sauge-dim)",
+                border: "1px solid var(--sauge-border)",
+                padding: "2px 8px", borderRadius: 100,
+              }}>
+                FOOTBOARD · PLATEFORME TACTIQUE
+              </span>
+            </div>
             <h1 style={{
               fontFamily: "var(--font-display), system-ui, sans-serif",
               fontWeight: 900, fontSize: "clamp(44px, 7vw, 72px)",
@@ -140,12 +145,12 @@ export default function Home() {
               color: "rgba(255,255,255,0.95)", marginBottom: 20,
             }}>
               LA PLATEFORME<br />
-              <span style={{ color: "#7A9A82" }}>DES COACHS</span><br />
+              <span style={{ color: "var(--sauge)" }}>DES COACHS</span><br />
               AMBITIEUX
             </h1>
             <p style={{
               fontFamily: "var(--font-body), sans-serif",
-              fontWeight: 300, fontSize: 17, lineHeight: 1.6,
+              fontWeight: 400, fontSize: 17, lineHeight: 1.6,
               color: "rgba(255,255,255,0.45)", maxWidth: 400, marginBottom: 32,
             }}>
               Gérez votre club, préparez vos matchs, animez vos entraînements
@@ -155,7 +160,7 @@ export default function Home() {
               <Link href="/dashboard" className="transition hover:opacity-85" style={{
                 fontFamily: "var(--font-mono), monospace",
                 fontWeight: 700, fontSize: 11, letterSpacing: "0.1em",
-                backgroundColor: "#7A9A82", color: "#181812",
+                backgroundColor: "var(--sauge)", color: "var(--bg)",
                 padding: "13px 26px", borderRadius: 10, display: "inline-block",
               }}>
                 COMMENCER GRATUITEMENT →
@@ -186,11 +191,11 @@ export default function Home() {
           style={{ border: "1px solid rgba(122,154,130,0.12)", backgroundColor: "rgba(122,154,130,0.08)" }}>
           {STATS.map(({ value, label }) => (
             <div key={label} className="flex flex-col items-center justify-center py-8 px-4 text-center"
-              style={{ backgroundColor: "#1f1f19" }}>
+              style={{ backgroundColor: "var(--bg-card)" }}>
               <span style={{
                 fontFamily: "var(--font-display), system-ui, sans-serif",
                 fontWeight: 900, fontSize: "clamp(36px, 6vw, 52px)",
-                lineHeight: 1, color: "#7A9A82", letterSpacing: "-0.02em",
+                lineHeight: 1, color: "var(--sauge)", letterSpacing: "-0.02em",
               }}>
                 {value}
               </span>
@@ -207,13 +212,16 @@ export default function Home() {
 
         {/* ── 3. FONCTIONNALITÉS ── */}
         <div className="mb-24">
-          <p style={{
-            fontFamily: "var(--font-mono), monospace",
-            fontSize: 10, fontWeight: 700, letterSpacing: "0.14em",
-            color: "#7A9A82", textAlign: "center", marginBottom: 12,
-          }}>
-            TOUT CE DONT TU AS BESOIN
-          </p>
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, marginBottom: 12 }}>
+            <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--sauge)", display: "inline-block" }} />
+            <span style={{
+              fontFamily: "var(--font-mono), monospace",
+              fontSize: 9, fontWeight: 700, letterSpacing: "0.14em",
+              color: "var(--sauge)", background: "var(--sauge-dim)",
+              border: "1px solid var(--sauge-border)",
+              padding: "2px 8px", borderRadius: 100,
+            }}>TOUT CE DONT TU AS BESOIN</span>
+          </div>
           <h2 style={{
             fontFamily: "var(--font-display), system-ui, sans-serif",
             fontWeight: 900, fontSize: "clamp(28px, 4vw, 44px)",
@@ -221,21 +229,24 @@ export default function Home() {
             textAlign: "center", marginBottom: 40,
           }}>
             UNE PLATEFORME,<br />
-            <span style={{ color: "#7A9A82" }}>TOUTES LES FONCTIONS.</span>
+            <span style={{ color: "var(--sauge)" }}>TOUTES LES FONCTIONS.</span>
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {FEATURES.map(f => (
               <div key={f.tag} className="flex flex-col gap-4 p-5 rounded-2xl" style={{
-                backgroundColor: f.available ? "#1f1f19" : "rgba(122,154,130,0.02)",
-                border: `1px solid ${f.available ? "rgba(122,154,130,0.15)" : "rgba(122,154,130,0.07)"}`,
+                backgroundColor: f.available ? "var(--bg-card)" : "rgba(122,154,130,0.02)",
+                border: `1px solid ${f.available ? "var(--sauge-border)" : "rgba(122,154,130,0.07)"}`,
               }}>
                 <div className="flex items-center justify-between">
                   <span style={{
                     fontFamily: "var(--font-mono), monospace",
                     fontSize: 9, fontWeight: 700, letterSpacing: "0.12em",
-                    color: f.available ? "#7A9A82" : "rgba(122,154,130,0.3)",
+                    color: f.available ? "var(--sauge)" : "rgba(122,154,130,0.3)",
+                    background: f.available ? "var(--sauge-dim)" : "transparent",
+                    border: f.available ? "1px solid var(--sauge-border)" : "none",
+                    padding: f.available ? "2px 8px" : "0", borderRadius: 100,
                   }}>
-                    {f.icon} {f.tag}
+                    {f.tag}
                   </span>
                   {!f.available && (
                     <span style={{
@@ -250,7 +261,7 @@ export default function Home() {
                 <div className="flex-1">
                   <p style={{
                     fontFamily: "var(--font-display), system-ui, sans-serif",
-                    fontWeight: 700, fontSize: 17,
+                    fontWeight: 900, fontSize: 17,
                     color: f.available ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.25)",
                     marginBottom: 6,
                   }}>
@@ -258,7 +269,7 @@ export default function Home() {
                   </p>
                   <p style={{
                     fontFamily: "var(--font-body), sans-serif",
-                    fontWeight: 300, fontSize: 13, lineHeight: 1.5,
+                    fontWeight: 400, fontSize: 13, lineHeight: 1.5,
                     color: f.available ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.18)",
                   }}>
                     {f.desc}
@@ -268,7 +279,7 @@ export default function Home() {
                   <Link href={f.href} className="transition hover:opacity-70" style={{
                     fontFamily: "var(--font-mono), monospace",
                     fontWeight: 700, fontSize: 10, letterSpacing: "0.1em",
-                    color: "#7A9A82",
+                    color: "var(--sauge)",
                   }}>
                     {f.cta}
                   </Link>
@@ -288,16 +299,19 @@ export default function Home() {
 
         {/* ── 4. COMMENT ÇA MARCHE ── */}
         <div id="comment" className="mb-24 rounded-2xl p-10" style={{
-          backgroundColor: "#1c1c16",
-          border: "1px solid rgba(122,154,130,0.1)",
+          backgroundColor: "var(--bg-card)",
+          border: "1px solid rgba(122,154,130,0.13)",
         }}>
-          <p style={{
-            fontFamily: "var(--font-mono), monospace",
-            fontSize: 10, fontWeight: 700, letterSpacing: "0.14em",
-            color: "#7A9A82", textAlign: "center", marginBottom: 12,
-          }}>
-            SIMPLE ET RAPIDE
-          </p>
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, marginBottom: 12 }}>
+            <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--sauge)", display: "inline-block" }} />
+            <span style={{
+              fontFamily: "var(--font-mono), monospace",
+              fontSize: 9, fontWeight: 700, letterSpacing: "0.14em",
+              color: "var(--sauge)", background: "var(--sauge-dim)",
+              border: "1px solid var(--sauge-border)",
+              padding: "2px 8px", borderRadius: 100,
+            }}>SIMPLE ET RAPIDE</span>
+          </div>
           <h2 style={{
             fontFamily: "var(--font-display), system-ui, sans-serif",
             fontWeight: 900, fontSize: "clamp(28px, 4vw, 44px)",
@@ -305,7 +319,7 @@ export default function Home() {
             textAlign: "center", marginBottom: 48,
           }}>
             COMMENT<br />
-            <span style={{ color: "#7A9A82" }}>ÇA MARCHE ?</span>
+            <span style={{ color: "var(--sauge)" }}>ÇA MARCHE ?</span>
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {STEPS.map(({ n, title, desc }) => (
@@ -326,7 +340,7 @@ export default function Home() {
                 </p>
                 <p style={{
                   fontFamily: "var(--font-body), sans-serif",
-                  fontWeight: 300, fontSize: 13, lineHeight: 1.6,
+                  fontWeight: 400, fontSize: 13, lineHeight: 1.6,
                   color: "rgba(255,255,255,0.4)",
                 }}>
                   {desc}
@@ -338,13 +352,16 @@ export default function Home() {
 
         {/* ── 5. TARIFS ── */}
         <div id="tarifs" className="mb-24">
-          <p style={{
-            fontFamily: "var(--font-mono), monospace",
-            fontSize: 10, fontWeight: 700, letterSpacing: "0.14em",
-            color: "#7A9A82", textAlign: "center", marginBottom: 12,
-          }}>
-            TRANSPARENT ET SANS SURPRISE
-          </p>
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, marginBottom: 12 }}>
+            <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--sauge)", display: "inline-block" }} />
+            <span style={{
+              fontFamily: "var(--font-mono), monospace",
+              fontSize: 9, fontWeight: 700, letterSpacing: "0.14em",
+              color: "var(--sauge)", background: "var(--sauge-dim)",
+              border: "1px solid var(--sauge-border)",
+              padding: "2px 8px", borderRadius: 100,
+            }}>TRANSPARENT ET SANS SURPRISE</span>
+          </div>
           <h2 style={{
             fontFamily: "var(--font-display), system-ui, sans-serif",
             fontWeight: 900, fontSize: "clamp(28px, 4vw, 44px)",
@@ -352,7 +369,7 @@ export default function Home() {
             textAlign: "center", marginBottom: 48,
           }}>
             DES TARIFS POUR<br />
-            <span style={{ color: "#7A9A82" }}>CHAQUE COACH.</span>
+            <span style={{ color: "var(--sauge)" }}>CHAQUE COACH.</span>
           </h2>
           <div className="flex flex-col md:flex-row gap-4 items-stretch">
             {PLANS.map(plan => (
@@ -363,13 +380,13 @@ export default function Home() {
 
         {/* ── 6. CTA FINAL ── */}
         <div className="mb-20 rounded-2xl p-10 text-center" style={{
-          backgroundColor: "#1f1f19",
+          backgroundColor: "var(--bg-card)",
           border: "1px solid rgba(122,154,130,0.18)",
         }}>
           <p style={{
             fontFamily: "var(--font-mono), monospace",
             fontSize: 10, fontWeight: 700, letterSpacing: "0.14em",
-            color: "#7A9A82", marginBottom: 12,
+            color: "var(--sauge)", marginBottom: 12,
           }}>
             PRÊT À PASSER AU NIVEAU SUPÉRIEUR ?
           </p>
@@ -379,11 +396,11 @@ export default function Home() {
             lineHeight: 0.95, color: "rgba(255,255,255,0.95)", marginBottom: 12,
           }}>
             COMMENÇONS<br />
-            <span style={{ color: "#7A9A82" }}>ENSEMBLE.</span>
+            <span style={{ color: "var(--sauge)" }}>ENSEMBLE.</span>
           </h2>
           <p style={{
             fontFamily: "var(--font-body), sans-serif",
-            fontWeight: 300, fontSize: 16, lineHeight: 1.5,
+            fontWeight: 400, fontSize: 16, lineHeight: 1.5,
             color: "rgba(255,255,255,0.35)", marginBottom: 32,
           }}>
             Gratuit, sans carte bancaire, sans engagement.
@@ -391,7 +408,7 @@ export default function Home() {
           <Link href="/dashboard" className="transition hover:opacity-85" style={{
             fontFamily: "var(--font-mono), monospace",
             fontWeight: 700, fontSize: 11, letterSpacing: "0.1em",
-            backgroundColor: "#7A9A82", color: "#181812",
+            backgroundColor: "var(--sauge)", color: "var(--bg)",
             padding: "14px 32px", borderRadius: 10, display: "inline-block",
           }}>
             COMMENCER GRATUITEMENT →

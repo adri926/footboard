@@ -30,7 +30,7 @@ export default function NotFound() {
       </h1>
       <p style={{
         fontFamily: "var(--font-body), sans-serif",
-        fontWeight: 300, fontSize: 14,
+        fontWeight: 400, fontSize: 14,
         color: "rgba(255,255,255,0.3)", marginBottom: 32, maxWidth: 360,
       }}>
         Cette page n'existe pas ou a été déplacée.

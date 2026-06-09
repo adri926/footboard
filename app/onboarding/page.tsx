@@ -12,7 +12,7 @@ const LEVELS = [
 
 const INPUT: React.CSSProperties = {
   fontFamily: "var(--font-body), sans-serif",
-  fontWeight: 300, fontSize: 14,
+  fontWeight: 400, fontSize: 14,
   backgroundColor: "rgba(255,255,255,0.05)",
   border: "1px solid rgba(122,154,130,0.2)",
   borderRadius: 10, padding: "12px 14px",
@@ -86,7 +86,7 @@ export default function OnboardingPage() {
           </h1>
           <p style={{
             fontFamily: "var(--font-body), sans-serif",
-            fontWeight: 300, fontSize: 13, lineHeight: 1.6,
+            fontWeight: 400, fontSize: 13, lineHeight: 1.6,
             color: "rgba(255,255,255,0.35)",
           }}>
             Ces informations apparaîtront dans votre espace et sur les convocations envoyées à vos joueurs.

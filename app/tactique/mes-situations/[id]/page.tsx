@@ -62,7 +62,7 @@ export default async function SituationPlaybackPage({ params }: Props) {
           {situation.description && (
             <p style={{
               fontFamily: "var(--font-body), sans-serif",
-              fontWeight: 300, fontSize: 13, lineHeight: 1.5,
+              fontWeight: 400, fontSize: 13, lineHeight: 1.5,
               color: "rgba(255,255,255,0.4)", marginTop: 6, maxWidth: 520,
             }}>
               {situation.description}

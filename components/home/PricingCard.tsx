@@ -54,7 +54,7 @@ export default function PricingCard({ name, price, period, desc, features, cta, 
         </span>
         <span style={{
           fontFamily: "var(--font-body), sans-serif",
-          fontWeight: 300, fontSize: 13,
+          fontWeight: 400, fontSize: 13,
           color: "rgba(255,255,255,0.35)", marginBottom: 6,
         }}>
           {period}
@@ -63,7 +63,7 @@ export default function PricingCard({ name, price, period, desc, features, cta, 
 
       <p style={{
         fontFamily: "var(--font-body), sans-serif",
-        fontWeight: 300, fontSize: 13, lineHeight: 1.5,
+        fontWeight: 400, fontSize: 13, lineHeight: 1.5,
         color: "rgba(255,255,255,0.4)", marginBottom: 20,
       }}>
         {desc}
@@ -81,7 +81,7 @@ export default function PricingCard({ name, price, period, desc, features, cta, 
             </span>
             <span style={{
               fontFamily: "var(--font-body), sans-serif",
-              fontWeight: 300, fontSize: 12, lineHeight: 1.4,
+              fontWeight: 400, fontSize: 12, lineHeight: 1.4,
               color: f.included ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.2)",
             }}>
               {f.label}

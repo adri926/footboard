@@ -81,7 +81,7 @@ export default function PlayerStatusTable({ rows }: Props) {
         ))}
         {filtered.length === 0 && (
           <p style={{
-            fontFamily: "var(--font-body), sans-serif", fontWeight: 300,
+            fontFamily: "var(--font-body), sans-serif", fontWeight: 400,
             fontSize: 13, color: "rgba(255,255,255,0.3)",
             padding: "24px 0", textAlign: "center",
           }}>

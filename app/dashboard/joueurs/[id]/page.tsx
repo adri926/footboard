@@ -123,7 +123,7 @@ export default async function JoueurPage({ params }: { params: Promise<{ id: str
           }}>
             <p style={{
               fontFamily: "var(--font-body), sans-serif",
-              fontWeight: 300, fontSize: 13,
+              fontWeight: 400, fontSize: 13,
               color: "rgba(255,255,255,0.4)",
             }}>
               {label}
@@ -155,7 +155,7 @@ export default async function JoueurPage({ params }: { params: Promise<{ id: str
             </p>
             <p style={{
               fontFamily: "var(--font-body), sans-serif",
-              fontWeight: 300, fontSize: 13, lineHeight: 1.5,
+              fontWeight: 400, fontSize: 13, lineHeight: 1.5,
               color: "rgba(255,255,255,0.5)",
             }}>
               {player.injury_note}

@@ -26,7 +26,7 @@ export default async function JoueursPage() {
           backgroundColor: "#1f1f19", border: "1px dashed rgba(122,154,130,0.2)",
         }}>
           <p style={{
-            fontFamily: "var(--font-body), sans-serif", fontWeight: 300,
+            fontFamily: "var(--font-body), sans-serif", fontWeight: 400,
             fontSize: 14, color: "rgba(255,255,255,0.3)", marginBottom: 8,
           }}>
             Aucun joueur inscrit.

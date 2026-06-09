@@ -15,7 +15,7 @@ const LEVELS = [
 
 const INPUT: React.CSSProperties = {
   fontFamily: "var(--font-body), sans-serif",
-  fontWeight: 300, fontSize: 13,
+  fontWeight: 400, fontSize: 13,
   backgroundColor: "rgba(255,255,255,0.04)",
   border: "1px solid rgba(122,154,130,0.15)",
   borderRadius: 8, padding: "9px 12px",
@@ -116,7 +116,7 @@ export default function CompteClient({ club }: Props) {
               />
             </div>
             <p style={{
-              fontFamily: "var(--font-body), sans-serif", fontWeight: 300,
+              fontFamily: "var(--font-body), sans-serif", fontWeight: 400,
               fontSize: 11, color: "rgba(255,255,255,0.25)", marginTop: 6,
             }}>
               Lien direct vers une image (hébergée ailleurs). Affiché dans les listes de matchs et les statistiques.
@@ -186,7 +186,7 @@ export default function CompteClient({ club }: Props) {
         </p>
         <p style={{
           fontFamily: "var(--font-body), sans-serif",
-          fontWeight: 300, fontSize: 13, lineHeight: 1.6,
+          fontWeight: 400, fontSize: 13, lineHeight: 1.6,
           color: "rgba(255,255,255,0.35)", marginBottom: 14,
         }}>
           La suppression de votre compte est <strong style={{ color: "rgba(255,255,255,0.55)", fontWeight: 500 }}>irréversible</strong>. Toutes vos données (club, joueurs, matchs, entraînements) seront définitivement effacées.
@@ -227,7 +227,7 @@ export default function CompteClient({ club }: Props) {
             </p>
             <p style={{
               fontFamily: "var(--font-body), sans-serif",
-              fontWeight: 300, fontSize: 13, lineHeight: 1.6,
+              fontWeight: 400, fontSize: 13, lineHeight: 1.6,
               color: "rgba(255,255,255,0.35)", marginBottom: 18,
             }}>
               Tapez <strong style={{ color: "rgba(255,255,255,0.65)", fontFamily: "var(--font-mono), monospace", fontSize: 12 }}>SUPPRIMER</strong> pour confirmer.

@@ -53,7 +53,7 @@ export default function Footer() {
             </Link>
             <p style={{
               fontFamily: "var(--font-body), sans-serif",
-              fontWeight: 300, fontSize: 13, lineHeight: 1.6,
+              fontWeight: 400, fontSize: 13, lineHeight: 1.6,
               color: "rgba(255,255,255,0.35)", marginTop: 10, maxWidth: 180,
             }}>
               La plateforme des coachs ambitieux.
@@ -88,7 +88,7 @@ export default function Footer() {
                     <Link href={l.available ? l.href : "#"}
                       style={{
                         fontFamily: "var(--font-body), sans-serif",
-                        fontWeight: 300, fontSize: 13,
+                        fontWeight: 400, fontSize: 13,
                         color: l.available ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.2)",
                         pointerEvents: l.available ? "auto" : "none",
                         display: "flex", alignItems: "center", gap: 6,

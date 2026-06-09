@@ -26,7 +26,7 @@ export default function Error({ reset }: { reset: () => void }) {
       </h1>
       <p style={{
         fontFamily: "var(--font-body), sans-serif",
-        fontWeight: 300, fontSize: 14,
+        fontWeight: 400, fontSize: 14,
         color: "rgba(255,255,255,0.3)", marginBottom: 32, maxWidth: 360,
       }}>
         Une erreur s'est produite. Réessayez ou revenez à l'accueil.

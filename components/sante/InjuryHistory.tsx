@@ -18,7 +18,7 @@ export default function InjuryHistory({ injuries }: Props) {
   if (injuries.length === 0) {
     return (
       <p style={{
-        fontFamily: "var(--font-body), sans-serif", fontWeight: 300,
+        fontFamily: "var(--font-body), sans-serif", fontWeight: 400,
         fontSize: 13, color: "rgba(255,255,255,0.3)",
       }}>
         Aucun antécédent de blessure enregistré cette saison.
@@ -60,7 +60,7 @@ export default function InjuryHistory({ injuries }: Props) {
           </p>
           {injury.notes && (
             <p style={{
-              fontFamily: "var(--font-body), sans-serif", fontWeight: 300,
+              fontFamily: "var(--font-body), sans-serif", fontWeight: 400,
               fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 6, lineHeight: 1.5,
             }}>
               {injury.notes}

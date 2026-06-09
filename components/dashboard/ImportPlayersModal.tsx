@@ -138,7 +138,7 @@ export default function ImportPlayersModal({ onClose, onImported }: Props) {
         </div>
 
         <p style={{
-          fontFamily: "var(--font-body), sans-serif", fontWeight: 300,
+          fontFamily: "var(--font-body), sans-serif", fontWeight: 400,
           fontSize: 12, color: "rgba(255,255,255,0.4)", lineHeight: 1.6, marginBottom: 20,
         }}>
           Exporte ta liste de licenciés depuis Footclubs
@@ -203,7 +203,7 @@ export default function ImportPlayersModal({ onClose, onImported }: Props) {
                   {parsed.slice(0, 8).map((r, i) => (
                     <div key={i} style={{
                       padding: "6px 10px", backgroundColor: "rgba(255,255,255,0.02)",
-                      fontFamily: "var(--font-body), sans-serif", fontWeight: 300,
+                      fontFamily: "var(--font-body), sans-serif", fontWeight: 400,
                       fontSize: 12, color: "rgba(255,255,255,0.6)",
                       display: "flex", justifyContent: "space-between",
                     }}>
@@ -232,7 +232,7 @@ export default function ImportPlayersModal({ onClose, onImported }: Props) {
                   value={position}
                   onChange={e => setPosition(e.target.value as typeof position)}
                   style={{
-                    fontFamily: "var(--font-body), sans-serif", fontWeight: 300, fontSize: 13,
+                    fontFamily: "var(--font-body), sans-serif", fontWeight: 400, fontSize: 13,
                     backgroundColor: "rgba(255,255,255,0.04)",
                     border: "1px solid rgba(122,154,130,0.15)",
                     borderRadius: 8, padding: "9px 12px",

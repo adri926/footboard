@@ -123,7 +123,7 @@ function ConvocationModal({
             <div style={{ flex: 1, overflowY: "auto", margin: "16px 0", display: "flex", flexDirection: "column", gap: 4 }}>
               {sorted.length === 0 ? (
                 <p style={{
-                  fontFamily: "var(--font-body), sans-serif", fontWeight: 300,
+                  fontFamily: "var(--font-body), sans-serif", fontWeight: 400,
                   fontSize: 13, color: "rgba(255,255,255,0.3)", textAlign: "center", padding: "24px 0",
                 }}>
                   Aucun joueur dans l'effectif.
@@ -270,7 +270,7 @@ export default function MatchsClient({ matches, players, club }: Props) {
           backgroundColor: "#1f1f19", border: "1px dashed rgba(122,154,130,0.2)",
         }}>
           <p style={{
-            fontFamily: "var(--font-body), sans-serif", fontWeight: 300, fontSize: 14,
+            fontFamily: "var(--font-body), sans-serif", fontWeight: 400, fontSize: 14,
             color: "rgba(255,255,255,0.3)", marginBottom: 8,
           }}>
             Aucun match pour l'instant.
@@ -315,7 +315,7 @@ export default function MatchsClient({ matches, players, club }: Props) {
               backgroundColor: "#1f1f19", border: "1px dashed rgba(122,154,130,0.15)",
             }}>
               <p style={{
-                fontFamily: "var(--font-body), sans-serif", fontWeight: 300, fontSize: 13,
+                fontFamily: "var(--font-body), sans-serif", fontWeight: 400, fontSize: 13,
                 color: "rgba(255,255,255,0.3)",
               }}>
                 Aucun match à venir programmé.
@@ -409,7 +409,7 @@ export default function MatchsClient({ matches, players, club }: Props) {
               backgroundColor: "#1f1f19", border: "1px dashed rgba(122,154,130,0.15)",
             }}>
               <p style={{
-                fontFamily: "var(--font-body), sans-serif", fontWeight: 300, fontSize: 13,
+                fontFamily: "var(--font-body), sans-serif", fontWeight: 400, fontSize: 13,
                 color: "rgba(255,255,255,0.3)",
               }}>
                 Aucun match passé pour le moment.

@@ -8,7 +8,7 @@ import FormationPanel from "./FormationPanel"
 import DrawingCanvas, { type Tool } from "./DrawingCanvas"
 import Toolbar from "./Toolbar"
 import { FORMATIONS, mirrorY } from "@/lib/formations"
-import { saveTacticalBoard } from "@/app/tactique/animations/actions"
+import { saveTacticalBoard } from "@/app/tactique/digiboard/actions"
 import type { Drawing, Pion, TacticalMode, TacticalTeam } from "@/types/tactical"
 
 const DEFAULT_FORMATION_A = "4-3-3"

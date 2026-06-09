@@ -19,7 +19,7 @@ const NAV = [
     label: "Tactique",
     href: "/tactique",
     children: [
-      { href: "/tactique/animations",     label: "Animations",          available: true  },
+      { href: "/tactique/digiboard",       label: "Digiboard",           available: true  },
       { href: "/tactique/creer",          label: "Créer une situation", available: true  },
       { href: "/tactique/mes-situations", label: "Mes situations",      available: true  },
       { href: "/tactique/concepts",       label: "Concepts",            available: true  },
@@ -29,7 +29,7 @@ const NAV = [
   { label: "Tarifs", href: "/#tarifs", children: [] },
 ]
 
-const HIDE_ON = ["/tactique/animations"]
+const HIDE_ON = ["/tactique/digiboard"]
 
 export default function Nav() {
   const pathname = usePathname()

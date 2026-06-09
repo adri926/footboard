@@ -88,7 +88,7 @@ export default async function FicheMedicalePage({ params }: Props) {
           <TrainingLoadChart loads={record.loads} />
         ) : (
           <p style={{
-            fontFamily: "var(--font-body), sans-serif", fontWeight: 300,
+            fontFamily: "var(--font-body), sans-serif", fontWeight: 400,
             fontSize: 13, color: "rgba(255,255,255,0.3)",
           }}>
             Aucune charge d'entraînement enregistrée pour le moment.
@@ -99,7 +99,7 @@ export default async function FicheMedicalePage({ params }: Props) {
       {/* 4. Notes médicales */}
       <Section title="Notes médicales">
         <p style={{
-          fontFamily: "var(--font-body), sans-serif", fontWeight: 300,
+          fontFamily: "var(--font-body), sans-serif", fontWeight: 400,
           fontSize: 13, color: record.notes ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.3)", lineHeight: 1.6,
         }}>
           {record.notes || "Aucune note enregistrée pour le moment."}

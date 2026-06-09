@@ -225,7 +225,7 @@ export default function CreerPage() {
                     </span>
                     <span style={{
                       fontFamily: "var(--font-body), sans-serif",
-                      fontWeight: 300, fontSize: 9,
+                      fontWeight: 400, fontSize: 9,
                       color: "rgba(255,255,255,0.25)",
                     }}>
                       {CONFIG_HINTS[cfg.label]}
@@ -292,7 +292,7 @@ export default function CreerPage() {
                       </span>
                       <span style={{
                         fontFamily: "var(--font-body), sans-serif",
-                        fontWeight: 300, fontSize: 10,
+                        fontWeight: 400, fontSize: 10,
                         color: "rgba(255,255,255,0.25)",
                       }}>
                         {FINALITY_HINTS[f.id]}
@@ -325,7 +325,7 @@ export default function CreerPage() {
                     border: "1px solid rgba(122,154,130,0.15)",
                     borderRadius: 8, padding: "10px 12px",
                     fontFamily: "var(--font-body), sans-serif",
-                    fontWeight: 300, fontSize: 13, lineHeight: 1.5,
+                    fontWeight: 400, fontSize: 13, lineHeight: 1.5,
                     color: "rgba(255,255,255,0.7)",
                     outline: "none",
                   }}

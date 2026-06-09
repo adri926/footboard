@@ -223,7 +223,7 @@ export default async function DashboardPage() {
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {nonAvailable.length === 0 ? (
               <p style={{
-                fontFamily: "var(--font-body), sans-serif", fontWeight: 300,
+                fontFamily: "var(--font-body), sans-serif", fontWeight: 400,
                 fontSize: 13, color: "rgba(255,255,255,0.3)",
               }}>
                 {players.length === 0 ? "Aucun joueur dans l'effectif." : "Tous les joueurs sont disponibles."}
@@ -250,7 +250,7 @@ export default async function DashboardPage() {
                   </p>
                   {p.injury_note && (
                     <p style={{
-                      fontFamily: "var(--font-body), sans-serif", fontWeight: 300,
+                      fontFamily: "var(--font-body), sans-serif", fontWeight: 400,
                       fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 2,
                     }}>
                       {p.injury_note}
@@ -286,7 +286,7 @@ export default async function DashboardPage() {
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {recentResults.length === 0 ? (
               <p style={{
-                fontFamily: "var(--font-body), sans-serif", fontWeight: 300,
+                fontFamily: "var(--font-body), sans-serif", fontWeight: 400,
                 fontSize: 13, color: "rgba(255,255,255,0.3)",
               }}>
                 Aucun résultat enregistré.
@@ -364,7 +364,7 @@ export default async function DashboardPage() {
 
         {lastTrainings.length === 0 ? (
           <p style={{
-            fontFamily: "var(--font-body), sans-serif", fontWeight: 300,
+            fontFamily: "var(--font-body), sans-serif", fontWeight: 400,
             fontSize: 13, color: "rgba(255,255,255,0.3)",
           }}>
             Aucune séance enregistrée.

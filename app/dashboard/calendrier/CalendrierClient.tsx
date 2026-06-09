@@ -188,7 +188,7 @@ export default function CalendrierClient({ matches, trainings }: Props) {
                 <div style={{
                   fontFamily: "var(--font-mono), monospace",
                   fontSize: isToday ? 12 : 11,
-                  fontWeight: isToday ? 700 : 300,
+                  fontWeight: isToday ? 700 : 400,
                   color: isToday
                     ? "#7A9A82"
                     : isPast ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.55)",
@@ -337,7 +337,7 @@ function DetailRow({ label, value }: { label: string; value: string }) {
         {label}
       </p>
       <p style={{
-        fontFamily: "var(--font-body), sans-serif", fontWeight: 300,
+        fontFamily: "var(--font-body), sans-serif", fontWeight: 400,
         fontSize: 13, color: "rgba(255,255,255,0.75)",
       }}>
         {value}
@@ -369,7 +369,7 @@ function TrainingDetail({ ev, onClose }: { ev: SelectedEvent & { kind: "training
       {ev.location && <DetailRow label="Lieu"     value={ev.location} />}
       {!ev.theme && !typeLabel && (
         <p style={{
-          fontFamily: "var(--font-body), sans-serif", fontWeight: 300,
+          fontFamily: "var(--font-body), sans-serif", fontWeight: 400,
           fontSize: 13, color: "rgba(255,255,255,0.3)",
         }}>
           Aucun détail renseigné.

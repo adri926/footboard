@@ -23,6 +23,7 @@ export default function TrainingLoadChart({ loads }: Props) {
   return (
     <div>
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" xmlns="http://www.w3.org/2000/svg">
+        <rect width="100%" height="100%" fill="var(--chart-warm)" rx="1" />
         {/* ligne de base */}
         <line x1="0" y1={H - PAD_BOTTOM} x2={W} y2={H - PAD_BOTTOM} stroke="rgba(122,154,130,0.2)" strokeWidth="0.4" />
 

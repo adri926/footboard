@@ -12,7 +12,7 @@ interface Props {
 
 const INPUT: React.CSSProperties = {
   fontFamily: "var(--font-body), sans-serif",
-  fontWeight: 300, fontSize: 13,
+  fontWeight: 400, fontSize: 13,
   backgroundColor: "rgba(255,255,255,0.04)",
   border: "1px solid rgba(122,154,130,0.15)",
   borderRadius: 8, padding: "9px 12px",
