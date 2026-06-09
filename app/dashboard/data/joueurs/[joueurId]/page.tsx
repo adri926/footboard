@@ -1,22 +1,13 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import PageHeader from "@/components/dashboard/PageHeader"
-import PlayerProgressionChart from "@/components/data/PlayerProgressionChart"
 import { getPlayers } from "@/app/dashboard/effectif/actions"
-import { toRosterPlayer } from "@/lib/mock/medical"
-import { buildPlayerStats, getPlayerStats, getPlayerProgression } from "@/lib/mock/stats"
+import { toRosterPlayer } from "@/lib/roster"
+import { getPlayerMatchHistory } from "@/app/dashboard/matchs/actions"
 
 interface Props {
   params: Promise<{ joueurId: string }>
 }
-
-const STAT_LABELS: { key: "matchesPlayed" | "starts" | "goals" | "assists" | "minutesPlayed"; label: string }[] = [
-  { key: "matchesPlayed", label: "Matchs joués" },
-  { key: "starts",        label: "Titularisations" },
-  { key: "goals",         label: "Buts" },
-  { key: "assists",       label: "Passes décisives" },
-  { key: "minutesPlayed", label: "Minutes jouées" },
-]
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -37,19 +28,46 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   )
 }
 
+function parseDate(s: string) {
+  const m = s.match(/(\d{4})-(\d{2})-(\d{2})/)
+  if (!m) return null
+  return new Date(parseInt(m[1]), parseInt(m[2]) - 1, parseInt(m[3]))
+}
+
+function formatDate(s: string) {
+  const d = parseDate(s)
+  if (!d) return s
+  return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })
+}
+
 export default async function ProfilStatsPage({ params }: Props) {
   const { joueurId } = await params
-  const players = await getPlayers()
+  const [players, history] = await Promise.all([
+    getPlayers(),
+    getPlayerMatchHistory(joueurId),
+  ])
   const roster = players.map(toRosterPlayer)
   const player = roster.find(p => p.id === joueurId)
-  const playerStats = buildPlayerStats(roster)
-  const stats = getPlayerStats(playerStats, joueurId)
-  if (!player || !stats) notFound()
+  if (!player) notFound()
 
-  const progression = getPlayerProgression(playerStats, joueurId)
+  const totals = history.reduce((acc, h) => ({
+    matchesPlayed: acc.matchesPlayed + 1,
+    starts:        acc.starts + (h.role === "starter" ? 1 : 0),
+    goals:         acc.goals + h.goals,
+    assists:       acc.assists + h.assists,
+    minutesPlayed: acc.minutesPlayed + h.minutesPlayed,
+  }), { matchesPlayed: 0, starts: 0, goals: 0, assists: 0, minutesPlayed: 0 })
+
+  const SUMMARY = [
+    { label: "Matchs joués", value: totals.matchesPlayed },
+    { label: "Titularisations", value: totals.starts },
+    { label: "Buts", value: totals.goals },
+    { label: "Passes décisives", value: totals.assists },
+    { label: "Minutes jouées", value: totals.minutesPlayed },
+  ]
 
   return (
-    <div style={{ padding: "32px 36px", maxWidth: 760 }}>
+    <div style={{ padding: "32px 36px", maxWidth: 800 }}>
       <Link href="/dashboard/data/joueurs" style={{
         fontFamily: "var(--font-mono), monospace", fontSize: 10,
         letterSpacing: "0.06em", color: "rgba(122,154,130,0.5)",
@@ -59,51 +77,89 @@ export default async function ProfilStatsPage({ params }: Props) {
       </Link>
 
       <PageHeader
-        label={`${player.position} · N°${player.number}`}
+        label={`${player.position === "GK" ? "GB" : player.position} · N°${player.number}`}
         title={player.name}
-        subtitle={`Saison ${stats.season}`}
-        action={stats.rating !== null && (
-          <div style={{ textAlign: "right" }}>
-            <p style={{
-              fontFamily: "var(--font-display), system-ui, sans-serif",
-              fontWeight: 900, fontSize: 28, color: "var(--sauge)", lineHeight: 1,
-            }}>
-              {stats.rating.toFixed(1)}
-            </p>
-            <p style={{
-              fontFamily: "var(--font-mono), monospace", fontSize: 9,
-              letterSpacing: "0.06em", color: "rgba(255,255,255,0.3)", marginTop: 2,
-            }}>
-              NOTE MOYENNE
-            </p>
-          </div>
-        )}
       />
 
       <Section title="Statistiques de la saison">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10 }}>
-          {STAT_LABELS.map(({ key, label }) => (
-            <div key={key}>
-              <p style={{
-                fontFamily: "var(--font-display), system-ui, sans-serif",
-                fontWeight: 900, fontSize: 22, color: "rgba(255,255,255,0.9)", lineHeight: 1,
-              }}>
-                {stats[key]}
-              </p>
-              <p style={{
-                fontFamily: "var(--font-mono), monospace", fontSize: 9, fontWeight: 700,
-                letterSpacing: "0.05em", color: "rgba(255,255,255,0.3)", marginTop: 6,
-              }}>
-                {label.toUpperCase()}
-              </p>
-            </div>
-          ))}
-        </div>
+        {history.length === 0 ? (
+          <p style={{
+            fontFamily: "var(--font-body), sans-serif", fontWeight: 300,
+            fontSize: 13, color: "rgba(255,255,255,0.3)",
+          }}>
+            Aucune statistique enregistrée pour ce joueur cette saison.
+          </p>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10 }}>
+            {SUMMARY.map(s => (
+              <div key={s.label}>
+                <p style={{
+                  fontFamily: "var(--font-display), system-ui, sans-serif",
+                  fontWeight: 900, fontSize: 22, color: "rgba(255,255,255,0.85)", lineHeight: 1,
+                }}>
+                  {s.value}
+                </p>
+                <p style={{
+                  fontFamily: "var(--font-mono), monospace", fontSize: 9, fontWeight: 700,
+                  letterSpacing: "0.06em", color: "rgba(255,255,255,0.3)", marginTop: 6,
+                }}>
+                  {s.label.toUpperCase()}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
       </Section>
 
-      <Section title="Progression — notes des derniers matchs">
-        <PlayerProgressionChart progression={progression} />
+      <Section title="Historique des matchs">
+        {history.length === 0 ? (
+          <p style={{
+            fontFamily: "var(--font-body), sans-serif", fontWeight: 300,
+            fontSize: 13, color: "rgba(255,255,255,0.3)",
+          }}>
+            Ce joueur n'apparaît dans aucune composition pour le moment.
+          </p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            {history.map(h => (
+              <Link key={h.match.id} href={`/dashboard/matchs/${h.match.id}/bilan`} style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                padding: "9px 12px", borderRadius: 8, textDecoration: "none",
+                backgroundColor: "rgba(255,255,255,0.02)",
+                border: "1px solid rgba(122,154,130,0.06)",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <span style={{ fontFamily: "var(--font-mono), monospace", fontSize: 9, color: "rgba(255,255,255,0.25)", width: 44 }}>
+                    {formatDate(h.match.date)}
+                  </span>
+                  <span style={{ fontFamily: "var(--font-body), sans-serif", fontWeight: 400, fontSize: 13, color: "rgba(255,255,255,0.7)" }}>
+                    vs {h.match.opponent}
+                  </span>
+                  <span style={{
+                    fontFamily: "var(--font-mono), monospace", fontSize: 8, fontWeight: 700,
+                    color: h.role === "starter" ? "#7A9A82" : "rgba(220,180,80,0.8)",
+                  }}>
+                    {h.role === "starter" ? "TITU" : "REMP"}
+                  </span>
+                </div>
+                <div style={{ display: "flex", gap: 14 }}>
+                  {h.goals > 0 && <span style={statTag("#7A9A82")}>⚽ {h.goals}</span>}
+                  {h.assists > 0 && <span style={statTag("rgba(255,255,255,0.5)")}>🅰 {h.assists}</span>}
+                  {h.yellowCards > 0 && <span style={statTag("#d4a847")}>🟨 {h.yellowCards}</span>}
+                  {h.redCards > 0 && <span style={statTag("#e07070")}>🟥 {h.redCards}</span>}
+                  <span style={statTag("rgba(255,255,255,0.3)")}>{h.minutesPlayed}&apos;</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </Section>
     </div>
   )
+}
+
+function statTag(color: string): React.CSSProperties {
+  return {
+    fontFamily: "var(--font-mono), monospace", fontSize: 11, fontWeight: 700, color,
+  }
 }

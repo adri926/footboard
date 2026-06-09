@@ -4,6 +4,7 @@ import { useState, useTransition } from "react"
 import { updateClub } from "@/app/dashboard/club/actions"
 import { deleteAccount } from "./actions"
 import PageHeader from "@/components/dashboard/PageHeader"
+import ClubLogo from "@/components/dashboard/ClubLogo"
 import type { Club } from "@/app/dashboard/club/actions"
 
 const LEVELS = [
@@ -44,6 +45,7 @@ export default function CompteClient({ club }: Props) {
     name:  club?.name  ?? "",
     city:  club?.city  ?? "",
     level: club?.level ?? "",
+    logo:  club?.logo  ?? "",
   })
   const [clubSaved, setClubSaved]   = useState(false)
   const [clubError, setClubError]   = useState<string | null>(null)
@@ -66,6 +68,7 @@ export default function CompteClient({ club }: Props) {
         name:  form.name,
         city:  form.city  || null,
         level: form.level || null,
+        logo:  form.logo  || null,
       })
       if (res.ok) setClubSaved(true)
       else setClubError(res.error)
@@ -99,6 +102,25 @@ export default function CompteClient({ club }: Props) {
               onChange={e => set("name", e.target.value)}
               required style={INPUT}
             />
+          </div>
+
+          <div>
+            <label style={LABEL}>Logo du club (URL)</label>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <ClubLogo src={form.logo || null} name={form.name || "?"} size={36} />
+              <input
+                value={form.logo}
+                onChange={e => set("logo", e.target.value)}
+                placeholder="https://..."
+                style={INPUT}
+              />
+            </div>
+            <p style={{
+              fontFamily: "var(--font-body), sans-serif", fontWeight: 300,
+              fontSize: 11, color: "rgba(255,255,255,0.25)", marginTop: 6,
+            }}>
+              Lien direct vers une image (hébergée ailleurs). Affiché dans les listes de matchs et les statistiques.
+            </p>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>

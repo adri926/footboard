@@ -177,7 +177,7 @@ export default function PreparationClient({ match, players, initialStarters, ini
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <span style={{ fontFamily: "var(--font-mono), monospace", fontSize: 8, letterSpacing: "0.06em", color: "rgba(122,154,130,0.4)" }}>
-                        {p.position}
+                        {p.position === "GK" ? "GB" : p.position}
                       </span>
                       {roleBadge(role)}
                     </div>

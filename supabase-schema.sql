@@ -91,3 +91,15 @@ create policy "owner trainings" on trainings        for all using (club_id in (s
 create policy "owner attendance" on training_attendance for all using (training_id in (select t.id from trainings t join clubs c on t.club_id = c.id where c.owner_id = current_setting('app.user_id', true)));
 create policy "owner matches"  on matches           for all using (club_id in (select id from clubs where owner_id = current_setting('app.user_id', true)));
 create policy "owner stats"    on match_stats       for all using (match_id in (select m.id from matches m join clubs c on m.club_id = c.id where c.owner_id = current_setting('app.user_id', true)));
+
+-- Paperboards tactiques (schémas du coach : pions + tracés, sécurité via filtre coach_id côté action)
+create table if not exists tactical_boards (
+  id          uuid primary key default gen_random_uuid(),
+  coach_id    text not null,        -- Clerk user ID
+  name        text not null,
+  formation   text,
+  pions       jsonb not null default '[]',
+  drawings    jsonb not null default '[]',
+  mode        text not null default 'preparation' check (mode in ('preparation','direct','analyse')),
+  created_at  timestamptz default now()
+);

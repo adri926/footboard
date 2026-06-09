@@ -11,6 +11,7 @@ export interface Club {
   name:       string
   city:       string | null
   level:      string | null
+  logo:       string | null
   created_at: string
 }
 
@@ -18,6 +19,7 @@ const ClubSchema = z.object({
   name:  z.string().min(1).max(100).trim(),
   city:  z.string().max(100).trim().nullable().optional(),
   level: z.string().max(100).trim().nullable().optional(),
+  logo:  z.string().max(2000).trim().nullable().optional(),
 })
 
 async function requireUserId() {

@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react"
 import { createMatch, updateMatch } from "@/app/dashboard/matchs/actions"
 import type { Match } from "@/app/dashboard/matchs/actions"
+import ClubLogo from "@/components/dashboard/ClubLogo"
 
 interface Props {
   match?:   Match
@@ -29,9 +30,7 @@ const LABEL: React.CSSProperties = {
 export default function MatchForm({ match, onClose }: Props) {
   const [pending, startTransition] = useTransition()
   const [error, setError]         = useState<string | null>(null)
-  const [withScore, setWithScore] = useState(
-    match?.goals_for !== null && match?.goals_for !== undefined
-  )
+  const [withScore, setWithScore] = useState(Boolean(match))
 
   const [form, setForm] = useState({
     opponent:     match?.opponent     ?? "",
@@ -41,6 +40,7 @@ export default function MatchForm({ match, onClose }: Props) {
     venue:        match?.venue        ?? "",
     goals_for:    match?.goals_for    ?? "",
     goals_against: match?.goals_against ?? "",
+    opponent_logo: match?.opponent_logo ?? "",
     notes:        match?.notes        ?? "",
   })
 
@@ -58,8 +58,9 @@ export default function MatchForm({ match, onClose }: Props) {
       home_away:     form.home_away,
       competition:   form.competition || null,
       venue:         form.venue || null,
-      goals_for:     withScore && form.goals_for !== "" ? Number(form.goals_for) : null,
-      goals_against: withScore && form.goals_against !== "" ? Number(form.goals_against) : null,
+      goals_for:     withScore ? Number(form.goals_for || 0) : null,
+      goals_against: withScore ? Number(form.goals_against || 0) : null,
+      opponent_logo: form.opponent_logo || null,
       notes:         form.notes || null,
     }
 
@@ -113,6 +114,20 @@ export default function MatchForm({ match, onClose }: Props) {
               required placeholder="FC Vincennes"
               style={INPUT}
             />
+          </div>
+
+          {/* Logo adversaire */}
+          <div>
+            <label style={LABEL}>Logo adversaire (URL, optionnel)</label>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <ClubLogo src={form.opponent_logo || null} name={form.opponent || "?"} size={32} />
+              <input
+                value={form.opponent_logo}
+                onChange={e => set("opponent_logo", e.target.value)}
+                placeholder="https://..."
+                style={INPUT}
+              />
+            </div>
           </div>
 
           {/* Date + Dom/Ext */}

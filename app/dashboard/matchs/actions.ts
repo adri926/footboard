@@ -15,6 +15,7 @@ export interface Match {
   venue:        string | null
   goals_for:    number | null
   goals_against: number | null
+  opponent_logo: string | null
   notes:        string | null
   created_at:   string
 }
@@ -24,6 +25,32 @@ export interface Lineup {
   substitutes: string[]
 }
 
+export interface MatchPlayerStat {
+  playerId:      string
+  goals:         number
+  assists:       number
+  yellowCards:   number
+  redCards:      number
+  minutesPlayed: number
+}
+
+export interface PlayerSeasonStats {
+  matchesPlayed: number
+  starts:        number
+  goals:         number
+  assists:       number
+  minutesPlayed: number
+}
+
+const MatchStatRowSchema = z.object({
+  playerId:      z.string().regex(/^[0-9a-f-]{36}$/),
+  goals:         z.coerce.number().int().min(0).max(20),
+  assists:       z.coerce.number().int().min(0).max(20),
+  yellowCards:   z.coerce.number().int().min(0).max(2),
+  redCards:      z.coerce.number().int().min(0).max(1),
+  minutesPlayed: z.coerce.number().int().min(0).max(120),
+})
+
 const MatchSchema = z.object({
   opponent:     z.string().min(1).max(100).trim(),
   date:         z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -32,6 +59,7 @@ const MatchSchema = z.object({
   venue:        z.string().max(200).nullable().optional(),
   goals_for:    z.coerce.number().int().min(0).max(30).nullable().optional(),
   goals_against: z.coerce.number().int().min(0).max(30).nullable().optional(),
+  opponent_logo: z.string().max(2000).trim().nullable().optional(),
   notes:        z.string().max(1000).nullable().optional(),
 })
 
@@ -142,6 +170,149 @@ export async function updateMatch(
   if (error) return { ok: false, error: error.message }
   revalidatePath("/dashboard/matchs")
   return { ok: true }
+}
+
+export async function getMatchStats(matchId: string): Promise<MatchPlayerStat[]> {
+  const userId = await requireUserId()
+  const match = await getMatchById(matchId)
+  if (!match) return []
+
+  const { data } = await supabase
+    .from("match_stats")
+    .select("player_id, goals, assists, yellow_cards, red_cards, minutes_played")
+    .eq("match_id", matchId)
+
+  if (!data) return []
+  return data.map(row => ({
+    playerId:      row.player_id,
+    goals:         row.goals ?? 0,
+    assists:       row.assists ?? 0,
+    yellowCards:   row.yellow_cards ?? 0,
+    redCards:      row.red_cards ?? 0,
+    minutesPlayed: row.minutes_played ?? 0,
+  }))
+}
+
+export async function saveMatchStats(
+  matchId: string,
+  rows: unknown[]
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const userId = await requireUserId()
+  if (!/^[0-9a-f-]{36}$/.test(matchId)) return { ok: false, error: "ID invalide." }
+
+  const match = await getMatchById(matchId)
+  if (!match) return { ok: false, error: "Match introuvable." }
+
+  const parsed = z.array(MatchStatRowSchema).safeParse(rows)
+  if (!parsed.success) return { ok: false, error: "Données invalides." }
+
+  await supabase.from("match_stats").delete().eq("match_id", matchId)
+
+  const toInsert = parsed.data
+    .filter(r => r.goals || r.assists || r.yellowCards || r.redCards || r.minutesPlayed)
+    .map(r => ({
+      match_id:       matchId,
+      player_id:      r.playerId,
+      goals:          r.goals,
+      assists:        r.assists,
+      yellow_cards:   r.yellowCards,
+      red_cards:      r.redCards,
+      minutes_played: r.minutesPlayed,
+    }))
+
+  if (toInsert.length > 0) {
+    const { error } = await supabase.from("match_stats").insert(toInsert)
+    if (error) return { ok: false, error: error.message }
+  }
+
+  revalidatePath(`/dashboard/matchs/${matchId}/bilan`)
+  revalidatePath("/dashboard/matchs")
+  revalidatePath("/dashboard/data")
+  revalidatePath("/dashboard/data/joueurs")
+  return { ok: true }
+}
+
+export async function getPlayerSeasonStats(): Promise<Record<string, PlayerSeasonStats>> {
+  const userId = await requireUserId()
+
+  const { data: matches } = await supabase
+    .from("matches")
+    .select("id")
+    .eq("owner_id", userId)
+  const matchIds = (matches ?? []).map(m => m.id)
+  if (matchIds.length === 0) return {}
+
+  const [{ data: lineups }, { data: stats }] = await Promise.all([
+    supabase.from("match_lineups").select("player_id, role").eq("owner_id", userId).in("match_id", matchIds),
+    supabase.from("match_stats").select("player_id, goals, assists, minutes_played").in("match_id", matchIds),
+  ])
+
+  const result: Record<string, PlayerSeasonStats> = {}
+  const get = (playerId: string) => {
+    if (!result[playerId]) {
+      result[playerId] = { matchesPlayed: 0, starts: 0, goals: 0, assists: 0, minutesPlayed: 0 }
+    }
+    return result[playerId]
+  }
+
+  for (const row of lineups ?? []) {
+    const entry = get(row.player_id)
+    entry.matchesPlayed += 1
+    if (row.role === "starter") entry.starts += 1
+  }
+
+  for (const row of stats ?? []) {
+    const entry = get(row.player_id)
+    entry.goals += row.goals ?? 0
+    entry.assists += row.assists ?? 0
+    entry.minutesPlayed += row.minutes_played ?? 0
+  }
+
+  return result
+}
+
+export interface PlayerMatchEntry {
+  match:         Match
+  role:          "starter" | "substitute"
+  goals:         number
+  assists:       number
+  yellowCards:   number
+  redCards:      number
+  minutesPlayed: number
+}
+
+export async function getPlayerMatchHistory(playerId: string): Promise<PlayerMatchEntry[]> {
+  const userId = await requireUserId()
+  if (!/^[0-9a-f-]{36}$/.test(playerId)) return []
+
+  const { data: lineupRows } = await supabase
+    .from("match_lineups")
+    .select("match_id, role")
+    .eq("owner_id", userId)
+    .eq("player_id", playerId)
+
+  if (!lineupRows || lineupRows.length === 0) return []
+  const matchIds = lineupRows.map(r => r.match_id)
+
+  const [{ data: matches }, { data: stats }] = await Promise.all([
+    supabase.from("matches").select("*").eq("owner_id", userId).in("id", matchIds).order("date", { ascending: false }),
+    supabase.from("match_stats").select("match_id, goals, assists, yellow_cards, red_cards, minutes_played").eq("player_id", playerId).in("match_id", matchIds),
+  ])
+  if (!matches) return []
+
+  return matches.map(match => {
+    const lineupRow = lineupRows.find(r => r.match_id === match.id)
+    const statRow = stats?.find(s => s.match_id === match.id)
+    return {
+      match,
+      role:          lineupRow?.role === "starter" ? "starter" : "substitute",
+      goals:         statRow?.goals ?? 0,
+      assists:       statRow?.assists ?? 0,
+      yellowCards:   statRow?.yellow_cards ?? 0,
+      redCards:      statRow?.red_cards ?? 0,
+      minutesPlayed: statRow?.minutes_played ?? 0,
+    }
+  })
 }
 
 export async function deleteMatch(

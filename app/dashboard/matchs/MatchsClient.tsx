@@ -4,10 +4,12 @@ import { useState, useTransition } from "react"
 import Link from "next/link"
 import MatchForm from "@/components/dashboard/MatchForm"
 import PageHeader from "@/components/dashboard/PageHeader"
+import ClubLogo from "@/components/dashboard/ClubLogo"
 import { deleteMatch } from "./actions"
 import { sendConvocations } from "./convocations"
 import type { Match } from "./actions"
 import type { ConvocablePlayer } from "./convocations"
+import type { Club } from "@/app/dashboard/club/actions"
 
 function parseDate(dateStr: string): Date | null {
   const m = dateStr.match(/(\d{4})-(\d{2})-(\d{2})/)
@@ -160,7 +162,7 @@ function ConvocationModal({
                           fontFamily: "var(--font-mono), monospace", fontSize: 9,
                           color: "rgba(255,255,255,0.25)", marginLeft: 6,
                         }}>
-                          {p.number ? `#${p.number} · ` : ""}{p.position}
+                          {p.number ? `#${p.number} · ` : ""}{p.position === "GK" ? "GB" : p.position}
                         </span>
                       </p>
                       {!hasEmail && (
@@ -219,13 +221,16 @@ function ConvocationModal({
   )
 }
 
-interface Props { matches: Match[]; players: ConvocablePlayer[] }
+interface Props { matches: Match[]; players: ConvocablePlayer[]; club: Club | null }
 
-export default function MatchsClient({ matches, players }: Props) {
+export default function MatchsClient({ matches, players, club }: Props) {
+  const clubName = club?.name ?? "Mon club"
+  const clubLogo = club?.logo ?? null
   const [showForm, setShowForm]         = useState(false)
   const [editing, setEditing]           = useState<Match | undefined>(undefined)
   const [convokingMatch, setConvoking]  = useState<Match | null>(null)
   const [deleting, startDelete]         = useTransition()
+  const [tab, setTab]                   = useState<"a-venir" | "passes">("a-venir")
 
   const _d       = new Date()
   const today    = `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,"0")}-${String(_d.getDate()).padStart(2,"0")}`
@@ -279,16 +284,44 @@ export default function MatchsClient({ matches, players }: Props) {
         </div>
       )}
 
+      {/* Onglets */}
+      {matches.length > 0 && (
+        <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
+          {([
+            { key: "a-venir", label: `À venir (${upcoming.length})` },
+            { key: "passes",  label: `Matchs passés (${played.length})` },
+          ] as const).map(t => (
+            <button key={t.key} onClick={() => setTab(t.key)} style={{
+              fontFamily: "var(--font-mono), monospace",
+              fontSize: 9, fontWeight: 700, letterSpacing: "0.1em",
+              padding: "9px 16px", borderRadius: 8, cursor: "pointer",
+              backgroundColor: tab === t.key ? "rgba(122,154,130,0.12)" : "transparent",
+              border: `1px solid ${tab === t.key ? "rgba(122,154,130,0.35)" : "rgba(122,154,130,0.12)"}`,
+              color: tab === t.key ? "#7A9A82" : "rgba(255,255,255,0.3)",
+              textTransform: "uppercase",
+            }}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* À venir */}
-      {upcoming.length > 0 && (
+      {tab === "a-venir" && (
         <div style={{ marginBottom: 36 }}>
-          <p style={{
-            fontFamily: "var(--font-mono), monospace",
-            fontSize: 9, fontWeight: 700, letterSpacing: "0.14em",
-            color: "#7A9A82", textTransform: "uppercase", marginBottom: 12,
-          }}>
-            À venir
-          </p>
+          {upcoming.length === 0 ? (
+            <div style={{
+              padding: "40px 32px", borderRadius: 12, textAlign: "center",
+              backgroundColor: "#1f1f19", border: "1px dashed rgba(122,154,130,0.15)",
+            }}>
+              <p style={{
+                fontFamily: "var(--font-body), sans-serif", fontWeight: 300, fontSize: 13,
+                color: "rgba(255,255,255,0.3)",
+              }}>
+                Aucun match à venir programmé.
+              </p>
+            </div>
+          ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {upcoming.map(m => (
               <div key={m.id} style={{
@@ -298,21 +331,28 @@ export default function MatchsClient({ matches, players }: Props) {
                 border: "1px solid rgba(122,154,130,0.18)",
                 gap: 12,
               }}>
-                <div style={{ flex: 1 }}>
-                  <p style={{
-                    fontFamily: "var(--font-body), sans-serif",
-                    fontWeight: 500, fontSize: 15, color: "rgba(255,255,255,0.85)",
-                  }}>
-                    vs {m.opponent}
-                  </p>
-                  <p style={{
-                    fontFamily: "var(--font-mono), monospace",
-                    fontSize: 9, letterSpacing: "0.06em",
-                    color: "rgba(255,255,255,0.3)", marginTop: 4,
-                  }}>
-                    {formatDate(m.date)} · {m.home_away === "home" ? "DOMICILE" : "EXTÉRIEUR"}
-                    {m.competition && ` · ${m.competition}`}
-                  </p>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1 }}>
+                  <ClubLogo src={clubLogo} name={clubName} size={30} />
+                  <span style={{ fontFamily: "var(--font-mono), monospace", fontSize: 10, color: "rgba(255,255,255,0.2)" }}>
+                    {m.home_away === "home" ? "vs" : "@"}
+                  </span>
+                  <ClubLogo src={m.opponent_logo} name={m.opponent} size={30} />
+                  <div>
+                    <p style={{
+                      fontFamily: "var(--font-body), sans-serif",
+                      fontWeight: 500, fontSize: 15, color: "rgba(255,255,255,0.85)",
+                    }}>
+                      {m.opponent}
+                    </p>
+                    <p style={{
+                      fontFamily: "var(--font-mono), monospace",
+                      fontSize: 9, letterSpacing: "0.06em",
+                      color: "rgba(255,255,255,0.3)", marginTop: 4,
+                    }}>
+                      {formatDate(m.date)} · {m.home_away === "home" ? "DOMICILE" : "EXTÉRIEUR"}
+                      {m.competition && ` · ${m.competition}`}
+                    </p>
+                  </div>
                 </div>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                   <button onClick={() => setConvoking(m)} style={{
@@ -356,19 +396,26 @@ export default function MatchsClient({ matches, players }: Props) {
               </div>
             ))}
           </div>
+          )}
         </div>
       )}
 
-      {/* Résultats */}
-      {played.length > 0 && (
+      {/* Matchs passés */}
+      {tab === "passes" && (
         <div>
-          <p style={{
-            fontFamily: "var(--font-mono), monospace",
-            fontSize: 9, fontWeight: 700, letterSpacing: "0.14em",
-            color: "rgba(122,154,130,0.5)", textTransform: "uppercase", marginBottom: 12,
-          }}>
-            Résultats
-          </p>
+          {played.length === 0 ? (
+            <div style={{
+              padding: "40px 32px", borderRadius: 12, textAlign: "center",
+              backgroundColor: "#1f1f19", border: "1px dashed rgba(122,154,130,0.15)",
+            }}>
+              <p style={{
+                fontFamily: "var(--font-body), sans-serif", fontWeight: 300, fontSize: 13,
+                color: "rgba(255,255,255,0.3)",
+              }}>
+                Aucun match passé pour le moment.
+              </p>
+            </div>
+          ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {played.map(m => {
               const hasScore = m.goals_for !== null && m.goals_against !== null
@@ -385,42 +432,49 @@ export default function MatchsClient({ matches, players }: Props) {
                   border: "1px solid rgba(122,154,130,0.08)",
                   gap: 12,
                 }}>
-                  <div style={{ flex: 1 }}>
-                    <p style={{
-                      fontFamily: "var(--font-body), sans-serif",
-                      fontWeight: 500, fontSize: 14, color: "rgba(255,255,255,0.75)",
-                    }}>
-                      vs {m.opponent}
-                    </p>
-                    <p style={{
-                      fontFamily: "var(--font-mono), monospace",
-                      fontSize: 9, letterSpacing: "0.06em",
-                      color: "rgba(255,255,255,0.25)", marginTop: 3,
-                    }}>
-                      {formatDate(m.date)} · {m.home_away === "home" ? "DOM" : "EXT"}
-                      {m.competition && ` · ${m.competition}`}
-                    </p>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
+                    <ClubLogo src={clubLogo} name={clubName} size={28} />
+                    {hasScore && (
+                      <span style={{
+                        fontFamily: "var(--font-display), system-ui, sans-serif",
+                        fontWeight: 900, fontSize: 26, lineHeight: 1,
+                        color: resultColor,
+                        minWidth: 64, textAlign: "center",
+                      }}>
+                        {m.goals_for} – {m.goals_against}
+                      </span>
+                    )}
+                    <ClubLogo src={m.opponent_logo} name={m.opponent} size={28} />
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{
+                        fontFamily: "var(--font-body), sans-serif",
+                        fontWeight: 500, fontSize: 14, color: "rgba(255,255,255,0.75)",
+                        whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                      }}>
+                        {m.home_away === "home" ? "vs" : "@"} {m.opponent}
+                      </p>
+                      <p style={{
+                        fontFamily: "var(--font-mono), monospace",
+                        fontSize: 9, letterSpacing: "0.06em",
+                        color: "rgba(255,255,255,0.25)", marginTop: 3,
+                      }}>
+                        {formatDate(m.date)} · {m.home_away === "home" ? "DOM" : "EXT"}
+                        {m.competition && ` · ${m.competition}`}
+                      </p>
+                    </div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     {hasScore ? (
-                      <>
-                        <span style={{
-                          fontFamily: "var(--font-display), system-ui, sans-serif",
-                          fontWeight: 900, fontSize: 22, color: "rgba(255,255,255,0.85)",
-                        }}>
-                          {m.goals_for} – {m.goals_against}
-                        </span>
-                        <span style={{
-                          fontFamily: "var(--font-mono), monospace",
-                          fontSize: 7, fontWeight: 700, letterSpacing: "0.1em",
-                          color: resultColor,
-                          backgroundColor: `${resultColor}18`,
-                          border: `1px solid ${resultColor}40`,
-                          padding: "3px 10px", borderRadius: 100,
-                        }}>
-                          {resultLabel}
-                        </span>
-                      </>
+                      <span style={{
+                        fontFamily: "var(--font-mono), monospace",
+                        fontSize: 7, fontWeight: 700, letterSpacing: "0.1em",
+                        color: resultColor,
+                        backgroundColor: `${resultColor}18`,
+                        border: `1px solid ${resultColor}40`,
+                        padding: "3px 10px", borderRadius: 100,
+                      }}>
+                        {resultLabel}
+                      </span>
                     ) : (
                       <button onClick={() => openEdit(m)} style={{
                         fontFamily: "var(--font-mono), monospace",
@@ -433,6 +487,17 @@ export default function MatchsClient({ matches, players }: Props) {
                         SAISIR SCORE
                       </button>
                     )}
+                    <Link href={`/dashboard/matchs/${m.id}/bilan`} style={{
+                      fontFamily: "var(--font-mono), monospace",
+                      fontSize: 8, letterSpacing: "0.06em",
+                      padding: "5px 10px", borderRadius: 6,
+                      backgroundColor: "transparent",
+                      border: "1px solid rgba(122,154,130,0.2)",
+                      color: "rgba(122,154,130,0.5)",
+                      textDecoration: "none",
+                    }}>
+                      BILAN
+                    </Link>
                     <button onClick={() => openEdit(m)} style={{
                       fontFamily: "var(--font-mono), monospace", fontSize: 8,
                       padding: "5px 10px", borderRadius: 6, cursor: "pointer",
@@ -452,6 +517,7 @@ export default function MatchsClient({ matches, players }: Props) {
               )
             })}
           </div>
+          )}
         </div>
       )}
 

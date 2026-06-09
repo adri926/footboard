@@ -5,7 +5,8 @@ import StatusBadge from "@/components/sante/StatusBadge"
 import InjuryHistory from "@/components/sante/InjuryHistory"
 import TrainingLoadChart from "@/components/sante/TrainingLoadChart"
 import { getPlayers } from "@/app/dashboard/effectif/actions"
-import { toRosterPlayer, buildMedicalRecords, getMedicalRecord } from "@/lib/mock/medical"
+import { toRosterPlayer } from "@/lib/roster"
+import { buildMedicalRecords, getMedicalRecord } from "@/lib/medical"
 
 interface Props {
   params: Promise<{ joueurId: string }>
@@ -35,7 +36,7 @@ export default async function FicheMedicalePage({ params }: Props) {
   const players = await getPlayers()
   const roster = players.map(toRosterPlayer)
   const player = roster.find(p => p.id === joueurId)
-  const record = getMedicalRecord(buildMedicalRecords(roster), joueurId)
+  const record = getMedicalRecord(buildMedicalRecords(players), joueurId)
   if (!player || !record) notFound()
 
   return (
@@ -49,7 +50,7 @@ export default async function FicheMedicalePage({ params }: Props) {
       </Link>
 
       <PageHeader
-        label={`${player.position} · N°${player.number}`}
+        label={`${player.position === "GK" ? "GB" : player.position} · N°${player.number}`}
         title={player.name}
         action={<StatusBadge status={record.status} />}
       />
@@ -83,16 +84,25 @@ export default async function FicheMedicalePage({ params }: Props) {
 
       {/* 3. Charge d'entraînement */}
       <Section title="Charge d'entraînement — 8 dernières semaines">
-        <TrainingLoadChart loads={record.loads} />
+        {record.loads.length > 0 ? (
+          <TrainingLoadChart loads={record.loads} />
+        ) : (
+          <p style={{
+            fontFamily: "var(--font-body), sans-serif", fontWeight: 300,
+            fontSize: 13, color: "rgba(255,255,255,0.3)",
+          }}>
+            Aucune charge d'entraînement enregistrée pour le moment.
+          </p>
+        )}
       </Section>
 
       {/* 4. Notes médicales */}
       <Section title="Notes médicales">
         <p style={{
           fontFamily: "var(--font-body), sans-serif", fontWeight: 300,
-          fontSize: 13, color: "rgba(255,255,255,0.6)", lineHeight: 1.6,
+          fontSize: 13, color: record.notes ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.3)", lineHeight: 1.6,
         }}>
-          {record.notes}
+          {record.notes || "Aucune note enregistrée pour le moment."}
         </p>
       </Section>
     </div>

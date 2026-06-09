@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import StatusBadge from "@/components/sante/StatusBadge"
-import type { RosterPlayer } from "@/lib/mock/medical"
+import type { RosterPlayer } from "@/lib/roster"
 import type { MedicalRecord, PlayerMedicalStatus } from "@/types/medical"
 
 const FILTERS: { value: PlayerMedicalStatus | "tous"; label: string }[] = [
@@ -11,7 +11,6 @@ const FILTERS: { value: PlayerMedicalStatus | "tous"; label: string }[] = [
   { value: "disponible", label: "Disponibles" },
   { value: "incertain",  label: "Incertains" },
   { value: "blesse",     label: "Blessés" },
-  { value: "reprise",    label: "En reprise" },
 ]
 
 interface Row {
@@ -73,7 +72,7 @@ export default function PlayerStatusTable({ rows }: Props) {
                 fontFamily: "var(--font-mono), monospace", fontSize: 9,
                 letterSpacing: "0.06em", color: "rgba(255,255,255,0.3)", marginTop: 2,
               }}>
-                {player.position}
+                {player.position === "GK" ? "GB" : player.position}
                 {record.returnDate && ` · RETOUR ESTIMÉ ${new Date(record.returnDate).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }).toUpperCase()}`}
               </p>
             </div>

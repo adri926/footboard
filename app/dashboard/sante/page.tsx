@@ -1,26 +1,20 @@
 import Link from "next/link"
 import PageHeader from "@/components/dashboard/PageHeader"
 import PlayerStatusTable from "@/components/sante/PlayerStatusTable"
-import MedicalAlert from "@/components/sante/MedicalAlert"
 import { getPlayers } from "@/app/dashboard/effectif/actions"
-import { toRosterPlayer, buildMedicalRecords, MOCK_NEXT_MATCH } from "@/lib/mock/medical"
+import { toRosterPlayer } from "@/lib/roster"
+import { buildMedicalRecords } from "@/lib/medical"
 
-function daysUntil(iso: string): number {
-  const ms = new Date(iso).getTime() - new Date("2026-06-07").getTime()
-  return Math.ceil(ms / 86_400_000)
-}
-
-const COUNTER_DEFS: { status: "disponible" | "incertain" | "blesse" | "reprise"; label: string; color: string }[] = [
+const COUNTER_DEFS: { status: "disponible" | "incertain" | "blesse"; label: string; color: string }[] = [
   { status: "disponible", label: "Disponibles", color: "#7A9A82" },
   { status: "incertain",  label: "Incertains",  color: "#d4a847" },
   { status: "blesse",     label: "Blessés",     color: "#e07070" },
-  { status: "reprise",    label: "En reprise",  color: "#6f9bb8" },
 ]
 
 export default async function SantePage() {
   const players = await getPlayers()
   const roster = players.map(toRosterPlayer)
-  const records = buildMedicalRecords(roster)
+  const records = buildMedicalRecords(players)
   const rows = roster.map(player => ({
     player,
     record: records.find(r => r.playerId === player.id)!,
@@ -31,16 +25,12 @@ export default async function SantePage() {
     count: rows.filter(r => r.record.status === def.status).length,
   }))
 
-  const days = daysUntil(MOCK_NEXT_MATCH.date)
-  const unavailable = rows.filter(r => r.record.status === "blesse" || r.record.status === "incertain").length
-  const showAlert = days <= 7 && days >= 0 && unavailable > 0
-
   return (
     <div style={{ padding: "32px 36px", maxWidth: 960 }}>
       <PageHeader
         label="Mon Club"
         title="Suivi médical"
-        subtitle={`${rows.length} joueur${rows.length !== 1 ? "s" : ""} suivis — vue d'ensemble de l'état de forme de l'effectif`}
+        subtitle={`${rows.length} joueur${rows.length !== 1 ? "s" : ""} dans l'effectif`}
       />
 
       {rows.length === 0 ? (
@@ -63,17 +53,18 @@ export default async function SantePage() {
         </div>
       ) : (
         <>
-          {showAlert && (
-            <MedicalAlert
-              matchDate={MOCK_NEXT_MATCH.date}
-              opponent={MOCK_NEXT_MATCH.opponent}
-              unavailableCount={unavailable}
-              daysUntil={days}
-            />
-          )}
+          <p style={{
+            fontFamily: "var(--font-body), sans-serif", fontWeight: 300,
+            fontSize: 12, color: "rgba(255,255,255,0.3)", lineHeight: 1.6, marginBottom: 20,
+          }}>
+            Statuts et notes issus de la fiche de chaque joueur — modifiables à tout moment depuis{" "}
+            <Link href="/dashboard/effectif" style={{ color: "rgba(122,154,130,0.6)" }}>l'effectif</Link>.
+            Historique des blessures et charges d'entraînement s'afficheront ici dès que ce suivi
+            détaillé sera disponible.
+          </p>
 
           <div style={{
-            display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 28,
+            display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 28,
           }}>
             {counts.map(c => (
               <div key={c.status} style={{

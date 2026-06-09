@@ -1,0 +1,374 @@
+"use client"
+
+import { useCallback, useMemo, useRef, useState } from "react"
+import Terrain from "./Terrain"
+import PionPlayer from "./PionPlayer"
+import BallToken from "@/components/pitch/BallToken"
+import FormationPanel from "./FormationPanel"
+import DrawingCanvas, { type Tool } from "./DrawingCanvas"
+import Toolbar from "./Toolbar"
+import { FORMATIONS, mirrorY } from "@/lib/formations"
+import { saveTacticalBoard } from "@/app/tactique/animations/actions"
+import type { Drawing, Pion, TacticalMode, TacticalTeam } from "@/types/tactical"
+
+const DEFAULT_FORMATION_A = "4-3-3"
+const DEFAULT_FORMATION_B = "4-4-2"
+const DEFAULT_COLOR = "#7A9A82"
+const DEFAULT_THICKNESS = 4
+
+// Ordre de priorité d'attribution (les postes les plus "typés" choisissent en premier)
+// et numéros traditionnels candidats par poste — ex. 9 = buteur, 7 = ailier droit, 10 = meneur
+const POSITION_PRIORITY: Record<string, number> = {
+  GB: 0,
+  BU: 1, SO: 1,
+  MOC: 2,
+  AD: 3, MD: 3,
+  AG: 4, MG: 4,
+  MDC: 5,
+  DD: 6, PD: 6,
+  DG: 7, PG: 7,
+  DC: 8,
+  MC: 9,
+}
+
+const NUMBER_CANDIDATES: Record<string, number[]> = {
+  GB:  [1],
+  BU:  [9, 10],
+  SO:  [10, 9],
+  MOC: [10, 8],
+  AD:  [7, 11],
+  MD:  [7, 8],
+  AG:  [11, 7],
+  MG:  [11, 8],
+  MDC: [6, 4, 5],
+  DD:  [2],
+  PD:  [2],
+  DG:  [3],
+  PG:  [3],
+  DC:  [5, 4, 6],
+  MC:  [8, 6, 4],
+}
+
+// Attribue à chaque joueur un numéro cohérent avec son poste (1 = GB, 9 = buteur, 7 = ailier droit…),
+// en traitant d'abord les postes les plus typés pour limiter les collisions sur les formations à 3 milieux
+function assignNumbers(players: { name: string }[]): number[] {
+  const order = players
+    .map((_, i) => i)
+    .sort((a, b) => (POSITION_PRIORITY[players[a].name] ?? 9) - (POSITION_PRIORITY[players[b].name] ?? 9))
+  const used = new Set<number>()
+  const numbers = new Array<number>(players.length)
+  for (const i of order) {
+    const candidates = NUMBER_CANDIDATES[players[i].name] ?? []
+    const pick = candidates.find(n => !used.has(n))
+      ?? Array.from({ length: 11 }, (_, n) => n + 1).find(n => !used.has(n))
+      ?? 1
+    used.add(pick)
+    numbers[i] = pick
+  }
+  return numbers
+}
+
+// Place les 11 pions d'une équipe aux positions théoriques d'une formation —
+// l'équipe B fait face à l'équipe A (positions retournées verticalement)
+function buildPions(formationId: string, team: TacticalTeam): Pion[] {
+  const formation = FORMATIONS.find(f => f.id === formationId) ?? FORMATIONS[0]
+  const positions = team === "B" ? mirrorY(formation.players) : formation.players
+  const numbers = assignNumbers(formation.players)
+  return positions.map((p, i) => ({
+    id: `${team}${i + 1}`,
+    team,
+    number: numbers[i],
+    x: p.x, y: p.y,
+    label: String(numbers[i]),
+  }))
+}
+
+interface DrawHistory {
+  past: Drawing[][]
+  present: Drawing[]
+  future: Drawing[][]
+}
+
+const EMPTY_HISTORY: DrawHistory = { past: [], present: [], future: [] }
+
+const MODES: { id: TacticalMode; label: string }[] = [
+  { id: "preparation", label: "Préparation" },
+  { id: "direct",      label: "Direct" },
+  { id: "analyse",     label: "Analyse" },
+]
+
+export default function Paperboard() {
+  const [formationA, setFormationA] = useState(DEFAULT_FORMATION_A)
+  const [formationB, setFormationB] = useState(DEFAULT_FORMATION_B)
+  const [editingTeam, setEditingTeam] = useState<TacticalTeam>("A")
+  const [pions, setPions] = useState<Pion[]>(() => [
+    ...buildPions(DEFAULT_FORMATION_A, "A"),
+    ...buildPions(DEFAULT_FORMATION_B, "B"),
+  ])
+  const [ball, setBall] = useState({ x: 50, y: 50 })
+  const [mode, setMode] = useState<TacticalMode>("preparation")
+
+  // Outils de dessin
+  const [tool, setTool] = useState<Tool>("curseur")
+  const [color, setColor] = useState(DEFAULT_COLOR)
+  const [thickness, setThickness] = useState(DEFAULT_THICKNESS)
+  const [drawState, setDrawState] = useState<DrawHistory>(EMPTY_HISTORY)
+
+  // Sauvegarde
+  const [boardName, setBoardName] = useState("")
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "ok" | "error">("idle")
+  const [saveError, setSaveError] = useState("")
+
+  const containerRef = useRef<HTMLDivElement>(null)
+  const drawings = drawState.present
+
+  const changeFormation = useCallback((team: TacticalTeam, formationId: string) => {
+    if (team === "A") setFormationA(formationId)
+    else setFormationB(formationId)
+    const replacement = buildPions(formationId, team)
+    setPions(prev => [...prev.filter(p => p.team !== team), ...replacement])
+  }, [])
+
+  const updatePionPosition = useCallback((id: string, x: number, y: number) => {
+    setPions(prev => prev.map(p => p.id === id ? { ...p, x, y } : p))
+  }, [])
+
+  const updateBallPosition = useCallback((x: number, y: number) => {
+    setBall({ x, y })
+  }, [])
+
+  const resetTerrain = useCallback(() => {
+    setPions([...buildPions(formationA, "A"), ...buildPions(formationB, "B")])
+    setBall({ x: 50, y: 50 })
+  }, [formationA, formationB])
+
+  // ── Historique des tracés (undo/redo) ──
+  const addDrawing = useCallback((d: Drawing) => {
+    setDrawState(s => ({ past: [...s.past, s.present], present: [...s.present, d], future: [] }))
+  }, [])
+
+  const eraseDrawing = useCallback((target: Drawing) => {
+    setDrawState(s => ({ past: [...s.past, s.present], present: s.present.filter(d => d !== target), future: [] }))
+  }, [])
+
+  const undo = useCallback(() => {
+    setDrawState(s => {
+      if (s.past.length === 0) return s
+      const previous = s.past[s.past.length - 1]
+      return { past: s.past.slice(0, -1), present: previous, future: [s.present, ...s.future] }
+    })
+  }, [])
+
+  const redo = useCallback(() => {
+    setDrawState(s => {
+      if (s.future.length === 0) return s
+      const [next, ...rest] = s.future
+      return { past: [...s.past, s.present], present: next, future: rest }
+    })
+  }, [])
+
+  const clearDrawings = useCallback(() => {
+    setDrawState(s => s.present.length === 0 ? s : { past: [...s.past, s.present], present: [], future: [] })
+  }, [])
+
+  // ── Sauvegarde Supabase ──
+  const handleSave = useCallback(async () => {
+    if (!boardName.trim()) {
+      setSaveStatus("error")
+      setSaveError("Donne un nom au paperboard.")
+      return
+    }
+    setSaveStatus("saving")
+    const result = await saveTacticalBoard({
+      name: boardName.trim(),
+      formation: `${formationA} / ${formationB}`,
+      pions,
+      drawings,
+      mode,
+    })
+    if (result.ok) {
+      setSaveStatus("ok")
+    } else {
+      setSaveStatus("error")
+      setSaveError(result.error)
+    }
+  }, [boardName, formationA, formationB, pions, drawings, mode])
+
+  const summary = useMemo(() => `${formationA} contre ${formationB}`, [formationA, formationB])
+
+  return (
+    <div className="flex flex-col md:flex-row h-screen overflow-hidden" style={{ background: "#181612" }}>
+      {/* ── Terrain ── */}
+      <main className="flex-1 flex items-center justify-center p-3 md:p-6 overflow-hidden">
+        <div className="flex flex-col items-center gap-3">
+          {/* Barre d'outils en flux, au-dessus du cadre — ne couvre jamais la pelouse */}
+          <Toolbar
+            tool={tool} onToolChange={setTool}
+            color={color} onColorChange={setColor}
+            thickness={thickness} onThicknessChange={setThickness}
+            canUndo={drawState.past.length > 0}
+            canRedo={drawState.future.length > 0}
+            onUndo={undo} onRedo={redo}
+            onClear={clearDrawings}
+          />
+
+          <div
+            ref={containerRef}
+            className="relative rounded-2xl overflow-hidden"
+            style={{
+              height: "min(calc(100vh - 8.5rem), calc((100vw - 18rem) * 1.544))",
+              aspectRatio: "680 / 1050",
+              boxShadow: "0 0 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.08)",
+              touchAction: "none",
+            }}
+          >
+            <Terrain />
+            {pions.map(pion => (
+              <PionPlayer
+                key={pion.id}
+                id={pion.id} label={pion.label}
+                x={pion.x} y={pion.y} team={pion.team}
+                containerRef={containerRef}
+                onPositionUpdate={updatePionPosition}
+              />
+            ))}
+            <BallToken
+              x={ball.x} y={ball.y}
+              draggable={true}
+              containerRef={containerRef}
+              onPositionUpdate={updateBallPosition}
+            />
+            <DrawingCanvas
+              containerRef={containerRef}
+              drawings={drawings}
+              tool={tool}
+              color={color}
+              thickness={thickness}
+              onAdd={addDrawing}
+              onErase={eraseDrawing}
+            />
+          </div>
+        </div>
+      </main>
+
+      {/* ── Panneau latéral ── */}
+      <aside
+        className="md:w-72 md:h-full shrink-0 flex flex-col gap-4 px-5 py-5 border-t md:border-t-0 md:border-l overflow-y-auto"
+        style={{ backgroundColor: "#1a1a18", borderColor: "rgba(122,154,130,0.15)" }}
+      >
+        <div>
+          <a href="/tactique"
+            className="transition mb-2 inline-block"
+            style={{ fontFamily: "var(--font-mono), monospace", fontSize: 10, letterSpacing: "0.06em", color: "rgba(122,154,130,0.45)" }}>
+            ← TACTIQUE
+          </a>
+          <h1 style={{
+            fontFamily: "var(--font-display), system-ui, sans-serif",
+            fontWeight: 900, fontSize: 24, letterSpacing: "0.04em",
+            color: "rgba(255,255,255,0.92)", lineHeight: 1,
+          }}>PAPERBOARD</h1>
+          <p style={{ fontFamily: "var(--font-mono), monospace", fontSize: 9, letterSpacing: "0.08em", color: "rgba(122,154,130,0.5)", marginTop: 4 }}>
+            PLACE · DESSINE · EXPLIQUE
+          </p>
+        </div>
+
+        {/* Sélecteur de mode */}
+        <div>
+          <p className="text-[10px] uppercase tracking-widest mb-1.5" style={{ fontFamily: "var(--font-mono), monospace", color: "rgba(255,255,255,0.3)" }}>
+            Mode
+          </p>
+          <div className="grid grid-cols-3 gap-1.5">
+            {MODES.map(m => {
+              const active = mode === m.id
+              return (
+                <button key={m.id} onClick={() => setMode(m.id)}
+                  className="py-1.5 rounded-lg text-[11px] font-bold transition"
+                  style={{
+                    backgroundColor: active ? "rgba(122,154,130,0.22)" : "rgba(255,255,255,0.04)",
+                    border: `1px solid ${active ? "rgba(122,154,130,0.5)" : "rgba(255,255,255,0.08)"}`,
+                    color: active ? "#7A9A82" : "rgba(255,255,255,0.4)",
+                    fontFamily: "var(--font-mono), monospace",
+                  }}>
+                  {m.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        <div style={{ height: 1, backgroundColor: "rgba(122,154,130,0.12)" }} />
+
+        {mode === "preparation" ? (
+          <>
+            <FormationPanel
+              team={editingTeam}
+              onTeamChange={setEditingTeam}
+              formation={editingTeam === "A" ? formationA : formationB}
+              onFormationChange={id => changeFormation(editingTeam, id)}
+            />
+            <button
+              onClick={resetTerrain}
+              className="text-xs py-2 rounded-lg transition text-gray-500 hover:text-gray-300"
+              style={{ border: "1px solid rgba(255,255,255,0.08)" }}>
+              Réinitialiser le terrain
+            </button>
+          </>
+        ) : (
+          <div className="text-xs leading-relaxed" style={{ fontFamily: "var(--font-mono), monospace", color: "rgba(255,255,255,0.45)" }}>
+            <p>Formation en place :</p>
+            <p style={{ color: "#7A9A82", marginTop: 2 }}>{summary}</p>
+            <p style={{ marginTop: 8 }}>
+              {mode === "direct"
+                ? "Mode direct : annote en live pendant le match."
+                : "Mode analyse : revois et commente la séquence."}
+            </p>
+          </div>
+        )}
+
+        <div style={{ height: 1, backgroundColor: "rgba(122,154,130,0.12)" }} />
+
+        {/* Sauvegarde */}
+        <div className="flex flex-col gap-2">
+          <p className="text-[10px] uppercase tracking-widest" style={{ fontFamily: "var(--font-mono), monospace", color: "rgba(255,255,255,0.3)" }}>
+            Sauvegarder
+          </p>
+          <input
+            value={boardName}
+            onChange={e => { setBoardName(e.target.value); setSaveStatus("idle") }}
+            placeholder="Nom du paperboard…"
+            className="w-full text-xs rounded-lg px-2.5 py-2 focus:outline-none"
+            style={{
+              fontFamily: "var(--font-mono), monospace",
+              color: "rgba(255,255,255,0.8)",
+              backgroundColor: "rgba(122,154,130,0.06)",
+              border: "1px solid rgba(122,154,130,0.18)",
+            }}
+          />
+          <button
+            onClick={handleSave}
+            disabled={saveStatus === "saving"}
+            className="text-xs font-bold py-2 rounded-lg transition"
+            style={{
+              backgroundColor: "rgba(122,154,130,0.18)",
+              border: "1px solid rgba(122,154,130,0.4)",
+              color: "#7A9A82",
+              cursor: saveStatus === "saving" ? "default" : "pointer",
+              opacity: saveStatus === "saving" ? 0.6 : 1,
+            }}>
+            {saveStatus === "saving" ? "Enregistrement…" : "Enregistrer le paperboard"}
+          </button>
+          {saveStatus === "ok" && (
+            <p className="text-[11px]" style={{ color: "#7A9A82", fontFamily: "var(--font-mono), monospace" }}>
+              Paperboard enregistré.
+            </p>
+          )}
+          {saveStatus === "error" && (
+            <p className="text-[11px]" style={{ color: "#e07050", fontFamily: "var(--font-mono), monospace" }}>
+              {saveError}
+            </p>
+          )}
+        </div>
+      </aside>
+    </div>
+  )
+}

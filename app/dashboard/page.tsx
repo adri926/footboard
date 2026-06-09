@@ -245,7 +245,7 @@ export default async function DashboardPage() {
                       fontFamily: "var(--font-mono), monospace", fontSize: 9,
                       letterSpacing: "0.06em", color: "rgba(255,255,255,0.25)", marginLeft: 6,
                     }}>
-                      {p.number ? `#${p.number} · ` : ""}{p.position}
+                      {p.number ? `#${p.number} · ` : ""}{p.position === "GK" ? "GB" : p.position}
                     </span>
                   </p>
                   {p.injury_note && (

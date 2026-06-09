@@ -63,7 +63,7 @@ export default async function JoueursPage() {
                   fontSize: 7, letterSpacing: "0.1em",
                   color: "rgba(122,154,130,0.5)", marginTop: 2,
                 }}>
-                  {p.position}
+                  {p.position === "GK" ? "GB" : p.position}
                 </p>
               </div>
 

@@ -2,7 +2,9 @@
 // directement vers de futures tables Supabase (medical_records,
 // injuries, training_loads).
 
-export type PlayerMedicalStatus = "disponible" | "incertain" | "blesse" | "reprise"
+// Reflète directement le statut réel du joueur (table `players`,
+// modifiable depuis l'effectif) — disponible/blessé/incertain.
+export type PlayerMedicalStatus = "disponible" | "incertain" | "blesse"
 
 export interface Injury {
   id: string
