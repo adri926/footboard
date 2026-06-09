@@ -29,7 +29,7 @@ export default async function StatsJoueursPage() {
       {roster.length === 0 ? (
         <div style={{
           padding: "48px 32px", borderRadius: 12, textAlign: "center",
-          backgroundColor: "#1f1f19", border: "1px dashed rgba(122,154,130,0.2)",
+          backgroundColor: "var(--bg-card)", border: "1px dashed rgba(122,154,130,0.2)",
         }}>
           <p style={{
             fontFamily: "var(--font-body), sans-serif", fontWeight: 400,
@@ -47,7 +47,7 @@ export default async function StatsJoueursPage() {
       ) : (
         <div style={{
           padding: "20px 22px", borderRadius: 12,
-          backgroundColor: "#1a1a15",
+          backgroundColor: "var(--bg-card)",
           border: "1px solid rgba(122,154,130,0.08)",
         }}>
           <p style={{

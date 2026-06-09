@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Comparaison contraste — Footboard</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #111; font-family: system-ui, sans-serif; padding: 24px; color: white; }
+  h1 { font-size: 13px; letter-spacing: .1em; color: rgba(255,255,255,.4); margin-bottom: 24px; text-transform: uppercase; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+
+  /* ── COLONNE ACTUEL ── */
+  .card {
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,.08);
+  }
+  .card-label {
+    font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+    color: rgba(255,255,255,.35);
+  }
+  .card-body { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+
+  /* Actuel */
+  .col-current { background: #1f1f19; }
+  .col-current .card-label { background: #181812; }
+  .col-current .nav { background: rgba(24,24,18,.94); border-bottom: 1px solid rgba(122,154,130,.12); padding: 10px 14px; display: flex; align-items: center; gap: 10px; border-radius: 8px; }
+  .col-current .nav-link { font-size: 11px; font-weight: 700; letter-spacing: .06em; color: rgba(255,255,255,.38); }
+  .col-current .nav-link.active { color: #7A9A82; background: rgba(122,154,130,.15); padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(122,154,130,.30); }
+  .col-current .stat-card { background: #252520; border: 1px solid rgba(122,154,130,.10); border-radius: 10px; padding: 12px; }
+  .col-current .stat-label { font-size: 10px; color: rgba(255,255,255,.38); letter-spacing: .06em; text-transform: uppercase; margin-bottom: 4px; }
+  .col-current .stat-value { font-size: 22px; font-weight: 700; color: rgba(255,255,255,.92); }
+  .col-current .stat-sub { font-size: 10px; color: rgba(255,255,255,.18); margin-top: 2px; }
+  .col-current .btn { background: transparent; border: 1px solid rgba(122,154,130,.30); color: #7A9A82; font-size: 10px; font-weight: 700; letter-spacing: .06em; padding: 7px 14px; border-radius: 8px; cursor: pointer; }
+  .col-current .input { background: #2a2a23; border: 1px solid rgba(122,154,130,.15); color: rgba(255,255,255,.92); font-size: 11px; padding: 8px 10px; border-radius: 8px; }
+  .col-current .tag { font-size: 9px; background: rgba(122,154,130,.08); border: 1px solid rgba(122,154,130,.15); color: rgba(122,154,130,.5); padding: 2px 6px; border-radius: 100px; letter-spacing: .06em; }
+  .col-current .divider { height: 1px; background: rgba(122,154,130,.08); }
+
+  /* Option 1 : boost permanent */
+  .col-boost { background: #1f1f19; }
+  .col-boost .card-label { background: #181812; }
+  .col-boost .nav { background: rgba(24,24,18,.97); border-bottom: 1px solid rgba(122,154,130,.25); padding: 10px 14px; display: flex; align-items: center; gap: 10px; border-radius: 8px; }
+  .col-boost .nav-link { font-size: 11px; font-weight: 700; letter-spacing: .06em; color: rgba(255,255,255,.65); }
+  .col-boost .nav-link.active { color: #8fb89a; background: rgba(122,154,130,.25); padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(122,154,130,.50); }
+  .col-boost .stat-card { background: #282823; border: 1px solid rgba(122,154,130,.22); border-radius: 10px; padding: 12px; }
+  .col-boost .stat-label { font-size: 10px; color: rgba(255,255,255,.60); letter-spacing: .06em; text-transform: uppercase; margin-bottom: 4px; }
+  .col-boost .stat-value { font-size: 22px; font-weight: 700; color: #fff; }
+  .col-boost .stat-sub { font-size: 10px; color: rgba(255,255,255,.38); margin-top: 2px; }
+  .col-boost .btn { background: transparent; border: 1px solid rgba(122,154,130,.55); color: #8fb89a; font-size: 10px; font-weight: 700; letter-spacing: .06em; padding: 7px 14px; border-radius: 8px; cursor: pointer; }
+  .col-boost .input { background: #2a2a23; border: 1px solid rgba(122,154,130,.35); color: #fff; font-size: 11px; padding: 8px 10px; border-radius: 8px; }
+  .col-boost .tag { font-size: 9px; background: rgba(122,154,130,.15); border: 1px solid rgba(122,154,130,.35); color: rgba(122,154,130,.85); padding: 2px 6px; border-radius: 100px; letter-spacing: .06em; }
+  .col-boost .divider { height: 1px; background: rgba(122,154,130,.18); }
+
+  /* Option 2 : toggle — état DEFAULT */
+  .col-toggle-off { background: #1f1f19; }
+  .col-toggle-off .card-label { background: #181812; }
+  .col-toggle-off .nav { background: rgba(24,24,18,.94); border-bottom: 1px solid rgba(122,154,130,.12); padding: 10px 14px; display: flex; align-items: center; gap: 10px; border-radius: 8px; }
+  .col-toggle-off .nav-link { font-size: 11px; font-weight: 700; letter-spacing: .06em; color: rgba(255,255,255,.38); }
+  .col-toggle-off .nav-link.active { color: #7A9A82; background: rgba(122,154,130,.15); padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(122,154,130,.30); }
+  .col-toggle-off .stat-card { background: #252520; border: 1px solid rgba(122,154,130,.10); border-radius: 10px; padding: 12px; }
+  .col-toggle-off .stat-label { font-size: 10px; color: rgba(255,255,255,.38); letter-spacing: .06em; text-transform: uppercase; margin-bottom: 4px; }
+  .col-toggle-off .stat-value { font-size: 22px; font-weight: 700; color: rgba(255,255,255,.92); }
+  .col-toggle-off .stat-sub { font-size: 10px; color: rgba(255,255,255,.18); margin-top: 2px; }
+  .col-toggle-off .btn-toggle { background: rgba(122,154,130,.08); border: 1px solid rgba(122,154,130,.20); color: rgba(255,255,255,.38); font-size: 10px; letter-spacing: .06em; padding: 6px 12px; border-radius: 100px; cursor: pointer; display: flex; align-items: center; gap: 6px; width: fit-content; }
+  .col-toggle-off .dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.2); }
+  .col-toggle-off .divider { height: 1px; background: rgba(122,154,130,.08); }
+
+  /* Option 2 : toggle — état ACTIVÉ */
+  .col-toggle-on { background: #222219; }
+  .col-toggle-on .card-label { background: #181812; }
+  .col-toggle-on .nav { background: rgba(24,24,18,.97); border-bottom: 1px solid rgba(122,154,130,.28); padding: 10px 14px; display: flex; align-items: center; gap: 10px; border-radius: 8px; }
+  .col-toggle-on .nav-link { font-size: 11px; font-weight: 700; letter-spacing: .06em; color: rgba(255,255,255,.68); }
+  .col-toggle-on .nav-link.active { color: #9dc9a6; background: rgba(122,154,130,.28); padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(122,154,130,.55); }
+  .col-toggle-on .stat-card { background: #2a2a22; border: 1px solid rgba(122,154,130,.25); border-radius: 10px; padding: 12px; }
+  .col-toggle-on .stat-label { font-size: 10px; color: rgba(255,255,255,.62); letter-spacing: .06em; text-transform: uppercase; margin-bottom: 4px; }
+  .col-toggle-on .stat-value { font-size: 22px; font-weight: 700; color: #fff; }
+  .col-toggle-on .stat-sub { font-size: 10px; color: rgba(255,255,255,.40); margin-top: 2px; }
+  .col-toggle-on .btn-toggle { background: rgba(122,154,130,.20); border: 1px solid rgba(122,154,130,.45); color: #9dc9a6; font-size: 10px; letter-spacing: .06em; padding: 6px 12px; border-radius: 100px; cursor: pointer; display: flex; align-items: center; gap: 6px; width: fit-content; }
+  .col-toggle-on .dot { width: 8px; height: 8px; border-radius: 50%; background: #9dc9a6; }
+  .col-toggle-on .divider { height: 1px; background: rgba(122,154,130,.20); }
+
+  /* Annotations */
+  .annotation { font-size: 10px; color: rgba(255,255,255,.28); margin-top: 6px; line-height: 1.5; padding: 0 2px; }
+  .annotation span { color: rgba(122,154,130,.7); }
+
+  input[type=text] { width: 100%; }
+</style>
+</head>
+<body>
+
+<h1>Footboard — Comparaison contraste</h1>
+
+<div class="grid">
+
+  <!-- ACTUEL -->
+  <div>
+    <p style="font-size:11px;color:rgba(255,255,255,.55);margin-bottom:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em">Actuel</p>
+    <div class="card col-current">
+      <div class="card-label">Aperçu interface</div>
+      <div class="card-body">
+        <div class="nav">
+          <span class="nav-link active">TACTIQUE</span>
+          <span class="nav-link">MON CLUB</span>
+          <span class="nav-link">TARIFS</span>
+        </div>
+        <div class="divider"></div>
+        <div class="stat-card">
+          <div class="stat-label">Joueurs disponibles</div>
+          <div class="stat-value">18</div>
+          <div class="stat-sub">sur 24 dans l'effectif</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Prochain match</div>
+          <div class="stat-value" style="font-size:15px">RC Lens B</div>
+          <div class="stat-sub">Samedi 14 juin · 15h00</div>
+        </div>
+        <input class="input" type="text" placeholder="Rechercher un joueur…" readonly>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span class="tag">4-3-3</span>
+          <span class="tag">DOMICILE</span>
+        </div>
+        <button class="btn">ENREGISTRER</button>
+      </div>
+    </div>
+    <p class="annotation">État par défaut. <span>--text-muted 38%</span>, bordures <span>12–15%</span></p>
+  </div>
+
+  <!-- OPTION 1 : BOOST PERMANENT -->
+  <div>
+    <p style="font-size:11px;color:rgba(255,255,255,.55);margin-bottom:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em">Option 1 — Boost permanent</p>
+    <div class="card col-boost">
+      <div class="card-label">Aperçu interface</div>
+      <div class="card-body">
+        <div class="nav">
+          <span class="nav-link active">TACTIQUE</span>
+          <span class="nav-link">MON CLUB</span>
+          <span class="nav-link">TARIFS</span>
+        </div>
+        <div class="divider"></div>
+        <div class="stat-card">
+          <div class="stat-label">Joueurs disponibles</div>
+          <div class="stat-value">18</div>
+          <div class="stat-sub">sur 24 dans l'effectif</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Prochain match</div>
+          <div class="stat-value" style="font-size:15px">RC Lens B</div>
+          <div class="stat-sub">Samedi 14 juin · 15h00</div>
+        </div>
+        <input class="input" type="text" placeholder="Rechercher un joueur…" readonly>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span class="tag">4-3-3</span>
+          <span class="tag">DOMICILE</span>
+        </div>
+        <button class="btn">ENREGISTRER</button>
+      </div>
+    </div>
+    <p class="annotation">Tokens rehaussés partout. <span>--text-muted → 60%</span>, bordures <span>→ 22–35%</span>. Simple, un seul patch CSS.</p>
+  </div>
+
+  <!-- OPTION 2 : TOGGLE -->
+  <div>
+    <p style="font-size:11px;color:rgba(255,255,255,.55);margin-bottom:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em">Option 2 — Toggle</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+
+      <div>
+        <p style="font-size:9px;color:rgba(255,255,255,.25);margin-bottom:6px;letter-spacing:.06em;text-transform:uppercase">Par défaut</p>
+        <div class="card col-toggle-off">
+          <div class="card-label" style="font-size:9px">Aperçu</div>
+          <div class="card-body" style="gap:10px">
+            <div class="nav" style="padding:7px 10px;gap:7px">
+              <span class="nav-link active" style="font-size:9px">TACTIQUE</span>
+              <span class="nav-link" style="font-size:9px">CLUB</span>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label" style="font-size:9px">Joueurs</div>
+              <div class="stat-value" style="font-size:18px">18</div>
+              <div class="stat-sub" style="font-size:9px">sur 24</div>
+            </div>
+            <div class="btn-toggle">
+              <span class="dot"></span>
+              <span style="font-size:9px">CONTRASTE</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <p style="font-size:9px;color:#9dc9a6;margin-bottom:6px;letter-spacing:.06em;text-transform:uppercase">Activé ☀︎</p>
+        <div class="card col-toggle-on">
+          <div class="card-label" style="font-size:9px">Aperçu</div>
+          <div class="card-body" style="gap:10px">
+            <div class="nav" style="padding:7px 10px;gap:7px">
+              <span class="nav-link active" style="font-size:9px">TACTIQUE</span>
+              <span class="nav-link" style="font-size:9px">CLUB</span>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label" style="font-size:9px">Joueurs</div>
+              <div class="stat-value" style="font-size:18px">18</div>
+              <div class="stat-sub" style="font-size:9px">sur 24</div>
+            </div>
+            <div class="btn-toggle">
+              <span class="dot"></span>
+              <span style="font-size:9px">CONTRASTE</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <p class="annotation" style="margin-top:10px">Identité dark préservée par défaut. Bouton dans la sidebar → bascule une classe CSS + <span>localStorage</span> pour mémoriser le choix.</p>
+  </div>
+
+</div>
+
+</body>
+</html>

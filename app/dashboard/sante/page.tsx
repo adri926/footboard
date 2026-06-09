@@ -36,7 +36,7 @@ export default async function SantePage() {
       {rows.length === 0 ? (
         <div style={{
           padding: "48px 32px", borderRadius: 12, textAlign: "center",
-          backgroundColor: "#1f1f19", border: "1px dashed rgba(122,154,130,0.2)",
+          backgroundColor: "var(--bg-card)", border: "1px dashed rgba(122,154,130,0.2)",
         }}>
           <p style={{
             fontFamily: "var(--font-body), sans-serif", fontWeight: 400,
@@ -69,7 +69,7 @@ export default async function SantePage() {
             {counts.map(c => (
               <div key={c.status} style={{
                 padding: "16px 18px", borderRadius: 12,
-                backgroundColor: "#1f1f19",
+                backgroundColor: "var(--bg-card)",
                 border: "1px solid rgba(122,154,130,0.08)",
               }}>
                 <p style={{

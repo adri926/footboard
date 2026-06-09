@@ -56,7 +56,7 @@ export default function MobileHeader({ clubName, clubLevel, userName }: Props) {
       {/* Fixed header bar — hidden via CSS at desktop */}
       <header className="mh-bar" style={{
         position: "fixed", top: 0, left: 0, right: 0, zIndex: 50,
-        height: 56, backgroundColor: "#181812",
+        height: 56, backgroundColor: "var(--bg)",
         borderBottom: "1px solid rgba(122,154,130,0.1)",
         alignItems: "center", justifyContent: "space-between",
         padding: "0 16px",
@@ -100,7 +100,7 @@ export default function MobileHeader({ clubName, clubLevel, userName }: Props) {
       <div style={{
         position: "fixed", top: 0, left: 0, bottom: 0,
         width: 240, zIndex: 60,
-        backgroundColor: "#181812",
+        backgroundColor: "var(--bg)",
         borderRight: "1px solid rgba(122,154,130,0.15)",
         display: "flex", flexDirection: "column", overflowY: "auto",
         transform: open ? "translateX(0)" : "translateX(-100%)",

@@ -126,7 +126,7 @@ export default function BilanClient({ match, players, lineup, initialStats }: Pr
       {participants.length === 0 ? (
         <div style={{
           padding: "48px 32px", borderRadius: 12, textAlign: "center",
-          backgroundColor: "#1f1f19", border: "1px dashed rgba(122,154,130,0.2)",
+          backgroundColor: "var(--bg-card)", border: "1px dashed rgba(122,154,130,0.2)",
         }}>
           <p style={{
             fontFamily: "var(--font-body), sans-serif", fontWeight: 400,
@@ -142,7 +142,7 @@ export default function BilanClient({ match, players, lineup, initialStats }: Pr
           </Link>
         </div>
       ) : (
-        <div style={{ backgroundColor: "#1f1f19", border: "1px solid rgba(122,154,130,0.1)", borderRadius: 12, padding: "20px 22px" }}>
+        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid rgba(122,154,130,0.1)", borderRadius: 12, padding: "20px 22px" }}>
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
@@ -220,7 +220,7 @@ export default function BilanClient({ match, players, lineup, initialStats }: Pr
                 fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
                 backgroundColor: saved ? "rgba(122,154,130,0.15)" : "#7A9A82",
                 border: saved ? "1px solid rgba(122,154,130,0.3)" : "none",
-                color: saved ? "#7A9A82" : "#181812",
+                color: saved ? "#7A9A82" : "var(--bg)",
               }}
             >
               {pending ? "..." : saved ? "BILAN SAUVEGARDÉ ✓" : "SAUVEGARDER LE BILAN"}

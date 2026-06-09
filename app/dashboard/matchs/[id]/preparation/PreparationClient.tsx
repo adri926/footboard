@@ -136,7 +136,7 @@ export default function PreparationClient({ match, players, initialStarters, ini
       <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 20, alignItems: "start" }}>
 
         {/* Joueurs disponibles — sélection */}
-        <div style={{ backgroundColor: "#1f1f19", border: "1px solid rgba(122,154,130,0.1)", borderRadius: 12, padding: "20px 22px" }}>
+        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid rgba(122,154,130,0.1)", borderRadius: 12, padding: "20px 22px" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
             <p style={{ fontFamily: "var(--font-mono), monospace", fontSize: 9, fontWeight: 700, letterSpacing: "0.14em", color: "#7A9A82", textTransform: "uppercase" }}>
               Disponibles ({available.length})
@@ -192,7 +192,7 @@ export default function PreparationClient({ match, players, initialStarters, ini
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
 
           {/* Composition summary */}
-          <div style={{ backgroundColor: "#1f1f19", border: "1px solid rgba(122,154,130,0.1)", borderRadius: 12, padding: "18px 20px" }}>
+          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid rgba(122,154,130,0.1)", borderRadius: 12, padding: "18px 20px" }}>
             <p style={{ fontFamily: "var(--font-mono), monospace", fontSize: 9, fontWeight: 700, letterSpacing: "0.14em", color: "#7A9A82", textTransform: "uppercase", marginBottom: 14 }}>
               Composition
             </p>
@@ -255,7 +255,7 @@ export default function PreparationClient({ match, players, initialStarters, ini
                   fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
                   backgroundColor: saved ? "rgba(122,154,130,0.15)" : "#7A9A82",
                   border: saved ? "1px solid rgba(122,154,130,0.3)" : "none",
-                  color: saved ? "#7A9A82" : "#181812",
+                  color: saved ? "#7A9A82" : "var(--bg)",
                 }}
               >
                 {pending ? "..." : saved ? "COMPOSITION SAUVEGARDÉE ✓" : "SAUVEGARDER"}
@@ -265,7 +265,7 @@ export default function PreparationClient({ match, players, initialStarters, ini
 
           {/* Indisponibles */}
           {unavailable.length > 0 && (
-            <div style={{ backgroundColor: "#1f1f19", border: "1px solid rgba(122,154,130,0.08)", borderRadius: 12, padding: "18px 20px" }}>
+            <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid rgba(122,154,130,0.08)", borderRadius: 12, padding: "18px 20px" }}>
               <p style={{ fontFamily: "var(--font-mono), monospace", fontSize: 9, fontWeight: 700, letterSpacing: "0.14em", color: "rgba(224,112,112,0.5)", textTransform: "uppercase", marginBottom: 12 }}>
                 Indisponibles ({unavailable.length})
               </p>

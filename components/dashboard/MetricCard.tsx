@@ -12,7 +12,7 @@ export default function MetricCard({ label, value, sub, accent, warn }: Props) {
   return (
     <div style={{
       padding: "20px 22px", borderRadius: 12,
-      backgroundColor: "#1f1f19",
+      backgroundColor: "var(--bg-card)",
       border: `1px solid ${warn ? "rgba(224,112,112,0.2)" : accent ? "rgba(122,154,130,0.2)" : "rgba(122,154,130,0.1)"}`,
       display: "flex", flexDirection: "column", gap: 6,
     }}>

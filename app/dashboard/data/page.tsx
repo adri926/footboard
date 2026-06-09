@@ -43,7 +43,7 @@ export default async function DataPage() {
       {stats.played === 0 ? (
         <div style={{
           padding: "48px 32px", borderRadius: 12, textAlign: "center",
-          backgroundColor: "#1f1f19", border: "1px dashed rgba(122,154,130,0.2)",
+          backgroundColor: "var(--bg-card)", border: "1px dashed rgba(122,154,130,0.2)",
         }}>
           <p style={{
             fontFamily: "var(--font-body), sans-serif", fontWeight: 400,
@@ -74,7 +74,7 @@ export default async function DataPage() {
             {CARD_DEFS.map(def => (
               <div key={def.key} style={{
                 padding: "16px 18px", borderRadius: 12,
-                backgroundColor: "#1f1f19",
+                backgroundColor: "var(--bg-card)",
                 border: "1px solid rgba(122,154,130,0.08)",
               }}>
                 <p style={{
@@ -96,15 +96,15 @@ export default async function DataPage() {
           <div style={{
             display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 28,
           }}>
-            <div style={{ padding: "16px 18px", borderRadius: 12, backgroundColor: "#1f1f19", border: "1px solid rgba(122,154,130,0.08)" }}>
+            <div style={{ padding: "16px 18px", borderRadius: 12, backgroundColor: "var(--bg-card)", border: "1px solid rgba(122,154,130,0.08)" }}>
               <p style={{ fontFamily: "var(--font-display), system-ui, sans-serif", fontWeight: 900, fontSize: 22, color: "rgba(255,255,255,0.8)" }}>{stats.goalsFor}</p>
               <p style={{ fontFamily: "var(--font-mono), monospace", fontSize: 9, fontWeight: 700, letterSpacing: "0.06em", color: "rgba(255,255,255,0.35)", marginTop: 6 }}>BUTS MARQUÉS</p>
             </div>
-            <div style={{ padding: "16px 18px", borderRadius: 12, backgroundColor: "#1f1f19", border: "1px solid rgba(122,154,130,0.08)" }}>
+            <div style={{ padding: "16px 18px", borderRadius: 12, backgroundColor: "var(--bg-card)", border: "1px solid rgba(122,154,130,0.08)" }}>
               <p style={{ fontFamily: "var(--font-display), system-ui, sans-serif", fontWeight: 900, fontSize: 22, color: "rgba(255,255,255,0.8)" }}>{stats.goalsAgainst}</p>
               <p style={{ fontFamily: "var(--font-mono), monospace", fontSize: 9, fontWeight: 700, letterSpacing: "0.06em", color: "rgba(255,255,255,0.35)", marginTop: 6 }}>BUTS ENCAISSÉS</p>
             </div>
-            <div style={{ padding: "16px 18px", borderRadius: 12, backgroundColor: "#1f1f19", border: "1px solid rgba(122,154,130,0.08)" }}>
+            <div style={{ padding: "16px 18px", borderRadius: 12, backgroundColor: "var(--bg-card)", border: "1px solid rgba(122,154,130,0.08)" }}>
               <p style={{ fontFamily: "var(--font-display), system-ui, sans-serif", fontWeight: 900, fontSize: 22, color: goalDiff > 0 ? "#7A9A82" : goalDiff < 0 ? "#e07070" : "rgba(255,255,255,0.8)" }}>
                 {goalDiff > 0 ? "+" : ""}{goalDiff}
               </p>
@@ -114,7 +114,7 @@ export default async function DataPage() {
 
           <div style={{
             padding: "20px 22px", borderRadius: 12, marginBottom: 16,
-            backgroundColor: "#1a1a15",
+            backgroundColor: "var(--bg-card)",
             border: "1px solid rgba(122,154,130,0.08)",
           }}>
             <h2 style={{

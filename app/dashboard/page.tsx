@@ -191,7 +191,7 @@ export default async function DashboardPage() {
 
       {/* Mini calendrier */}
       <div style={{
-        backgroundColor: "#1f1f19", border: "1px solid rgba(122,154,130,0.1)",
+        backgroundColor: "var(--bg-card)", border: "1px solid rgba(122,154,130,0.1)",
         borderRadius: 12, padding: "20px 22px", marginBottom: 20,
       }}>
         <MiniCalendar trainings={trainings} matches={matches} />
@@ -202,7 +202,7 @@ export default async function DashboardPage() {
 
         {/* Santé effectif */}
         <div style={{
-          backgroundColor: "#1f1f19", border: "1px solid rgba(122,154,130,0.1)",
+          backgroundColor: "var(--bg-card)", border: "1px solid rgba(122,154,130,0.1)",
           borderRadius: 12, padding: "20px 22px",
         }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
@@ -265,7 +265,7 @@ export default async function DashboardPage() {
 
         {/* Résultats récents */}
         <div style={{
-          backgroundColor: "#1f1f19", border: "1px solid rgba(122,154,130,0.1)",
+          backgroundColor: "var(--bg-card)", border: "1px solid rgba(122,154,130,0.1)",
           borderRadius: 12, padding: "20px 22px",
         }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
@@ -344,7 +344,7 @@ export default async function DashboardPage() {
 
       {/* Derniers entraînements */}
       <div style={{
-        backgroundColor: "#1f1f19", border: "1px solid rgba(122,154,130,0.1)",
+        backgroundColor: "var(--bg-card)", border: "1px solid rgba(122,154,130,0.1)",
         borderRadius: 12, padding: "20px 22px",
       }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>

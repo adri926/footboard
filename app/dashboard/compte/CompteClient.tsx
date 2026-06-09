@@ -32,7 +32,7 @@ const LABEL: React.CSSProperties = {
 
 const SECTION: React.CSSProperties = {
   padding: "20px 22px", borderRadius: 12,
-  backgroundColor: "#1f1f19",
+  backgroundColor: "var(--bg-card)",
   border: "1px solid rgba(122,154,130,0.08)",
 }
 
@@ -164,7 +164,7 @@ export default function CompteClient({ club }: Props) {
             fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
             backgroundColor: clubSaved ? "rgba(122,154,130,0.15)" : "#7A9A82",
             border: clubSaved ? "1px solid rgba(122,154,130,0.3)" : "none",
-            color: clubSaved ? "#7A9A82" : "#181812",
+            color: clubSaved ? "#7A9A82" : "var(--bg)",
           }}>
             {clubPending ? "..." : clubSaved ? "MODIFICATIONS SAUVEGARDÉES ✓" : "ENREGISTRER"}
           </button>
@@ -214,7 +214,7 @@ export default function CompteClient({ club }: Props) {
           }}
         >
           <div style={{
-            backgroundColor: "#1f1f19",
+            backgroundColor: "var(--bg-card)",
             border: "1px solid rgba(224,112,112,0.2)",
             borderRadius: 16, padding: "28px",
             width: "100%", maxWidth: 420,

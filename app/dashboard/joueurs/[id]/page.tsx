@@ -74,7 +74,7 @@ export default async function JoueurPage({ params }: { params: Promise<{ id: str
         ].map(stat => (
           <div key={stat.label} style={{
             padding: "16px 18px", borderRadius: 10,
-            backgroundColor: "#1f1f19",
+            backgroundColor: "var(--bg-card)",
             border: "1px solid rgba(122,154,130,0.08)",
           }}>
             <p style={{
@@ -98,7 +98,7 @@ export default async function JoueurPage({ params }: { params: Promise<{ id: str
       {/* Détails */}
       <div style={{
         padding: "20px 22px", borderRadius: 12,
-        backgroundColor: "#1f1f19",
+        backgroundColor: "var(--bg-card)",
         border: "1px solid rgba(122,154,130,0.08)",
         display: "flex", flexDirection: "column", gap: 12,
       }}>

@@ -13,7 +13,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   return (
     <section style={{
       padding: "20px 22px", borderRadius: 12, marginBottom: 16,
-      backgroundColor: "#1a1a15",
+      backgroundColor: "var(--bg-card)",
       border: "1px solid rgba(122,154,130,0.08)",
     }}>
       <h2 style={{

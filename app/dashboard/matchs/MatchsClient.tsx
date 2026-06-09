@@ -70,7 +70,7 @@ function ConvocationModal({
       }}
     >
       <div style={{
-        backgroundColor: "#1f1f19",
+        backgroundColor: "var(--bg-card)",
         border: "1px solid rgba(122,154,130,0.18)",
         borderRadius: 16, padding: "28px 28px",
         width: "100%", maxWidth: 480,
@@ -112,7 +112,7 @@ function ConvocationModal({
             <button onClick={onClose} style={{
               marginTop: 8, padding: "10px 24px", borderRadius: 10, cursor: "pointer",
               fontFamily: "var(--font-mono), monospace", fontSize: 10, fontWeight: 700,
-              backgroundColor: "#7A9A82", color: "#181812", border: "none",
+              backgroundColor: "#7A9A82", color: "var(--bg)", border: "none",
             }}>
               FERMER
             </button>
@@ -150,7 +150,7 @@ function ConvocationModal({
                       border: `1.5px solid ${isChecked ? "#7A9A82" : "rgba(122,154,130,0.3)"}`,
                       display: "flex", alignItems: "center", justifyContent: "center",
                     }}>
-                      {isChecked && <span style={{ color: "#181812", fontSize: 10, fontWeight: 900 }}>✓</span>}
+                      {isChecked && <span style={{ color: "var(--bg)", fontSize: 10, fontWeight: 900 }}>✓</span>}
                     </div>
                     <div style={{ flex: 1 }}>
                       <p style={{
@@ -207,7 +207,7 @@ function ConvocationModal({
                   cursor: canSend ? "pointer" : "default",
                   fontFamily: "var(--font-mono), monospace", fontSize: 10, fontWeight: 700,
                   backgroundColor: canSend ? "#7A9A82" : "rgba(122,154,130,0.2)",
-                  border: "none", color: canSend ? "#181812" : "rgba(255,255,255,0.2)",
+                  border: "none", color: canSend ? "var(--bg)" : "rgba(255,255,255,0.2)",
                   transition: "all 0.15s",
                 }}
               >
@@ -256,7 +256,7 @@ export default function MatchsClient({ matches, players, club }: Props) {
             fontFamily: "var(--font-mono), monospace",
             fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
             padding: "10px 20px", borderRadius: 10, cursor: "pointer",
-            backgroundColor: "#7A9A82", color: "#181812", border: "none",
+            backgroundColor: "#7A9A82", color: "var(--bg)", border: "none",
           }}>
             + AJOUTER UN MATCH
           </button>
@@ -267,7 +267,7 @@ export default function MatchsClient({ matches, players, club }: Props) {
       {matches.length === 0 && (
         <div style={{
           padding: "48px 32px", borderRadius: 12, textAlign: "center",
-          backgroundColor: "#1f1f19", border: "1px dashed rgba(122,154,130,0.2)",
+          backgroundColor: "var(--bg-card)", border: "1px dashed rgba(122,154,130,0.2)",
         }}>
           <p style={{
             fontFamily: "var(--font-body), sans-serif", fontWeight: 400, fontSize: 14,
@@ -312,7 +312,7 @@ export default function MatchsClient({ matches, players, club }: Props) {
           {upcoming.length === 0 ? (
             <div style={{
               padding: "40px 32px", borderRadius: 12, textAlign: "center",
-              backgroundColor: "#1f1f19", border: "1px dashed rgba(122,154,130,0.15)",
+              backgroundColor: "var(--bg-card)", border: "1px dashed rgba(122,154,130,0.15)",
             }}>
               <p style={{
                 fontFamily: "var(--font-body), sans-serif", fontWeight: 400, fontSize: 13,
@@ -406,7 +406,7 @@ export default function MatchsClient({ matches, players, club }: Props) {
           {played.length === 0 ? (
             <div style={{
               padding: "40px 32px", borderRadius: 12, textAlign: "center",
-              backgroundColor: "#1f1f19", border: "1px dashed rgba(122,154,130,0.15)",
+              backgroundColor: "var(--bg-card)", border: "1px dashed rgba(122,154,130,0.15)",
             }}>
               <p style={{
                 fontFamily: "var(--font-body), sans-serif", fontWeight: 400, fontSize: 13,
@@ -428,7 +428,7 @@ export default function MatchsClient({ matches, players, club }: Props) {
                 <div key={m.id} style={{
                   display: "flex", alignItems: "center", justifyContent: "space-between",
                   padding: "14px 20px", borderRadius: 10,
-                  backgroundColor: "#1f1f19",
+                  backgroundColor: "var(--bg-card)",
                   border: "1px solid rgba(122,154,130,0.08)",
                   gap: 12,
                 }}>

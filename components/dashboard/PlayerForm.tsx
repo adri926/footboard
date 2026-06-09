@@ -96,7 +96,7 @@ export default function PlayerForm({ player, onClose }: Props) {
       }}
     >
       <div style={{
-        backgroundColor: "#1f1f19",
+        backgroundColor: "var(--bg-card)",
         border: "1px solid rgba(122,154,130,0.18)",
         borderRadius: 16, padding: "28px 28px",
         width: "100%", maxWidth: 440,
@@ -249,7 +249,7 @@ export default function PlayerForm({ player, onClose }: Props) {
               fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
               backgroundColor: pending ? "rgba(122,154,130,0.4)" : "#7A9A82",
               border: "none",
-              color: "#181812",
+              color: "var(--bg)",
               transition: "opacity 0.2s",
             }}>
               {pending ? "..." : player ? "ENREGISTRER" : "AJOUTER"}

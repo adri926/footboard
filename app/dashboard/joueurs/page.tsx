@@ -23,7 +23,7 @@ export default async function JoueursPage() {
       {players.length === 0 ? (
         <div style={{
           padding: "48px 32px", borderRadius: 12, textAlign: "center",
-          backgroundColor: "#1f1f19", border: "1px dashed rgba(122,154,130,0.2)",
+          backgroundColor: "var(--bg-card)", border: "1px dashed rgba(122,154,130,0.2)",
         }}>
           <p style={{
             fontFamily: "var(--font-body), sans-serif", fontWeight: 400,
@@ -44,7 +44,7 @@ export default async function JoueursPage() {
             <Link key={p.id} href={`/dashboard/joueurs/${p.id}`} style={{
               display: "flex", alignItems: "center",
               padding: "14px 18px", borderRadius: 10,
-              backgroundColor: "#1f1f19",
+              backgroundColor: "var(--bg-card)",
               border: "1px solid rgba(122,154,130,0.08)",
               gap: 16, textDecoration: "none",
               transition: "border-color 0.15s",

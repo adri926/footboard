@@ -34,7 +34,7 @@ export default function InjuryHistory({ injuries }: Props) {
       {sorted.map(injury => (
         <div key={injury.id} style={{
           padding: "12px 16px", borderRadius: 10,
-          backgroundColor: "#1f1f19",
+          backgroundColor: "var(--bg-card)",
           border: "1px solid rgba(122,154,130,0.08)",
         }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>

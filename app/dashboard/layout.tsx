@@ -18,7 +18,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <>
       <MobileHeader clubName={club.name} clubLevel={club.level} userName={userName} />
-      <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#181812" }}>
+      <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "var(--bg)" }}>
         <Sidebar clubName={club.name} clubLevel={club.level} userName={userName} />
         <main style={{ flex: 1, overflowY: "auto", minWidth: 0 }}>
           {children}

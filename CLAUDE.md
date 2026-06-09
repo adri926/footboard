@@ -19,19 +19,27 @@ npm run dev  # → http://localhost:3001
 - Framer Motion (animations terrain)
 
 ## Identité visuelle (Moodboard v2)
-- Noir Chaud `#181812` + Vert Sauge `#7A9A82`
+- Noir Chaud `var(--bg)` (#17160f) + Vert Sauge `var(--sauge)` (#7A9A82)
 - Titres : Barlow Condensed 900 — Labels : Space Mono 700 — Body : Barlow 300-500
 - Terrain : lignes `rgba(122,154,130,0.55)`
-- CSS vars dans `globals.css` : `--sauge`, `--sauge-dim`, `--bg`, `--bg-card`
+- CSS vars dans `globals.css` : `--bg`, `--bg-card`, `--sauge`, `--sauge-dim`, `--sauge-border`
+- **Ne jamais hardcoder** les couleurs de fond — toujours utiliser `var(--bg)`, `var(--bg-card)`, etc.
 
 ## Compte de test
 - Club : AS Poincaré (Paris, Régional 2)
 - Clerk user_id : `user_3E6KpNoP7KUQPMLk8mAlmeHJYq8`
 - Email : adrisim926@gmail.com
 
+## Supabase
+Pour chaque fichier SQL de migration généré,
+indiquer explicitement à quel moment l'exécuter
+avec le message :
+"⚠️ ACTION SUPABASE REQUISE : va sur
+supabase.com → SQL Editor → colle ce fichier
+→ clique Run. Reviens me dire quand c'est fait."
+Ne pas passer à l'étape suivante sans confirmation.
+
 ## Prochaines étapes
-1. Harmoniser les pages `/club/*` avec le moodboard
-2. Intégrer AppelLayer avec l'engine (appels auto par situation)
-3. Responsive mobile (terrain en portrait)
-4. Partage de tactiques via lien public
-5. Déploiement Vercel
+1. Responsive mobile (terrain en portrait)
+2. Partage de tactiques via lien public
+3. Déploiement Vercel

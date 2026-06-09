@@ -136,7 +136,7 @@ export default function CalendrierClient({ matches, trainings }: Props) {
 
       {/* Grille */}
       <div style={{
-        backgroundColor: "#1f1f19",
+        backgroundColor: "var(--bg-card)",
         border: "1px solid rgba(122,154,130,0.08)",
         borderRadius: 12, overflow: "hidden",
       }}>
@@ -275,7 +275,7 @@ export default function CalendrierClient({ matches, trainings }: Props) {
           <div
             onClick={e => e.stopPropagation()}
             style={{
-              backgroundColor: "#1f1f19",
+              backgroundColor: "var(--bg-card)",
               border: "1px solid rgba(122,154,130,0.18)",
               borderRadius: 16, padding: "28px 28px",
               width: "100%", maxWidth: 380,

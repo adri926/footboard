@@ -64,7 +64,7 @@ function CalendarView({ trainings, year, onEdit }: { trainings: Training[]; year
 
         return (
           <div key={monthIdx} style={{
-            backgroundColor: "#1f1f19",
+            backgroundColor: "var(--bg-card)",
             border: "1px solid rgba(122,154,130,0.08)",
             borderRadius: 10, padding: "14px 14px",
           }}>
@@ -174,7 +174,7 @@ export default function EntraineementsClient({ trainings }: Props) {
               fontFamily: "var(--font-mono), monospace",
               fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
               padding: "10px 20px", borderRadius: 10, cursor: "pointer",
-              backgroundColor: "#7A9A82", color: "#181812", border: "none",
+              backgroundColor: "#7A9A82", color: "var(--bg)", border: "none",
             }}>
               + AJOUTER
             </button>
@@ -186,7 +186,7 @@ export default function EntraineementsClient({ trainings }: Props) {
       {trainings.length === 0 && (
         <div style={{
           padding: "48px 32px", borderRadius: 12, textAlign: "center",
-          backgroundColor: "#1f1f19", border: "1px dashed rgba(122,154,130,0.2)",
+          backgroundColor: "var(--bg-card)", border: "1px dashed rgba(122,154,130,0.2)",
         }}>
           <p style={{ fontFamily: "var(--font-body), sans-serif", fontWeight: 400, fontSize: 14, color: "rgba(255,255,255,0.3)", marginBottom: 8 }}>
             Aucune séance enregistrée.
@@ -229,7 +229,7 @@ export default function EntraineementsClient({ trainings }: Props) {
           {trainings.map(t => (
             <div key={t.id} style={{
               padding: "18px 20px", borderRadius: 12,
-              backgroundColor: "#1f1f19",
+              backgroundColor: "var(--bg-card)",
               border: "1px solid rgba(122,154,130,0.08)",
             }}>
               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>

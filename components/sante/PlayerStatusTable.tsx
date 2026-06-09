@@ -49,7 +49,7 @@ export default function PlayerStatusTable({ rows }: Props) {
           <Link key={player.id} href={`/dashboard/sante/${player.id}`} style={{
             display: "flex", alignItems: "center", gap: 16,
             padding: "14px 18px", borderRadius: 10,
-            backgroundColor: "#1f1f19",
+            backgroundColor: "var(--bg-card)",
             border: "1px solid rgba(122,154,130,0.08)",
             textDecoration: "none",
           }}>

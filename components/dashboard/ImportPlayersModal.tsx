@@ -115,7 +115,7 @@ export default function ImportPlayersModal({ onClose, onImported }: Props) {
       }}
     >
       <div style={{
-        backgroundColor: "#1f1f19",
+        backgroundColor: "var(--bg-card)",
         border: "1px solid rgba(122,154,130,0.18)",
         borderRadius: 16, padding: "28px 28px",
         width: "100%", maxWidth: 480,
@@ -163,7 +163,7 @@ export default function ImportPlayersModal({ onClose, onImported }: Props) {
               fontFamily: "var(--font-mono), monospace",
               fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
               padding: "10px 24px", borderRadius: 10, cursor: "pointer",
-              backgroundColor: "#7A9A82", color: "#181812", border: "none",
+              backgroundColor: "#7A9A82", color: "var(--bg)", border: "none",
             }}>
               FERMER
             </button>
@@ -281,7 +281,7 @@ export default function ImportPlayersModal({ onClose, onImported }: Props) {
                   fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
                   backgroundColor: pending || parsed.length === 0 ? "rgba(122,154,130,0.25)" : "#7A9A82",
                   border: "none",
-                  color: "#181812",
+                  color: "var(--bg)",
                   transition: "opacity 0.2s",
                 }}
               >

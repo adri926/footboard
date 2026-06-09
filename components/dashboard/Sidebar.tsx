@@ -75,7 +75,7 @@ export default function Sidebar({ clubName, clubLevel, userName }: Props) {
 
       <aside className="sb" style={{
         width: 240, flexShrink: 0,
-        backgroundColor: "#17160f",
+        backgroundColor: "var(--bg)",
         borderRight: "1px solid rgba(122,154,130,0.1)",
         display: "flex", flexDirection: "column",
         height: "100vh", position: "sticky", top: 0, overflowY: "auto",

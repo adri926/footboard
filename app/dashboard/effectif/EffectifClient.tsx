@@ -68,7 +68,7 @@ export default function EffectifClient({ players }: Props) {
               fontFamily: "var(--font-mono), monospace",
               fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
               padding: "10px 20px", borderRadius: 10, cursor: "pointer",
-              backgroundColor: "#7A9A82", color: "#181812", border: "none",
+              backgroundColor: "#7A9A82", color: "var(--bg)", border: "none",
             }}>
               + AJOUTER UN JOUEUR
             </button>
@@ -80,7 +80,7 @@ export default function EffectifClient({ players }: Props) {
       {players.length === 0 && (
         <div style={{
           padding: "48px 32px", borderRadius: 12, textAlign: "center",
-          backgroundColor: "#1f1f19",
+          backgroundColor: "var(--bg-card)",
           border: "1px dashed rgba(122,154,130,0.2)",
         }}>
           <p style={{
@@ -117,7 +117,7 @@ export default function EffectifClient({ players }: Props) {
                 <div key={p.id} style={{
                   display: "flex", alignItems: "center",
                   padding: "11px 16px", borderRadius: 10,
-                  backgroundColor: "#1f1f19",
+                  backgroundColor: "var(--bg-card)",
                   border: "1px solid rgba(122,154,130,0.08)",
                   gap: 14,
                 }}>
