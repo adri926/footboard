@@ -15,10 +15,8 @@ const NAV_GROUPS = [
     items: [
       { href: "/dashboard/calendrier",     label: "Calendrier",      icon: "▦" },
       { href: "/dashboard/effectif",       label: "Effectif",        icon: "◻" },
-      { href: "/dashboard/joueurs",        label: "Joueurs",         icon: "◎" },
       { href: "/dashboard/matchs",         label: "Matchs",          icon: "◷" },
       { href: "/dashboard/entrainements",  label: "Entraînements",   icon: "◈" },
-      { href: "/dashboard/sante",          label: "Suivi médical",   icon: "✚" },
       { href: "/dashboard/data",           label: "Data & stats",    icon: "▤" },
     ],
   },

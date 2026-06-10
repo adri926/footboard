@@ -12,7 +12,6 @@ const NAV = [
       { href: "/dashboard/effectif",      label: "Effectif",        available: true  },
       { href: "/dashboard/matchs",        label: "Matchs",          available: true  },
       { href: "/dashboard/entrainements", label: "Entraînements",   available: true  },
-      { href: "/dashboard/joueurs",       label: "Joueurs",         available: true  },
     ],
   },
   {
@@ -53,7 +52,7 @@ export default function Nav() {
           fontWeight: 900, fontSize: 18, letterSpacing: "0.05em",
           color: "rgba(255,255,255,0.95)",
         }}>
-        FOOTBOARD
+        FOOT<span style={{ color: "#7A9A82" }}>BOARD</span>
       </Link>
 
       {/* Nav principale */}

@@ -2,64 +2,110 @@ import { SignIn } from "@clerk/nextjs"
 
 export default function SignInPage() {
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center gap-6"
-      style={{ background: "linear-gradient(150deg,#06060e 0%,#060e06 100%)" }}>
+    <main style={{
+      minHeight: "100vh",
+      backgroundColor: "#17160f",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 32,
+      padding: "24px 16px",
+    }}>
 
-      <div className="text-center mb-2">
-        <h1 className="text-3xl font-black text-white">Footboard</h1>
-        <p className="text-gray-400 mt-1 text-sm">Connecte-toi pour accéder à la plateforme</p>
+      {/* Logo + titre */}
+      <div style={{ textAlign: "center" }}>
+        <p style={{
+          fontFamily: "'Space Mono', monospace",
+          fontSize: 10, fontWeight: 700, letterSpacing: "0.20em",
+          color: "rgba(122,154,130,0.6)",
+          textTransform: "uppercase", marginBottom: 10,
+        }}>
+          PLATEFORME COACH
+        </p>
+        <h1 style={{
+          fontFamily: "'Barlow Condensed', system-ui, sans-serif",
+          fontWeight: 900, fontSize: 42, lineHeight: 0.95,
+          color: "rgba(255,255,255,0.92)",
+          letterSpacing: "0.02em",
+          textTransform: "uppercase",
+        }}>
+          FOOT<span style={{ color: "#7A9A82" }}>BOARD</span>
+        </h1>
       </div>
 
+      {/* Widget Clerk */}
       <SignIn
         routing="hash"
         appearance={{
           variables: {
-            colorBackground: "#1a1a2e",
-            colorText: "#ffffff",
-            colorPrimary: "#ffffff",
-            colorTextSecondary: "#aaaaaa",
-            colorInputBackground: "#2a2a3e",
-            colorInputText: "#ffffff",
-            borderRadius: "14px",
+            colorBackground: "#1e1c14",
+            colorText: "rgba(255,255,255,0.88)",
+            colorPrimary: "#7A9A82",
+            colorTextSecondary: "rgba(255,255,255,0.40)",
+            colorInputBackground: "rgba(255,255,255,0.04)",
+            colorInputText: "rgba(255,255,255,0.85)",
+            borderRadius: "10px",
+            fontFamily: "'Barlow', system-ui, sans-serif",
           },
           elements: {
             card: {
-              boxShadow: "0 0 60px rgba(0,0,0,0.6)",
-              border: "1px solid rgba(255,255,255,0.12)",
-              width: "360px",
+              boxShadow: "0 24px 64px rgba(0,0,0,0.5)",
+              border: "1px solid rgba(122,154,130,0.18)",
+              width: "340px",
+              padding: "28px",
             },
-            headerTitle: { color: "#ffffff", fontWeight: "700" },
-            headerSubtitle: { color: "#aaaaaa" },
+            headerTitle: {
+              fontFamily: "'Barlow Condensed', system-ui, sans-serif",
+              fontWeight: 900,
+              fontSize: "20px",
+              letterSpacing: "0.04em",
+              textTransform: "uppercase",
+              color: "rgba(255,255,255,0.90)",
+            },
+            headerSubtitle: {
+              color: "rgba(255,255,255,0.35)",
+              fontSize: "12px",
+            },
             socialButtonsBlockButton: {
-              border: "1px solid rgba(255,255,255,0.2)",
-              backgroundColor: "rgba(255,255,255,0.06)",
-              color: "#ffffff",
-              fontWeight: "600",
-              padding: "12px",
+              border: "1px solid rgba(122,154,130,0.30)",
+              backgroundColor: "rgba(122,154,130,0.08)",
+              color: "#7A9A82",
+              fontWeight: 700,
+              padding: "13px",
+              fontFamily: "'Space Mono', monospace",
+              fontSize: "11px",
+              letterSpacing: "0.06em",
+              transition: "all 0.2s",
             },
-            socialButtonsBlockButtonText: { color: "#ffffff", fontWeight: "600" },
-            dividerText: { color: "#666" },
-            dividerLine: { backgroundColor: "rgba(255,255,255,0.1)" },
-            formFieldLabel: { color: "#cccccc" },
-            formFieldInput: {
-              backgroundColor: "#2a2a3e",
-              border: "1px solid rgba(255,255,255,0.15)",
-              color: "#ffffff",
+            socialButtonsBlockButtonText: {
+              color: "#7A9A82",
+              fontWeight: 700,
+              fontFamily: "'Space Mono', monospace",
+              fontSize: "11px",
+              letterSpacing: "0.06em",
             },
+            dividerLine: { backgroundColor: "rgba(122,154,130,0.12)" },
+            dividerText: { color: "rgba(255,255,255,0.20)", fontSize: "10px" },
             formButtonPrimary: {
-              backgroundColor: "#ffffff",
-              color: "#000000",
-              fontWeight: "700",
+              backgroundColor: "#7A9A82",
+              color: "#17160f",
+              fontWeight: 700,
+              fontFamily: "'Space Mono', monospace",
+              letterSpacing: "0.06em",
             },
-            footerActionText: { color: "#888888" },
-            footerActionLink: { color: "#ffffff", fontWeight: "600" },
             footer: { display: "none" },
-          }
+          },
         }}
       />
 
-      <p className="text-xs text-gray-600 text-center max-w-xs">
-        En te connectant, tu accèdes à l'ensemble de la plateforme : Digiboard, données, Mon Club.
+      <p style={{
+        fontFamily: "'Space Mono', monospace",
+        fontSize: 9, letterSpacing: "0.08em",
+        color: "rgba(255,255,255,0.18)",
+        textAlign: "center", maxWidth: 280, lineHeight: 1.7,
+      }}>
+        DIGIBOARD · DONNÉES · MON CLUB
       </p>
     </main>
   )

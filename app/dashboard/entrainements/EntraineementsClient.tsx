@@ -1,11 +1,21 @@
 "use client"
 
 import { useState, useTransition } from "react"
+import Link from "next/link"
 import TrainingForm from "@/components/dashboard/TrainingForm"
+import PlanifierModal from "@/components/dashboard/PlanifierModal"
 import PageHeader from "@/components/dashboard/PageHeader"
 import { deleteTraining } from "./actions"
 import { TRAINING_TYPES } from "@/lib/training-types"
 import type { Training } from "./actions"
+
+interface SavedSession {
+  id: string
+  name: string
+  session_type: string
+  total_duration: number
+  date: string
+}
 
 function formatDate(dateStr: string) {
   const m = dateStr.match(/(\d{4})-(\d{2})-(\d{2})/)
@@ -130,16 +140,16 @@ function CalendarView({ trainings, year, onEdit }: { trainings: Training[]; year
 }
 
 /* ── Page principale ────────────────────────────────────── */
-interface Props { trainings: Training[] }
+interface Props { trainings: Training[]; savedSessions: SavedSession[] }
 
-export default function EntraineementsClient({ trainings }: Props) {
+export default function EntraineementsClient({ trainings, savedSessions }: Props) {
   const [showForm, setShowForm] = useState(false)
+  const [showPlanifier, setShowPlanifier] = useState(false)
   const [editing, setEditing]   = useState<Training | undefined>(undefined)
   const [deleting, startDelete] = useTransition()
   const [view, setView]         = useState<"list" | "calendar">("list")
   const [calYear, setCalYear]   = useState(new Date().getFullYear())
 
-  function openAdd()             { setEditing(undefined); setShowForm(true) }
   function openEdit(t: Training) { setEditing(t); setShowForm(true) }
   function handleDelete(id: string) {
     if (!confirm("Supprimer cette séance ?")) return
@@ -170,13 +180,24 @@ export default function EntraineementsClient({ trainings }: Props) {
                 </button>
               ))}
             </div>
-            <button onClick={openAdd} style={{
+            <Link href="/dashboard/entrainements/nouvelle-seance" style={{
+              fontFamily: "var(--font-mono), monospace",
+              fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
+              padding: "10px 20px", borderRadius: 10, cursor: "pointer",
+              backgroundColor: "rgba(122,154,130,0.12)",
+              border: "1px solid rgba(122,154,130,0.30)",
+              color: "#7A9A82",
+              textDecoration: "none", display: "inline-block",
+            }}>
+              CRÉER UNE SÉANCE
+            </Link>
+            <button onClick={() => setShowPlanifier(true)} style={{
               fontFamily: "var(--font-mono), monospace",
               fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
               padding: "10px 20px", borderRadius: 10, cursor: "pointer",
               backgroundColor: "#7A9A82", color: "var(--bg)", border: "none",
             }}>
-              + AJOUTER
+              PLANIFIER
             </button>
           </div>
         }
@@ -192,7 +213,7 @@ export default function EntraineementsClient({ trainings }: Props) {
             Aucune séance enregistrée.
           </p>
           <p style={{ fontFamily: "var(--font-mono), monospace", fontSize: 9, letterSpacing: "0.08em", color: "rgba(122,154,130,0.35)" }}>
-            Utilise le bouton AJOUTER pour créer ta première séance.
+            Utilise le bouton PLANIFIER pour créer ta première séance.
           </p>
         </div>
       )}
@@ -296,6 +317,10 @@ export default function EntraineementsClient({ trainings }: Props) {
 
       {showForm && (
         <TrainingForm training={editing} onClose={() => setShowForm(false)} />
+      )}
+
+      {showPlanifier && (
+        <PlanifierModal savedSessions={savedSessions} onClose={() => setShowPlanifier(false)} />
       )}
     </>
   )

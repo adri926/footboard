@@ -4,6 +4,7 @@ import { auth } from "@clerk/nextjs/server"
 import { z } from "zod"
 import { revalidatePath } from "next/cache"
 import { supabase } from "@/lib/supabase"
+import type { PhysicalEntry } from "@/types/physical"
 
 export interface Player {
   id:             string
@@ -147,6 +148,85 @@ export async function importPlayers(
 
   revalidatePath("/dashboard/effectif")
   return { ok: true, count: toInsert.length }
+}
+
+const PhysicalEntrySchema = z.object({
+  date:       z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  context:    z.enum(["match", "entrainement"]),
+  distanceM:  z.coerce.number().int().min(0).max(20000).nullable().optional(),
+  sprints:    z.coerce.number().int().min(0).max(200).nullable().optional(),
+  vmaxKmh:    z.coerce.number().min(0).max(50).nullable().optional(),
+  notes:      z.string().max(300).nullable().optional(),
+})
+
+export async function getPlayerPhysicalStats(playerId: string): Promise<PhysicalEntry[]> {
+  const userId = await requireUserId()
+  if (!/^[0-9a-f-]{36}$/.test(playerId)) return []
+
+  const { data, error } = await supabase
+    .from("player_physical_stats")
+    .select("*")
+    .eq("owner_id", userId)
+    .eq("player_id", playerId)
+    .order("date", { ascending: false })
+
+  if (error) return []
+  return (data ?? []).map(row => ({
+    id:        row.id,
+    playerId:  row.player_id,
+    date:      row.date,
+    context:   row.context,
+    distanceM: row.distance_m,
+    sprints:   row.sprints,
+    vmaxKmh:   row.vmax_kmh,
+    notes:     row.notes ?? "",
+  }))
+}
+
+export async function addPhysicalEntry(
+  playerId: string,
+  raw: unknown
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const userId = await requireUserId()
+
+  if (!/^[0-9a-f-]{36}$/.test(playerId)) return { ok: false, error: "ID invalide." }
+
+  const parsed = PhysicalEntrySchema.safeParse(raw)
+  if (!parsed.success) return { ok: false, error: "Données invalides." }
+
+  const { error } = await supabase.from("player_physical_stats").insert({
+    owner_id:   userId,
+    player_id:  playerId,
+    date:       parsed.data.date,
+    context:    parsed.data.context,
+    distance_m: parsed.data.distanceM ?? null,
+    sprints:    parsed.data.sprints ?? null,
+    vmax_kmh:   parsed.data.vmaxKmh ?? null,
+    notes:      parsed.data.notes ?? null,
+  })
+
+  if (error) return { ok: false, error: error.message }
+  revalidatePath(`/dashboard/effectif/${playerId}`)
+  return { ok: true }
+}
+
+export async function deletePhysicalEntry(
+  id: string,
+  playerId: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const userId = await requireUserId()
+
+  if (!/^[0-9a-f-]{36}$/.test(id)) return { ok: false, error: "ID invalide." }
+
+  const { error } = await supabase
+    .from("player_physical_stats")
+    .delete()
+    .eq("id", id)
+    .eq("owner_id", userId)
+
+  if (error) return { ok: false, error: error.message }
+  revalidatePath(`/dashboard/effectif/${playerId}`)
+  return { ok: true }
 }
 
 export async function deletePlayer(

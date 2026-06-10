@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import { useState, useTransition } from "react"
+import Link from "next/link"
 import PlayerStatusBadge from "@/components/dashboard/PlayerStatusBadge"
 import PlayerForm from "@/components/dashboard/PlayerForm"
 import ImportPlayersModal from "@/components/dashboard/ImportPlayersModal"
@@ -10,11 +11,31 @@ import { deletePlayer } from "./actions"
 import type { Player } from "./actions"
 
 type Position = "GK" | "DEF" | "MIL" | "ATT"
+type MedicalStatus = "disponible" | "incertain" | "blesse"
 
 const POSITION_ORDER: Position[] = ["GK", "DEF", "MIL", "ATT"]
 const POSITION_LABELS: Record<Position, string> = {
   GK: "Gardiens", DEF: "Défenseurs", MIL: "Milieux", ATT: "Attaquants",
 }
+
+const STATUS_MAP: Record<Player["status"], MedicalStatus> = {
+  available: "disponible",
+  injured:   "blesse",
+  uncertain: "incertain",
+}
+
+const COUNTER_DEFS: { status: MedicalStatus; label: string; color: string }[] = [
+  { status: "disponible", label: "Disponibles", color: "#7A9A82" },
+  { status: "incertain",  label: "Incertains",  color: "#d4a847" },
+  { status: "blesse",     label: "Blessés",     color: "#e07070" },
+]
+
+const STATUS_FILTERS: { value: MedicalStatus | "tous"; label: string }[] = [
+  { value: "tous",       label: "Tous" },
+  { value: "disponible", label: "Disponibles" },
+  { value: "incertain",  label: "Incertains" },
+  { value: "blesse",     label: "Blessés" },
+]
 
 interface Props { players: Player[] }
 
@@ -24,6 +45,7 @@ export default function EffectifClient({ players }: Props) {
   const [showImport, setShowImport] = useState(false)
   const [editing, setEditing]       = useState<Player | undefined>(undefined)
   const [deleting, startDelete]     = useTransition()
+  const [statusFilter, setStatusFilter] = useState<MedicalStatus | "tous">("tous")
 
   function openAdd() {
     setEditing(undefined)
@@ -40,9 +62,18 @@ export default function EffectifClient({ players }: Props) {
     startDelete(async () => { await deletePlayer(id) })
   }
 
+  const counts = COUNTER_DEFS.map(def => ({
+    ...def,
+    count: players.filter(p => STATUS_MAP[p.status] === def.status).length,
+  }))
+
+  const filteredPlayers = statusFilter === "tous"
+    ? players
+    : players.filter(p => STATUS_MAP[p.status] === statusFilter)
+
   const grouped = POSITION_ORDER.map(pos => ({
     pos,
-    players: players
+    players: filteredPlayers
       .filter(p => p.position === pos)
       .sort((a, b) => (a.number ?? 99) - (b.number ?? 99)),
   }))
@@ -76,6 +107,52 @@ export default function EffectifClient({ players }: Props) {
         }
       />
 
+      {/* Suivi médical — compteurs + filtre par statut */}
+      {players.length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <div style={{
+            display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 14,
+          }}>
+            {counts.map(c => (
+              <div key={c.status} style={{
+                padding: "16px 18px", borderRadius: 12,
+                backgroundColor: "var(--bg-card)",
+                border: "1px solid rgba(122,154,130,0.08)",
+              }}>
+                <p style={{
+                  fontFamily: "var(--font-display), system-ui, sans-serif",
+                  fontWeight: 900, fontSize: 28, color: c.color, lineHeight: 1,
+                }}>
+                  {c.count}
+                </p>
+                <p style={{
+                  fontFamily: "var(--font-mono), monospace", fontSize: 9, fontWeight: 700,
+                  letterSpacing: "0.06em", color: "rgba(255,255,255,0.35)", marginTop: 6,
+                }}>
+                  {c.label.toUpperCase()}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {STATUS_FILTERS.map(f => (
+              <button key={f.value} onClick={() => setStatusFilter(f.value)}
+                style={{
+                  fontFamily: "var(--font-mono), monospace", fontSize: 10, fontWeight: 700,
+                  letterSpacing: "0.05em",
+                  padding: "6px 12px", borderRadius: 8, cursor: "pointer",
+                  color: statusFilter === f.value ? "var(--sauge)" : "rgba(255,255,255,0.4)",
+                  backgroundColor: statusFilter === f.value ? "var(--sauge-dim)" : "transparent",
+                  border: statusFilter === f.value ? "1px solid var(--sauge-border)" : "1px solid rgba(122,154,130,0.12)",
+                }}>
+                {f.label.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Liste vide */}
       {players.length === 0 && (
         <div style={{
@@ -98,6 +175,17 @@ export default function EffectifClient({ players }: Props) {
             Utilise le bouton en haut à droite pour ajouter ton premier joueur.
           </p>
         </div>
+      )}
+
+      {/* Aucun joueur dans cette catégorie de statut */}
+      {players.length > 0 && filteredPlayers.length === 0 && (
+        <p style={{
+          fontFamily: "var(--font-body), sans-serif", fontWeight: 400,
+          fontSize: 13, color: "rgba(255,255,255,0.3)",
+          padding: "24px 0", textAlign: "center",
+        }}>
+          Aucun joueur dans cette catégorie.
+        </p>
       )}
 
       {/* Joueurs groupés par poste */}
@@ -132,7 +220,7 @@ export default function EffectifClient({ players }: Props) {
                   </span>
 
                   {/* Nom */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
+                  <Link href={`/dashboard/effectif/${p.id}`} style={{ flex: 1, minWidth: 0, textDecoration: "none" }}>
                     <p style={{
                       fontFamily: "var(--font-body), sans-serif",
                       fontWeight: 500, fontSize: 14,
@@ -149,7 +237,7 @@ export default function EffectifClient({ players }: Props) {
                         {p.injury_note}
                       </p>
                     )}
-                  </div>
+                  </Link>
 
                   {/* Stats */}
                   <div style={{ display: "flex", gap: 18 }}>

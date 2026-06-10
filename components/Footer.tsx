@@ -36,7 +36,7 @@ export default function Footer() {
   return (
     <footer style={{
       borderTop: "1px solid rgba(122,154,130,0.12)",
-      backgroundColor: "#181812",
+      backgroundColor: "var(--bg)",
       color: "rgba(255,255,255,0.92)",
     }}>
       <div className="max-w-5xl mx-auto px-6 py-14">
@@ -49,7 +49,7 @@ export default function Footer() {
               fontWeight: 900, fontSize: 20, letterSpacing: "0.05em",
               color: "rgba(255,255,255,0.95)",
             }}>
-              FOOTBOARD
+              FOOT<span style={{ color: "#7A9A82" }}>BOARD</span>
             </Link>
             <p style={{
               fontFamily: "var(--font-body), sans-serif",

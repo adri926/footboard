@@ -6,7 +6,7 @@ App Next.js de gestion de club football + terrain tactique interactif.
 
 ## Lancer le projet
 ```bash
-npm run dev  # → http://localhost:3001
+npm run dev  # → http://localhost:3000
 ```
 
 ## Stack
