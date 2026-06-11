@@ -7,7 +7,7 @@ export function hasEmailKey(): boolean {
   return !!KEY && KEY.length > 5
 }
 
-const FROM = process.env.RESEND_FROM ?? "Footboard <onboarding@resend.dev>"
+export const FROM = process.env.RESEND_FROM ?? "Footboard <onboarding@resend.dev>"
 
 // ─── Templates ────────────────────────────────────────────────
 
@@ -90,6 +90,36 @@ export function matchTemplate(d: MatchEmailData): { subject: string; html: strin
 
       <p style="margin:0 0 8px;color:#fff;font-weight:600;">Merci de confirmer ta présence à ton coach.</p>
       <p style="margin:0;color:#888;font-size:13px;">À très vite sur le terrain ⚽</p>
+    `)
+  }
+}
+
+interface PlayerInviteEmailData {
+  clubName: string
+  playerFirstName: string
+  inviteUrl: string
+}
+
+export function playerInviteTemplate(d: PlayerInviteEmailData): { subject: string; html: string } {
+  return {
+    subject: `[${d.clubName}] Ton espace joueur Footboard`,
+    html: emailLayout(`
+      <h1 style="margin:0 0 8px;font-size:24px;font-weight:800;color:#fff;">Bienvenue sur Footboard</h1>
+      <p style="margin:0 0 24px;color:#aaa;">${d.clubName}</p>
+
+      <p style="margin:0 0 16px;font-size:16px;color:#fff;">Salut ${d.playerFirstName},</p>
+      <p style="margin:0 0 24px;color:#ddd;">
+        Ton coach t'invite à créer ton espace joueur : tu pourras y consulter le calendrier,
+        tes convocations, tes statistiques et les séances préparées par le coach.
+      </p>
+
+      <div style="text-align:center;margin-bottom:24px;">
+        <a href="${d.inviteUrl}" style="display:inline-block;background:#7A9A82;color:#17160f;font-weight:800;text-decoration:none;padding:14px 28px;border-radius:10px;">
+          Créer mon compte
+        </a>
+      </div>
+
+      <p style="margin:0;color:#888;font-size:13px;">Ce lien est valable 7 jours. À très vite sur le terrain ⚽</p>
     `)
   }
 }

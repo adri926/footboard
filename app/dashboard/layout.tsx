@@ -4,6 +4,7 @@ import { currentUser } from "@clerk/nextjs/server"
 import Sidebar from "@/components/dashboard/Sidebar"
 import MobileHeader from "@/components/dashboard/MobileHeader"
 import { getMyClub } from "@/app/dashboard/club/actions"
+import { getLinkedPlayer } from "@/app/joueur/actions"
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
@@ -11,7 +12,10 @@ export const metadata: Metadata = {
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [club, user] = await Promise.all([getMyClub(), currentUser()])
-  if (!club) redirect("/onboarding")
+  if (!club) {
+    const linked = await getLinkedPlayer()
+    redirect(linked ? "/joueur" : "/onboarding")
+  }
 
   const userName = user?.firstName ?? user?.emailAddresses?.[0]?.emailAddress ?? "Coach"
 

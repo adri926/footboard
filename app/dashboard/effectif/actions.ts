@@ -2,8 +2,10 @@
 
 import { auth } from "@clerk/nextjs/server"
 import { z } from "zod"
+import { randomBytes } from "crypto"
 import { revalidatePath } from "next/cache"
 import { supabase } from "@/lib/supabase"
+import { resend, hasEmailKey, FROM, playerInviteTemplate } from "@/lib/email"
 import type { PhysicalEntry } from "@/types/physical"
 
 export interface Player {
@@ -16,6 +18,9 @@ export interface Player {
   status:         "available" | "injured" | "uncertain"
   injury_note:    string | null
   email:          string | null
+  phone:          string | null
+  user_id:        string | null
+  invite_status:  "none" | "pending" | "accepted"
   goals:          number
   assists:        number
   matches_played: number
@@ -31,6 +36,7 @@ const PlayerSchema = z.object({
   status:      z.enum(["available", "injured", "uncertain"]),
   injury_note: z.string().max(300).nullable().optional(),
   email:       z.string().email().max(200).nullable().optional(),
+  phone:       z.string().max(20).nullable().optional(),
 })
 
 async function requireUserId() {
@@ -225,6 +231,60 @@ export async function deletePhysicalEntry(
     .eq("owner_id", userId)
 
   if (error) return { ok: false, error: error.message }
+  revalidatePath(`/dashboard/effectif/${playerId}`)
+  return { ok: true }
+}
+
+export async function invitePlayer(
+  playerId: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const userId = await requireUserId()
+
+  if (!/^[0-9a-f-]{36}$/.test(playerId)) return { ok: false, error: "ID invalide." }
+
+  const { data: player, error: playerErr } = await supabase
+    .from("players")
+    .select("id, first_name, email, user_id")
+    .eq("id", playerId)
+    .eq("owner_id", userId)
+    .single()
+
+  if (playerErr || !player) return { ok: false, error: "Joueur introuvable." }
+  if (!player.email) return { ok: false, error: "Le joueur n'a pas d'email renseigné." }
+  if (player.user_id) return { ok: false, error: "Ce joueur a déjà un compte." }
+
+  const { data: club } = await supabase
+    .from("clubs")
+    .select("name")
+    .eq("owner_id", userId)
+    .single()
+
+  const token = randomBytes(24).toString("hex")
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+
+  // Repart d'une invitation propre à chaque (ré)envoi
+  await supabase.from("player_invites").delete().eq("player_id", playerId)
+
+  const { error: insertErr } = await supabase.from("player_invites").insert({
+    player_id: playerId,
+    owner_id:  userId,
+    email:     player.email,
+    token,
+    expires_at: expiresAt,
+  })
+  if (insertErr) return { ok: false, error: insertErr.message }
+
+  if (hasEmailKey()) {
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"
+    const { subject, html } = playerInviteTemplate({
+      clubName:        club?.name ?? "ton club",
+      playerFirstName: player.first_name,
+      inviteUrl:       `${baseUrl}/invitation/${token}`,
+    })
+    await resend!.emails.send({ from: FROM, to: player.email, subject, html })
+  }
+
+  await supabase.from("players").update({ invite_status: "pending" }).eq("id", playerId)
   revalidatePath(`/dashboard/effectif/${playerId}`)
   return { ok: true }
 }

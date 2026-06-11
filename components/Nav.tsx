@@ -122,22 +122,6 @@ export default function Nav() {
         })}
       </nav>
 
-      {/* CTA */}
-      {!pathname.startsWith("/dashboard") && (
-        <div className="ml-auto">
-          <Link href="/dashboard"
-            className="text-xs px-4 py-1.5 rounded-lg transition"
-            style={{
-              fontFamily: "var(--font-mono), monospace",
-              fontWeight: 700, letterSpacing: "0.06em",
-              color: "var(--sauge)",
-              backgroundColor: "transparent",
-              border: "1px solid var(--sauge-border)",
-            }}>
-            MON CLUB →
-          </Link>
-        </div>
-      )}
     </header>
   )
 }

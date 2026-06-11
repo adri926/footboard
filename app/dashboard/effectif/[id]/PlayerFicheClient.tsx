@@ -11,6 +11,7 @@ import TrainingLoadChart from "@/components/sante/TrainingLoadChart"
 import PhysicalStatsChart from "@/components/effectif/PhysicalStatsChart"
 import PhysicalEntryForm from "@/components/effectif/PhysicalEntryForm"
 import PhysicalEntryList from "@/components/effectif/PhysicalEntryList"
+import PlayerAccountSection from "@/components/effectif/PlayerAccountSection"
 import type { Player } from "@/app/dashboard/effectif/actions"
 import type { PlayerSeasonStats } from "@/app/dashboard/matchs/actions"
 import type { MedicalRecord } from "@/types/medical"
@@ -28,6 +29,11 @@ const TABS = [
 ] as const
 
 type Tab = typeof TABS[number]["key"]
+
+const CONTACT_MESSAGES: Record<"injured" | "uncertain", (firstName: string) => string> = {
+  injured:   name => `Salut ${name}, ton retour nous ferait du bien ! Comment évolue ta blessure ?`,
+  uncertain: name => `Salut ${name}, on compte sur toi ! Tu en es où, tu penses être dispo pour la suite ?`,
+}
 
 interface Props {
   player:   Player
@@ -100,6 +106,7 @@ export default function PlayerFicheClient({ player, stats, medical, physical }: 
             { label: "Numéro",  value: player.number ? `#${player.number}` : "—" },
             { label: "Statut",  value: <PlayerStatusBadge status={player.status} /> },
             { label: "Email",   value: player.email ?? "—" },
+            { label: "Téléphone", value: player.phone ?? "—" },
           ].map(({ label, value }) => (
             <div key={label} style={{
               display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -125,28 +132,19 @@ export default function PlayerFicheClient({ player, stats, medical, physical }: 
             </div>
           ))}
 
-          {player.injury_note && (
-            <div style={{
-              padding: "12px 14px", borderRadius: 8,
-              backgroundColor: "rgba(224,112,112,0.06)",
-              border: "1px solid rgba(224,112,112,0.15)",
+          <div style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            paddingTop: 2,
+          }}>
+            <p style={{
+              fontFamily: "var(--font-body), sans-serif",
+              fontWeight: 400, fontSize: 13,
+              color: "rgba(255,255,255,0.4)",
             }}>
-              <p style={{
-                fontFamily: "var(--font-mono), monospace",
-                fontSize: 8, letterSpacing: "0.1em",
-                color: "rgba(224,112,112,0.5)", marginBottom: 4,
-              }}>
-                NOTE MÉDICALE
-              </p>
-              <p style={{
-                fontFamily: "var(--font-body), sans-serif",
-                fontWeight: 400, fontSize: 13, lineHeight: 1.5,
-                color: "rgba(255,255,255,0.5)",
-              }}>
-                {player.injury_note}
-              </p>
-            </div>
-          )}
+              Espace joueur
+            </p>
+            <PlayerAccountSection player={player} />
+          </div>
         </div>
       )}
 
@@ -205,9 +203,76 @@ export default function PlayerFicheClient({ player, stats, medical, physical }: 
             </div>
           </Section>
 
-          <Section title="Historique des blessures">
-            <InjuryHistory injuries={medical.injuries} />
-          </Section>
+          {player.status === "injured" && (
+            <Section title="Notes médicales">
+              <p style={{
+                fontFamily: "var(--font-body), sans-serif", fontWeight: 400,
+                fontSize: 13, color: medical.notes ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.3)", lineHeight: 1.6,
+              }}>
+                {medical.notes || "Aucune note enregistrée pour le moment."}
+              </p>
+            </Section>
+          )}
+
+          {(player.status === "injured" || player.status === "uncertain") && (
+            <Section title="Prendre des nouvelles">
+              <p style={{
+                fontFamily: "var(--font-body), sans-serif", fontWeight: 400,
+                fontSize: 13, color: "rgba(255,255,255,0.5)", lineHeight: 1.6, marginBottom: 14,
+              }}>
+                Envoie un message type à {player.first_name} pour savoir où il en est.
+              </p>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <a
+                  href={player.phone
+                    ? `sms:${player.phone.replace(/\s+/g, "")}?&body=${encodeURIComponent(CONTACT_MESSAGES[player.status](player.first_name))}`
+                    : undefined
+                  }
+                  aria-disabled={!player.phone}
+                  style={{
+                    fontFamily: "var(--font-mono), monospace",
+                    fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
+                    padding: "10px 18px", borderRadius: 10,
+                    backgroundColor: player.phone ? "#7A9A82" : "rgba(122,154,130,0.12)",
+                    color: player.phone ? "var(--bg)" : "rgba(255,255,255,0.25)",
+                    border: "none", textDecoration: "none",
+                    cursor: player.phone ? "pointer" : "default",
+                    pointerEvents: player.phone ? "auto" : "none",
+                  }}
+                >
+                  ENVOYER UN SMS
+                </a>
+                <a
+                  href={player.email
+                    ? `mailto:${player.email}?subject=${encodeURIComponent("Des nouvelles ?")}&body=${encodeURIComponent(CONTACT_MESSAGES[player.status](player.first_name))}`
+                    : undefined
+                  }
+                  aria-disabled={!player.email}
+                  style={{
+                    fontFamily: "var(--font-mono), monospace",
+                    fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
+                    padding: "10px 18px", borderRadius: 10,
+                    backgroundColor: "transparent",
+                    color: player.email ? "rgba(122,154,130,0.7)" : "rgba(255,255,255,0.2)",
+                    border: `1px solid ${player.email ? "rgba(122,154,130,0.25)" : "rgba(122,154,130,0.1)"}`,
+                    textDecoration: "none",
+                    cursor: player.email ? "pointer" : "default",
+                    pointerEvents: player.email ? "auto" : "none",
+                  }}
+                >
+                  ENVOYER UN EMAIL
+                </a>
+              </div>
+              {!player.phone && !player.email && (
+                <p style={{
+                  fontFamily: "var(--font-mono), monospace", fontSize: 9,
+                  letterSpacing: "0.06em", color: "rgba(224,112,112,0.5)", marginTop: 10,
+                }}>
+                  Ajoute un email ou un téléphone à {player.first_name} (onglet Identité) pour activer ces boutons.
+                </p>
+              )}
+            </Section>
+          )}
 
           <Section title="Charge d'entraînement — 8 dernières semaines">
             {medical.loads.length > 0 ? (
@@ -222,13 +287,8 @@ export default function PlayerFicheClient({ player, stats, medical, physical }: 
             )}
           </Section>
 
-          <Section title="Notes médicales">
-            <p style={{
-              fontFamily: "var(--font-body), sans-serif", fontWeight: 400,
-              fontSize: 13, color: medical.notes ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.3)", lineHeight: 1.6,
-            }}>
-              {medical.notes || "Aucune note enregistrée pour le moment."}
-            </p>
+          <Section title="Historique des blessures">
+            <InjuryHistory injuries={medical.injuries} />
           </Section>
 
           <p style={{

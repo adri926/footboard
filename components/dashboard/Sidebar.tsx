@@ -45,7 +45,7 @@ export default function Sidebar({ clubName, clubLevel, userName }: Props) {
         @media (max-width: 1024px) and (min-width: 768px) {
           .sb { width: 64px !important; }
           .sb-label, .sb-group, .sb-sub, .sb-avtext { display: none !important; }
-          .sb-logoicon { display: inline !important; }
+          .sb-logoicon { display: flex !important; }
           .sb-item { justify-content: center !important; padding: 10px !important; gap: 0 !important; position: relative; }
           .sb-item:hover::after {
             content: attr(data-label);
@@ -79,37 +79,43 @@ export default function Sidebar({ clubName, clubLevel, userName }: Props) {
         height: "100vh", position: "sticky", top: 0, overflowY: "auto",
         transition: "width 0.2s ease",
       }}>
-        {/* Logo */}
-        <div className="sb-logo" style={{
-          padding: "18px 20px 14px",
+        {/* Club */}
+        <Link href="/dashboard" className="sb-logo" style={{
+          padding: "18px 20px 16px",
           borderBottom: "1px solid rgba(122,154,130,0.08)",
-          display: "flex", flexDirection: "column",
+          display: "flex", alignItems: "center", gap: 10,
+          textDecoration: "none",
         }}>
-          <div style={{ display: "flex", alignItems: "center" }}>
-            <Link href="/" className="sb-label" style={{
-              fontFamily: "var(--font-display), system-ui, sans-serif",
-              fontWeight: 900, fontSize: 16, letterSpacing: "0.06em",
-              color: "rgba(255,255,255,0.95)",
-            }}>
-              FOOTBOARD
-            </Link>
-            <span className="sb-logoicon" style={{
-              display: "none",
-              fontFamily: "var(--font-display), system-ui, sans-serif",
-              fontWeight: 900, fontSize: 16, letterSpacing: "0.06em",
-              color: "rgba(255,255,255,0.95)",
-            }}>
-              F
-            </span>
-          </div>
-          <p className="sb-sub" style={{
-            fontFamily: "var(--font-mono), monospace",
-            fontSize: 8, letterSpacing: "0.1em",
-            color: "rgba(122,154,130,0.55)", marginTop: 5,
+          <div className="sb-logoicon" style={{
+            width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+            backgroundColor: "rgba(122,154,130,0.1)",
+            border: "1px solid rgba(122,154,130,0.25)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontFamily: "var(--font-display), system-ui, sans-serif",
+            fontWeight: 900, fontSize: 14, color: "#7A9A82",
           }}>
-            {clubName.toUpperCase()}{clubLevel ? ` — ${clubLevel}` : ""}
-          </p>
-        </div>
+            {clubName[0].toUpperCase()}
+          </div>
+          <div className="sb-label" style={{ minWidth: 0 }}>
+            <p style={{
+              fontFamily: "var(--font-display), system-ui, sans-serif",
+              fontWeight: 900, fontSize: 15, letterSpacing: "0.04em",
+              color: "rgba(255,255,255,0.95)",
+              whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+            }}>
+              {clubName.toUpperCase()}
+            </p>
+            {clubLevel && (
+              <p style={{
+                fontFamily: "var(--font-mono), monospace",
+                fontSize: 9, letterSpacing: "0.1em",
+                color: "rgba(122,154,130,0.55)", marginTop: 2,
+              }}>
+                {clubLevel.toUpperCase()}
+              </p>
+            )}
+          </div>
+        </Link>
 
         {/* Navigation */}
         <nav style={{ flex: 1, padding: "16px 12px", display: "flex", flexDirection: "column", gap: 24 }}>

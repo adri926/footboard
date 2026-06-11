@@ -51,6 +51,7 @@ export default function PlayerForm({ player, onClose }: Props) {
     status:      player?.status      ?? "available",
     injury_note: player?.injury_note ?? "",
     email:       player?.email       ?? "",
+    phone:       player?.phone       ?? "",
   })
 
   function set(field: string, value: string | number) {
@@ -66,6 +67,7 @@ export default function PlayerForm({ player, onClose }: Props) {
       number:      form.number !== "" ? Number(form.number) : null,
       injury_note: form.injury_note || null,
       email:       form.email || null,
+      phone:       form.phone || null,
     }
 
     startTransition(async () => {
@@ -192,17 +194,30 @@ export default function PlayerForm({ player, onClose }: Props) {
             </div>
           </div>
 
-          {/* Email */}
-          <div>
-            <label style={LABEL}>Email (pour les convocations)</label>
-            <input
-              type="email"
-              value={form.email}
-              onChange={e => set("email", e.target.value)}
-              placeholder="lucas.moreau@email.com"
-              style={INPUT}
-              maxLength={200}
-            />
+          {/* Email + Téléphone */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div>
+              <label style={LABEL}>Email (pour les convocations)</label>
+              <input
+                type="email"
+                value={form.email}
+                onChange={e => set("email", e.target.value)}
+                placeholder="lucas.moreau@email.com"
+                style={INPUT}
+                maxLength={200}
+              />
+            </div>
+            <div>
+              <label style={LABEL}>Téléphone (pour SMS)</label>
+              <input
+                type="tel"
+                value={form.phone}
+                onChange={e => set("phone", e.target.value)}
+                placeholder="06 12 34 56 78"
+                style={INPUT}
+                maxLength={20}
+              />
+            </div>
           </div>
 
           {/* Note blessure */}
