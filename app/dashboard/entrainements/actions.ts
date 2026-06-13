@@ -4,7 +4,7 @@ import { z } from "zod"
 import { revalidatePath } from "next/cache"
 import { supabase } from "@/lib/supabase"
 import { getClubScope } from "@/lib/scope"
-import { getOrCreateDefaultTeam } from "@/lib/teams"
+import { getActiveTeam } from "@/lib/teams"
 import type { TrainingType } from "@/lib/training-types"
 
 export interface Training {
@@ -28,10 +28,12 @@ const TrainingSchema = z.object({
 
 export async function getTrainings(): Promise<Training[]> {
   const scope = await getClubScope()
+  const activeTeam = await getActiveTeam(scope)
   const { data, error } = await supabase
     .from("trainings")
     .select("*")
     .eq(scope.column, scope.value)
+    .eq("team_id", activeTeam.id)
     .order("date", { ascending: false })
 
   if (error) throw new Error(error.message)
@@ -46,7 +48,7 @@ export async function createTraining(
   const parsed = TrainingSchema.safeParse(raw)
   if (!parsed.success) return { ok: false, error: "Données invalides." }
 
-  const team = await getOrCreateDefaultTeam(scope)
+  const team = await getActiveTeam(scope)
 
   const { error } = await supabase
     .from("trainings")

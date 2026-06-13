@@ -4,7 +4,7 @@ import { z } from "zod"
 import { revalidatePath } from "next/cache"
 import { supabase } from "@/lib/supabase"
 import { getClubScope } from "@/lib/scope"
-import { getOrCreateDefaultTeam } from "@/lib/teams"
+import { getActiveTeam } from "@/lib/teams"
 
 export interface Match {
   id:           string
@@ -119,10 +119,12 @@ export async function saveLineup(
 
 export async function getMatches(): Promise<Match[]> {
   const scope = await getClubScope()
+  const activeTeam = await getActiveTeam(scope)
   const { data, error } = await supabase
     .from("matches")
     .select("*")
     .eq(scope.column, scope.value)
+    .eq("team_id", activeTeam.id)
     .order("date", { ascending: false })
 
   if (error) throw new Error(error.message)
@@ -137,7 +139,7 @@ export async function createMatch(
   const parsed = MatchSchema.safeParse(raw)
   if (!parsed.success) return { ok: false, error: "Données invalides." }
 
-  const team = await getOrCreateDefaultTeam(scope)
+  const team = await getActiveTeam(scope)
 
   const { error } = await supabase
     .from("matches")
