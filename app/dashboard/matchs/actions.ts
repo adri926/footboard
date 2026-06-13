@@ -1,9 +1,9 @@
 "use server"
 
-import { auth } from "@clerk/nextjs/server"
 import { z } from "zod"
 import { revalidatePath } from "next/cache"
 import { supabase } from "@/lib/supabase"
+import { getClubScope } from "@/lib/scope"
 
 export interface Match {
   id:           string
@@ -63,32 +63,26 @@ const MatchSchema = z.object({
   notes:        z.string().max(1000).nullable().optional(),
 })
 
-async function requireUserId() {
-  const { userId } = await auth()
-  if (!userId) throw new Error("Non authentifié")
-  return userId
-}
-
 export async function getMatchById(id: string): Promise<Match | null> {
-  const userId = await requireUserId()
+  const scope = await getClubScope()
   if (!/^[0-9a-f-]{36}$/.test(id)) return null
   const { data, error } = await supabase
     .from("matches")
     .select("*")
     .eq("id", id)
-    .eq("owner_id", userId)
+    .eq(scope.column, scope.value)
     .single()
   if (error) return null
   return data
 }
 
 export async function getLineup(matchId: string): Promise<Lineup> {
-  const userId = await requireUserId()
+  const scope = await getClubScope()
   const { data } = await supabase
     .from("match_lineups")
     .select("player_id, role")
     .eq("match_id", matchId)
-    .eq("owner_id", userId)
+    .eq(scope.column, scope.value)
   if (!data) return { starters: [], substitutes: [] }
   return {
     starters:    data.filter(r => r.role === "starter").map(r => r.player_id),
@@ -101,16 +95,16 @@ export async function saveLineup(
   starters: string[],
   substitutes: string[]
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const userId = await requireUserId()
+  const scope = await getClubScope()
   if (!/^[0-9a-f-]{36}$/.test(matchId)) return { ok: false, error: "ID invalide." }
 
   const validId = (id: string) => /^[0-9a-f-]{36}$/.test(id)
 
-  await supabase.from("match_lineups").delete().eq("match_id", matchId).eq("owner_id", userId)
+  await supabase.from("match_lineups").delete().eq("match_id", matchId).eq(scope.column, scope.value)
 
   const rows = [
-    ...starters.filter(validId).map(id => ({ match_id: matchId, player_id: id, role: "starter",    owner_id: userId })),
-    ...substitutes.filter(validId).map(id => ({ match_id: matchId, player_id: id, role: "substitute", owner_id: userId })),
+    ...starters.filter(validId).map(id => ({ match_id: matchId, player_id: id, role: "starter",    owner_id: scope.userId, org_id: scope.orgId })),
+    ...substitutes.filter(validId).map(id => ({ match_id: matchId, player_id: id, role: "substitute", owner_id: scope.userId, org_id: scope.orgId })),
   ]
 
   if (rows.length === 0) return { ok: true }
@@ -123,11 +117,11 @@ export async function saveLineup(
 }
 
 export async function getMatches(): Promise<Match[]> {
-  const userId = await requireUserId()
+  const scope = await getClubScope()
   const { data, error } = await supabase
     .from("matches")
     .select("*")
-    .eq("owner_id", userId)
+    .eq(scope.column, scope.value)
     .order("date", { ascending: false })
 
   if (error) throw new Error(error.message)
@@ -137,14 +131,14 @@ export async function getMatches(): Promise<Match[]> {
 export async function createMatch(
   raw: unknown
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const userId = await requireUserId()
+  const scope = await getClubScope()
 
   const parsed = MatchSchema.safeParse(raw)
   if (!parsed.success) return { ok: false, error: "Données invalides." }
 
   const { error } = await supabase
     .from("matches")
-    .insert({ ...parsed.data, owner_id: userId })
+    .insert({ ...parsed.data, owner_id: scope.userId, org_id: scope.orgId })
 
   if (error) return { ok: false, error: error.message }
   revalidatePath("/dashboard/matchs")
@@ -155,7 +149,7 @@ export async function updateMatch(
   id: string,
   raw: unknown
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const userId = await requireUserId()
+  const scope = await getClubScope()
   if (!/^[0-9a-f-]{36}$/.test(id)) return { ok: false, error: "ID invalide." }
 
   const parsed = MatchSchema.safeParse(raw)
@@ -165,7 +159,7 @@ export async function updateMatch(
     .from("matches")
     .update(parsed.data)
     .eq("id", id)
-    .eq("owner_id", userId)
+    .eq(scope.column, scope.value)
 
   if (error) return { ok: false, error: error.message }
   revalidatePath("/dashboard/matchs")
@@ -173,7 +167,6 @@ export async function updateMatch(
 }
 
 export async function getMatchStats(matchId: string): Promise<MatchPlayerStat[]> {
-  const userId = await requireUserId()
   const match = await getMatchById(matchId)
   if (!match) return []
 
@@ -197,7 +190,6 @@ export async function saveMatchStats(
   matchId: string,
   rows: unknown[]
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const userId = await requireUserId()
   if (!/^[0-9a-f-]{36}$/.test(matchId)) return { ok: false, error: "ID invalide." }
 
   const match = await getMatchById(matchId)
@@ -233,17 +225,17 @@ export async function saveMatchStats(
 }
 
 export async function getPlayerSeasonStats(): Promise<Record<string, PlayerSeasonStats>> {
-  const userId = await requireUserId()
+  const scope = await getClubScope()
 
   const { data: matches } = await supabase
     .from("matches")
     .select("id")
-    .eq("owner_id", userId)
+    .eq(scope.column, scope.value)
   const matchIds = (matches ?? []).map(m => m.id)
   if (matchIds.length === 0) return {}
 
   const [{ data: lineups }, { data: stats }] = await Promise.all([
-    supabase.from("match_lineups").select("player_id, role").eq("owner_id", userId).in("match_id", matchIds),
+    supabase.from("match_lineups").select("player_id, role").eq(scope.column, scope.value).in("match_id", matchIds),
     supabase.from("match_stats").select("player_id, goals, assists, minutes_played").in("match_id", matchIds),
   ])
 
@@ -282,20 +274,20 @@ export interface PlayerMatchEntry {
 }
 
 export async function getPlayerMatchHistory(playerId: string): Promise<PlayerMatchEntry[]> {
-  const userId = await requireUserId()
+  const scope = await getClubScope()
   if (!/^[0-9a-f-]{36}$/.test(playerId)) return []
 
   const { data: lineupRows } = await supabase
     .from("match_lineups")
     .select("match_id, role")
-    .eq("owner_id", userId)
+    .eq(scope.column, scope.value)
     .eq("player_id", playerId)
 
   if (!lineupRows || lineupRows.length === 0) return []
   const matchIds = lineupRows.map(r => r.match_id)
 
   const [{ data: matches }, { data: stats }] = await Promise.all([
-    supabase.from("matches").select("*").eq("owner_id", userId).in("id", matchIds).order("date", { ascending: false }),
+    supabase.from("matches").select("*").eq(scope.column, scope.value).in("id", matchIds).order("date", { ascending: false }),
     supabase.from("match_stats").select("match_id, goals, assists, yellow_cards, red_cards, minutes_played").eq("player_id", playerId).in("match_id", matchIds),
   ])
   if (!matches) return []
@@ -318,14 +310,14 @@ export async function getPlayerMatchHistory(playerId: string): Promise<PlayerMat
 export async function deleteMatch(
   id: string
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const userId = await requireUserId()
+  const scope = await getClubScope()
   if (!/^[0-9a-f-]{36}$/.test(id)) return { ok: false, error: "ID invalide." }
 
   const { error } = await supabase
     .from("matches")
     .delete()
     .eq("id", id)
-    .eq("owner_id", userId)
+    .eq(scope.column, scope.value)
 
   if (error) return { ok: false, error: error.message }
   revalidatePath("/dashboard/matchs")

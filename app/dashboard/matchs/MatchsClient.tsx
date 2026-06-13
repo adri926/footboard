@@ -29,8 +29,8 @@ function dateKey(dateStr: string): string {
 const POSITION_ORDER: Record<string, number> = { GK: 0, DEF: 1, MIL: 2, ATT: 3 }
 
 function ConvocationModal({
-  match, players, onClose,
-}: { match: Match; players: ConvocablePlayer[]; onClose: () => void }) {
+  match, players, availability, onClose,
+}: { match: Match; players: ConvocablePlayer[]; availability: Record<string, "present" | "absent">; onClose: () => void }) {
   const sorted = [...players].sort(
     (a, b) => (POSITION_ORDER[a.position] ?? 9) - (POSITION_ORDER[b.position] ?? 9)
   )
@@ -174,6 +174,18 @@ function ConvocationModal({
                         </p>
                       )}
                     </div>
+                    {availability[p.id] && (
+                      <span style={{
+                        fontFamily: "var(--font-mono), monospace", fontSize: 8, fontWeight: 700,
+                        letterSpacing: "0.06em",
+                        color: availability[p.id] === "present" ? "#7A9A82" : "#e07070",
+                        backgroundColor: availability[p.id] === "present" ? "rgba(122,154,130,0.12)" : "rgba(224,112,112,0.1)",
+                        border: `1px solid ${availability[p.id] === "present" ? "rgba(122,154,130,0.35)" : "rgba(224,112,112,0.3)"}`,
+                        padding: "3px 8px", borderRadius: 100, whiteSpace: "nowrap",
+                      }}>
+                        {availability[p.id] === "present" ? "✓ PRÉSENT" : "✗ ABSENT"}
+                      </span>
+                    )}
                   </div>
                 )
               })}
@@ -221,9 +233,9 @@ function ConvocationModal({
   )
 }
 
-interface Props { matches: Match[]; players: ConvocablePlayer[]; club: Club | null }
+interface Props { matches: Match[]; players: ConvocablePlayer[]; club: Club | null; availability: Record<string, Record<string, "present" | "absent">> }
 
-export default function MatchsClient({ matches, players, club }: Props) {
+export default function MatchsClient({ matches, players, club, availability }: Props) {
   const clubName = club?.name ?? "Mon club"
   const clubLogo = club?.logo ?? null
   const [showForm, setShowForm]         = useState(false)
@@ -355,6 +367,21 @@ export default function MatchsClient({ matches, players, club }: Props) {
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  {(() => {
+                    const total = players.filter(p => p.status === "available" && p.email).length
+                    const responded = Object.keys(availability[m.id] ?? {}).length
+                    if (total === 0) return null
+                    return (
+                      <span style={{
+                        fontFamily: "var(--font-mono), monospace", fontSize: 8, fontWeight: 700,
+                        letterSpacing: "0.06em", color: "rgba(255,255,255,0.35)",
+                        backgroundColor: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
+                        padding: "5px 10px", borderRadius: 6, whiteSpace: "nowrap",
+                      }}>
+                        {responded}/{total} RÉPONDUS
+                      </span>
+                    )
+                  })()}
                   <button onClick={() => setConvoking(m)} style={{
                     fontFamily: "var(--font-mono), monospace",
                     fontSize: 8, fontWeight: 700, letterSpacing: "0.06em",
@@ -529,6 +556,7 @@ export default function MatchsClient({ matches, players, club }: Props) {
         <ConvocationModal
           match={convokingMatch}
           players={players}
+          availability={availability[convokingMatch.id] ?? {}}
           onClose={() => setConvoking(null)}
         />
       )}

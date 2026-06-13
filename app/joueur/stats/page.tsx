@@ -3,6 +3,7 @@ import Link from "next/link"
 import PageHeader from "@/components/dashboard/PageHeader"
 import MetricCard from "@/components/dashboard/MetricCard"
 import { getLinkedPlayer, getMyPlayerStats, getMyMatchHistory } from "../actions"
+import { getPlayerClubScope } from "@/lib/scope"
 
 function formatDateLong(dateStr: string) {
   const m = dateStr.match(/(\d{4})-(\d{2})-(\d{2})/)
@@ -15,9 +16,10 @@ export default async function JoueurStatsPage() {
   const linked = await getLinkedPlayer()
   if (!linked) redirect("/onboarding")
 
+  const scope = getPlayerClubScope(linked.club)
   const [stats, history] = await Promise.all([
-    getMyPlayerStats(linked.club.owner_id, linked.player.id),
-    getMyMatchHistory(linked.club.owner_id, linked.player.id),
+    getMyPlayerStats(scope, linked.player.id),
+    getMyMatchHistory(scope, linked.player.id),
   ])
 
   return (
@@ -92,7 +94,7 @@ export default async function JoueurStatsPage() {
                     <p style={{ fontFamily: "var(--font-mono), monospace", fontSize: 7, color: "rgba(255,255,255,0.25)", letterSpacing: "0.08em" }}>PASSES D.</p>
                   </div>
                   <div>
-                    <p style={{ fontFamily: "var(--font-display), system-ui, sans-serif", fontWeight: 900, fontSize: 18, color: "rgba(255,255,255,0.85)" }}>{entry.minutesPlayed}'</p>
+                    <p style={{ fontFamily: "var(--font-display), system-ui, sans-serif", fontWeight: 900, fontSize: 18, color: "rgba(255,255,255,0.85)" }}>{entry.minutesPlayed}&apos;</p>
                     <p style={{ fontFamily: "var(--font-mono), monospace", fontSize: 7, color: "rgba(255,255,255,0.25)", letterSpacing: "0.08em" }}>MINUTES</p>
                   </div>
                 </div>

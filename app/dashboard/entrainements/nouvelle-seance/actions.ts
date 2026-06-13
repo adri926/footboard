@@ -1,8 +1,8 @@
 "use server"
 
-import { auth } from "@clerk/nextjs/server"
 import { revalidatePath } from "next/cache"
 import { supabase } from "@/lib/supabase"
+import { getClubScope } from "@/lib/scope"
 import type { SessionType } from "@/types/training"
 
 interface BlockInput {
@@ -23,8 +23,7 @@ interface SessionInput {
 export async function saveSession(
   input: SessionInput
 ): Promise<{ ok: true; sessionId: string } | { ok: false; error: string }> {
-  const { userId } = await auth()
-  if (!userId) return { ok: false, error: "Non authentifié" }
+  const scope = await getClubScope()
 
   if (!input.name?.trim()) return { ok: false, error: "Nom requis" }
   if (!input.date?.match(/^\d{4}-\d{2}-\d{2}$/)) return { ok: false, error: "Date invalide" }
@@ -35,7 +34,8 @@ export async function saveSession(
   const { data: session, error: sessionErr } = await supabase
     .from("training_sessions")
     .insert({
-      owner_id: userId,
+      owner_id: scope.userId,
+      org_id: scope.orgId,
       name: input.name.trim(),
       date: input.date,
       session_type: input.sessionType,

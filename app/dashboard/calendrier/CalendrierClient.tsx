@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useTransition } from "react"
 import type { Match } from "@/app/dashboard/matchs/actions"
 import type { Training } from "@/app/dashboard/entrainements/actions"
 import { TRAINING_TYPES } from "@/lib/training-types"
@@ -30,13 +30,26 @@ type CalEvent =
   | { kind: "training"; id: string; theme: string | null; type: string | null; location: string | null }
   | { kind: "match";    id: string; opponent: string; home_away: "home" | "away"; goals_for: number | null; goals_against: number | null }
 
-interface Props { matches: Match[]; trainings: Training[] }
+interface Props {
+  matches: Match[]
+  trainings: Training[]
+  myAvailability?: Record<string, "present" | "absent">
+  onRespond?: (matchId: string, status: "present" | "absent") => Promise<{ ok: true } | { ok: false; error: string }>
+}
 
-export default function CalendrierClient({ matches, trainings }: Props) {
+export default function CalendrierClient({ matches, trainings, myAvailability, onRespond }: Props) {
   const now   = new Date()
   const [year, setYear]     = useState(now.getFullYear())
   const [month, setMonth]   = useState(now.getMonth())
   const [selected, setSelected] = useState<SelectedEvent | null>(null)
+  const [availability, setAvailability] = useState<Record<string, "present" | "absent">>(myAvailability ?? {})
+  const [, startRespond] = useTransition()
+
+  function respond(matchId: string, status: "present" | "absent") {
+    setAvailability(prev => ({ ...prev, [matchId]: status }))
+    if (onRespond) startRespond(async () => { await onRespond(matchId, status) })
+    setSelected(null)
+  }
 
   const today = localToday()
 
@@ -285,7 +298,12 @@ export default function CalendrierClient({ matches, trainings }: Props) {
             {selected.kind === "training" ? (
               <TrainingDetail ev={selected} onClose={() => setSelected(null)} />
             ) : (
-              <MatchDetail ev={selected} onClose={() => setSelected(null)} />
+              <MatchDetail
+                ev={selected}
+                onClose={() => setSelected(null)}
+                currentStatus={availability[selected.id]}
+                onRespond={onRespond ? (status) => respond(selected.id, status) : undefined}
+              />
             )}
           </div>
         </div>
@@ -379,7 +397,14 @@ function TrainingDetail({ ev, onClose }: { ev: SelectedEvent & { kind: "training
   )
 }
 
-function MatchDetail({ ev, onClose }: { ev: SelectedEvent & { kind: "match" }; onClose: () => void }) {
+function MatchDetail({
+  ev, onClose, currentStatus, onRespond,
+}: {
+  ev: SelectedEvent & { kind: "match" }
+  onClose: () => void
+  currentStatus?: "present" | "absent"
+  onRespond?: (status: "present" | "absent") => void
+}) {
   const hasScore = ev.goals_for !== null && ev.goals_against !== null
   const win      = hasScore && ev.goals_for! > ev.goals_against!
   const draw     = hasScore && ev.goals_for === ev.goals_against
@@ -415,6 +440,43 @@ function MatchDetail({ ev, onClose }: { ev: SelectedEvent & { kind: "match" }; o
         }}>
           Score non encore saisi
         </p>
+      )}
+      {!hasScore && onRespond && (
+        <div style={{ marginTop: 20 }}>
+          <p style={{
+            fontFamily: "var(--font-mono), monospace", fontSize: 8, fontWeight: 700,
+            letterSpacing: "0.1em", color: "rgba(122,154,130,0.45)",
+            textTransform: "uppercase", marginBottom: 8,
+          }}>
+            Ta présence
+          </p>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button
+              onClick={() => onRespond("present")}
+              style={{
+                flex: 1, padding: "10px 0", borderRadius: 8, cursor: "pointer",
+                fontFamily: "var(--font-mono), monospace", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
+                backgroundColor: currentStatus === "present" ? "#7A9A82" : "rgba(122,154,130,0.1)",
+                border: `1px solid ${currentStatus === "present" ? "#7A9A82" : "rgba(122,154,130,0.25)"}`,
+                color: currentStatus === "present" ? "var(--bg)" : "#7A9A82",
+              }}
+            >
+              PRÉSENT
+            </button>
+            <button
+              onClick={() => onRespond("absent")}
+              style={{
+                flex: 1, padding: "10px 0", borderRadius: 8, cursor: "pointer",
+                fontFamily: "var(--font-mono), monospace", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
+                backgroundColor: currentStatus === "absent" ? "#e07070" : "rgba(224,112,112,0.08)",
+                border: `1px solid ${currentStatus === "absent" ? "#e07070" : "rgba(224,112,112,0.25)"}`,
+                color: currentStatus === "absent" ? "var(--bg)" : "#e07070",
+              }}
+            >
+              ABSENT
+            </button>
+          </div>
+        </div>
       )}
     </>
   )

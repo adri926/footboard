@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import PageHeader from "@/components/dashboard/PageHeader"
-import { getLinkedPlayer, getClubMatches } from "../actions"
+import { getLinkedPlayer, getClubMatches, getMyAvailability } from "../actions"
+import { getPlayerClubScope } from "@/lib/scope"
 import type { Match } from "@/app/dashboard/matchs/actions"
 
 function localToday(): string {
@@ -16,7 +17,22 @@ function formatDateLong(dateStr: string) {
   return d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
 }
 
-function MatchCard({ match }: { match: Match }) {
+function AvailabilityBadge({ status }: { status?: "present" | "absent" }) {
+  if (!status) return null
+  const color = status === "present" ? "#7A9A82" : "#e07070"
+  return (
+    <span style={{
+      fontFamily: "var(--font-mono), monospace", fontSize: 8, fontWeight: 700,
+      letterSpacing: "0.08em", color,
+      backgroundColor: `${color}18`, border: `1px solid ${color}40`,
+      padding: "3px 10px", borderRadius: 100, whiteSpace: "nowrap",
+    }}>
+      {status === "present" ? "✓ PRÉSENT" : "✗ ABSENT"}
+    </span>
+  )
+}
+
+function MatchCard({ match, myStatus }: { match: Match; myStatus?: "present" | "absent" }) {
   const hasScore = match.goals_for !== null && match.goals_against !== null
   const win   = hasScore && match.goals_for! > match.goals_against!
   const draw  = hasScore && match.goals_for === match.goals_against
@@ -72,14 +88,17 @@ function MatchCard({ match }: { match: Match }) {
             </span>
           </div>
         ) : (
-          <span style={{
-            fontFamily: "var(--font-mono), monospace", fontSize: 8, fontWeight: 700,
-            letterSpacing: "0.08em", color: "rgba(212,168,71,0.7)",
-            backgroundColor: "rgba(212,168,71,0.1)", border: "1px solid rgba(212,168,71,0.3)",
-            padding: "3px 10px", borderRadius: 100, whiteSpace: "nowrap",
-          }}>
-            À VENIR
-          </span>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+            <span style={{
+              fontFamily: "var(--font-mono), monospace", fontSize: 8, fontWeight: 700,
+              letterSpacing: "0.08em", color: "rgba(212,168,71,0.7)",
+              backgroundColor: "rgba(212,168,71,0.1)", border: "1px solid rgba(212,168,71,0.3)",
+              padding: "3px 10px", borderRadius: 100, whiteSpace: "nowrap",
+            }}>
+              À VENIR
+            </span>
+            <AvailabilityBadge status={myStatus} />
+          </div>
         )}
       </div>
     </Link>
@@ -103,7 +122,11 @@ export default async function JoueurMatchsPage() {
   const linked = await getLinkedPlayer()
   if (!linked) redirect("/onboarding")
 
-  const matches = await getClubMatches(linked.club.owner_id)
+  const scope = getPlayerClubScope(linked.club)
+  const [matches, myAvailability] = await Promise.all([
+    getClubMatches(scope),
+    getMyAvailability(scope, linked.player.id),
+  ])
   const today = localToday()
 
   const upcoming = matches.filter(m => m.date.slice(0, 10) >= today).sort((a, b) => a.date.localeCompare(b.date))
@@ -126,7 +149,7 @@ export default async function JoueurMatchsPage() {
         <div style={{ marginBottom: 32 }}>
           <SectionLabel>À venir</SectionLabel>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {upcoming.map(m => <MatchCard key={m.id} match={m} />)}
+            {upcoming.map(m => <MatchCard key={m.id} match={m} myStatus={myAvailability[m.id]} />)}
           </div>
         </div>
       )}

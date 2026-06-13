@@ -8,6 +8,10 @@ const isPublic = createRouteMatcher([
   "/invitation(.*)",
   "/tactique(.*)",
   "/api/webhook(.*)",
+  "/icon",
+  "/apple-icon",
+  "/icon-192",
+  "/icon-512",
 ])
 
 export default clerkMiddleware(async (auth, req) => {

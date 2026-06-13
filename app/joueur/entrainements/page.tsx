@@ -2,6 +2,7 @@ import { redirect } from "next/navigation"
 import PageHeader from "@/components/dashboard/PageHeader"
 import { TRAINING_TYPES } from "@/lib/training-types"
 import { getLinkedPlayer, getClubTrainings } from "../actions"
+import { getPlayerClubScope } from "@/lib/scope"
 import type { Training } from "@/app/dashboard/entrainements/actions"
 
 const TYPE_COLORS: Record<string, string> = {
@@ -104,7 +105,7 @@ export default async function JoueurEntrainementsPage() {
   const linked = await getLinkedPlayer()
   if (!linked) redirect("/onboarding")
 
-  const trainings = await getClubTrainings(linked.club.owner_id)
+  const trainings = await getClubTrainings(getPlayerClubScope(linked.club))
   const today = localToday()
 
   const upcoming = trainings.filter(t => t.date.slice(0, 10) >= today).sort((a, b) => a.date.localeCompare(b.date))

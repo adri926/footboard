@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server"
 import { redirect, notFound } from "next/navigation"
 import { supabase } from "@/lib/supabase"
+import { getClubScope } from "@/lib/scope"
 import { getExerciseById } from "@/lib/exercises"
 import SeanceDetailClient from "./SeanceDetailClient"
 import type { SessionBlock } from "@/types/training"
@@ -13,13 +14,14 @@ export default async function SeanceDetailPage({
   const { userId } = await auth()
   if (!userId) redirect("/sign-in")
 
+  const scope = await getClubScope()
   const { seanceId } = await params
 
   const { data: session } = await supabase
     .from("training_sessions")
     .select("*")
     .eq("id", seanceId)
-    .eq("owner_id", userId)
+    .eq(scope.column, scope.value)
     .single()
 
   if (!session) notFound()
@@ -31,7 +33,7 @@ export default async function SeanceDetailPage({
     .order("block_order", { ascending: true })
 
   const blocks: SessionBlock[] = (rawBlocks ?? [])
-    .map((b, i) => {
+    .map((b, i): SessionBlock | null => {
       const exercise = getExerciseById(b.exercise_id)
       if (!exercise) return null
       return {

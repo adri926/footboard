@@ -1,9 +1,9 @@
 "use server"
 
-import { auth } from "@clerk/nextjs/server"
 import { z } from "zod"
 import { revalidatePath } from "next/cache"
 import { supabase } from "@/lib/supabase"
+import { getClubScope } from "@/lib/scope"
 import type { TrainingType } from "@/lib/training-types"
 
 export interface Training {
@@ -25,18 +25,12 @@ const TrainingSchema = z.object({
   notes:    z.string().max(1000).nullable().optional(),
 })
 
-async function requireUserId() {
-  const { userId } = await auth()
-  if (!userId) throw new Error("Non authentifié")
-  return userId
-}
-
 export async function getTrainings(): Promise<Training[]> {
-  const userId = await requireUserId()
+  const scope = await getClubScope()
   const { data, error } = await supabase
     .from("trainings")
     .select("*")
-    .eq("owner_id", userId)
+    .eq(scope.column, scope.value)
     .order("date", { ascending: false })
 
   if (error) throw new Error(error.message)
@@ -46,14 +40,14 @@ export async function getTrainings(): Promise<Training[]> {
 export async function createTraining(
   raw: unknown
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const userId = await requireUserId()
+  const scope = await getClubScope()
 
   const parsed = TrainingSchema.safeParse(raw)
   if (!parsed.success) return { ok: false, error: "Données invalides." }
 
   const { error } = await supabase
     .from("trainings")
-    .insert({ ...parsed.data, owner_id: userId })
+    .insert({ ...parsed.data, owner_id: scope.userId, org_id: scope.orgId })
 
   if (error) return { ok: false, error: error.message }
   revalidatePath("/dashboard/entrainements")
@@ -64,7 +58,7 @@ export async function updateTraining(
   id: string,
   raw: unknown
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const userId = await requireUserId()
+  const scope = await getClubScope()
   if (!/^[0-9a-f-]{36}$/.test(id)) return { ok: false, error: "ID invalide." }
 
   const parsed = TrainingSchema.safeParse(raw)
@@ -74,7 +68,7 @@ export async function updateTraining(
     .from("trainings")
     .update(parsed.data)
     .eq("id", id)
-    .eq("owner_id", userId)
+    .eq(scope.column, scope.value)
 
   if (error) return { ok: false, error: error.message }
   revalidatePath("/dashboard/entrainements")
@@ -84,14 +78,14 @@ export async function updateTraining(
 export async function deleteTraining(
   id: string
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const userId = await requireUserId()
+  const scope = await getClubScope()
   if (!/^[0-9a-f-]{36}$/.test(id)) return { ok: false, error: "ID invalide." }
 
   const { error } = await supabase
     .from("trainings")
     .delete()
     .eq("id", id)
-    .eq("owner_id", userId)
+    .eq(scope.column, scope.value)
 
   if (error) return { ok: false, error: error.message }
   revalidatePath("/dashboard/entrainements")

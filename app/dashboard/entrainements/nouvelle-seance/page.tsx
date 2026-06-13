@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation"
-import { auth } from "@clerk/nextjs/server"
 import { currentUser } from "@clerk/nextjs/server"
 import { getMyClub } from "@/app/dashboard/club/actions"
 import { supabase } from "@/lib/supabase"
+import { getClubScope } from "@/lib/scope"
 import { getExerciseById } from "@/lib/exercises"
 import NouvelleSceanceClient from "./NouvelleSceanceClient"
 import type { ClubProfile, MatchContext, SessionBlock } from "@/types/training"
@@ -24,18 +24,17 @@ export default async function NouvelleSceancePage({
 }: {
   searchParams: Promise<{ from?: string }>
 }) {
-  const { userId } = await auth()
-  const [club, user, sp] = await Promise.all([getMyClub(), currentUser(), searchParams])
-  if (!club || !user || !userId) redirect("/onboarding")
+  const [club, user, sp, scope] = await Promise.all([getMyClub(), currentUser(), searchParams, getClubScope()])
+  if (!club || !user) redirect("/onboarding")
 
   const clubProfile = resolveClubProfile(club.level)
   const today = new Date().toISOString().slice(0, 10)
 
   // Prochain match et dernier match
   const [{ data: nextMatch }, { data: lastMatch }] = await Promise.all([
-    supabase.from("matches").select("date").eq("owner_id", userId)
+    supabase.from("matches").select("date").eq(scope.column, scope.value)
       .gte("date", today).order("date", { ascending: true }).limit(1).maybeSingle(),
-    supabase.from("matches").select("date").eq("owner_id", userId)
+    supabase.from("matches").select("date").eq(scope.column, scope.value)
       .lt("date", today).order("date", { ascending: false }).limit(1).maybeSingle(),
   ])
 
@@ -51,13 +50,13 @@ export default async function NouvelleSceancePage({
   const fromId = sp.from
   if (fromId && /^[0-9a-f-]{36}$/.test(fromId)) {
     const [{ data: tmpl }, { data: rawBlocks }] = await Promise.all([
-      supabase.from("training_sessions").select("name").eq("id", fromId).eq("owner_id", userId).single(),
+      supabase.from("training_sessions").select("name").eq("id", fromId).eq(scope.column, scope.value).single(),
       supabase.from("session_blocks").select("*").eq("session_id", fromId).order("block_order", { ascending: true }),
     ])
     if (tmpl && rawBlocks) {
       templateName = tmpl.name
       initialBlocks = rawBlocks
-        .map((b, i) => {
+        .map((b, i): SessionBlock | null => {
           const exercise = getExerciseById(b.exercise_id)
           if (!exercise) return null
           return {
@@ -67,7 +66,7 @@ export default async function NouvelleSceancePage({
             duration: b.duration,
             order: i,
             customNotes: b.custom_notes ?? undefined,
-          } satisfies SessionBlock
+          }
         })
         .filter((b): b is SessionBlock => b !== null)
     }

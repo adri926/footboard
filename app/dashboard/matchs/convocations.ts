@@ -1,10 +1,11 @@
 "use server"
 
-import { auth } from "@clerk/nextjs/server"
 import { z } from "zod"
 import { revalidatePath } from "next/cache"
 import { Resend } from "resend"
 import { supabase } from "@/lib/supabase"
+import { getClubScope } from "@/lib/scope"
+import { sendPushToUser } from "@/lib/push"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM   = process.env.RESEND_FROM ?? "Footboard <onboarding@resend.dev>"
@@ -19,23 +20,35 @@ export interface ConvocablePlayer {
   email:      string | null
 }
 
-async function requireUserId() {
-  const { userId } = await auth()
-  if (!userId) throw new Error("Non authentifié")
-  return userId
-}
-
 export async function getConvocablePlayers(): Promise<ConvocablePlayer[]> {
-  const userId = await requireUserId()
+  const scope = await getClubScope()
   const { data, error } = await supabase
     .from("players")
     .select("id, first_name, last_name, number, position, status, email")
-    .eq("owner_id", userId)
+    .eq(scope.column, scope.value)
     .order("position")
     .order("last_name")
 
   if (error) throw new Error(error.message)
   return data ?? []
+}
+
+export async function getAvailabilityByMatch(matchIds: string[]): Promise<Record<string, Record<string, "present" | "absent">>> {
+  if (matchIds.length === 0) return {}
+  const scope = await getClubScope()
+
+  const { data } = await supabase
+    .from("availability_responses")
+    .select("match_id, player_id, status")
+    .eq(scope.column, scope.value)
+    .in("match_id", matchIds)
+
+  const map: Record<string, Record<string, "present" | "absent">> = {}
+  for (const row of data ?? []) {
+    if (!map[row.match_id]) map[row.match_id] = {}
+    map[row.match_id][row.player_id] = row.status as "present" | "absent"
+  }
+  return map
 }
 
 function formatDate(dateStr: string) {
@@ -90,7 +103,7 @@ export async function sendConvocations(
   matchId: string,
   playerIds: string[],
 ): Promise<{ ok: true; sent: number } | { ok: false; error: string }> {
-  const userId = await requireUserId()
+  const scope = await getClubScope()
 
   const parsed = SendSchema.safeParse({ matchId, playerIds })
   if (!parsed.success) return { ok: false, error: "Paramètres invalides." }
@@ -100,7 +113,7 @@ export async function sendConvocations(
     .from("matches")
     .select("opponent, date, home_away, competition")
     .eq("id", matchId)
-    .eq("owner_id", userId)
+    .eq(scope.column, scope.value)
     .single()
 
   if (matchErr || !match) return { ok: false, error: "Match introuvable." }
@@ -108,8 +121,8 @@ export async function sendConvocations(
   // Récupérer les joueurs sélectionnés avec email
   const { data: players, error: playersErr } = await supabase
     .from("players")
-    .select("id, first_name, email")
-    .eq("owner_id", userId)
+    .select("id, first_name, email, user_id")
+    .eq(scope.column, scope.value)
     .in("id", playerIds)
 
   if (playersErr || !players) return { ok: false, error: "Erreur lors de la récupération des joueurs." }
@@ -140,11 +153,22 @@ export async function sendConvocations(
 
   const sent = results.filter(r => r.status === "fulfilled").length
 
+  // Notifications push (best-effort, en plus des emails)
+  await Promise.allSettled(
+    players
+      .filter(p => p.user_id)
+      .map(p => sendPushToUser(p.user_id!, {
+        title: "Convocation",
+        body:  `vs ${match.opponent} — ${date}`,
+        url:   `/joueur/matchs/${matchId}`,
+      }))
+  )
+
   // Tracer les convocations envoyées
   if (sent > 0) {
     const sentIds = withEmail
       .filter((_, i) => results[i].status === "fulfilled")
-      .map(p => ({ owner_id: userId, match_id: matchId, player_id: p.id }))
+      .map(p => ({ owner_id: scope.userId, org_id: scope.orgId, match_id: matchId, player_id: p.id }))
 
     await supabase.from("convocations").upsert(sentIds, { onConflict: "match_id,player_id" })
     revalidatePath("/dashboard/matchs")

@@ -1,7 +1,10 @@
 "use server"
 
 import { auth } from "@clerk/nextjs/server"
+import { revalidatePath } from "next/cache"
+import { z } from "zod"
 import { supabase } from "@/lib/supabase"
+import type { ClubScopeFilter } from "@/lib/scope"
 import type { Player } from "@/app/dashboard/effectif/actions"
 import type { Club } from "@/app/dashboard/club/actions"
 import type { Match, PlayerMatchEntry } from "@/app/dashboard/matchs/actions"
@@ -10,6 +13,82 @@ import type { Training } from "@/app/dashboard/entrainements/actions"
 export interface PlayerLink {
   player: Player
   club: Club
+}
+
+interface PushSubscriptionPayload {
+  endpoint: string
+  keys: { p256dh: string; auth: string }
+}
+
+export async function subscribePush(subscription: PushSubscriptionPayload): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { userId } = await auth()
+  if (!userId) return { ok: false, error: "Non authentifié" }
+
+  const { error } = await supabase
+    .from("push_subscriptions")
+    .upsert({
+      user_id:  userId,
+      endpoint: subscription.endpoint,
+      p256dh:   subscription.keys.p256dh,
+      auth:     subscription.keys.auth,
+    }, { onConflict: "endpoint" })
+
+  if (error) return { ok: false, error: error.message }
+  return { ok: true }
+}
+
+export async function unsubscribePush(endpoint: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { userId } = await auth()
+  if (!userId) return { ok: false, error: "Non authentifié" }
+
+  const { error } = await supabase
+    .from("push_subscriptions")
+    .delete()
+    .eq("endpoint", endpoint)
+    .eq("user_id", userId)
+
+  if (error) return { ok: false, error: error.message }
+  return { ok: true }
+}
+
+const AvailabilitySchema = z.object({
+  matchId: z.string().regex(/^[0-9a-f-]{36}$/),
+  status:  z.enum(["present", "absent"]),
+})
+
+export async function setAvailability(matchId: string, status: "present" | "absent"): Promise<{ ok: true } | { ok: false; error: string }> {
+  const parsed = AvailabilitySchema.safeParse({ matchId, status })
+  if (!parsed.success) return { ok: false, error: "Paramètres invalides." }
+
+  const linked = await getLinkedPlayer()
+  if (!linked) return { ok: false, error: "Non authentifié" }
+
+  const { error } = await supabase
+    .from("availability_responses")
+    .upsert({
+      match_id:   matchId,
+      player_id:  linked.player.id,
+      owner_id:   linked.club.owner_id,
+      org_id:     linked.club.org_id,
+      status,
+      responded_at: new Date().toISOString(),
+    }, { onConflict: "match_id,player_id" })
+
+  if (error) return { ok: false, error: error.message }
+  revalidatePath("/joueur")
+  return { ok: true }
+}
+
+export async function getMyAvailability(scope: ClubScopeFilter, playerId: string): Promise<Record<string, "present" | "absent">> {
+  const { data } = await supabase
+    .from("availability_responses")
+    .select("match_id, status")
+    .eq(scope.column, scope.value)
+    .eq("player_id", playerId)
+
+  const map: Record<string, "present" | "absent"> = {}
+  for (const row of data ?? []) map[row.match_id] = row.status as "present" | "absent"
+  return map
 }
 
 // Résout le compte joueur connecté → fiche joueur + club du coach (owner_id)
@@ -34,31 +113,31 @@ export async function getLinkedPlayer(): Promise<PlayerLink | null> {
   return { player, club }
 }
 
-export async function getClubMatches(ownerId: string): Promise<Match[]> {
+export async function getClubMatches(scope: ClubScopeFilter): Promise<Match[]> {
   const { data } = await supabase
     .from("matches")
     .select("*")
-    .eq("owner_id", ownerId)
+    .eq(scope.column, scope.value)
     .order("date", { ascending: false })
   return data ?? []
 }
 
-export async function getClubTrainings(ownerId: string): Promise<Training[]> {
+export async function getClubTrainings(scope: ClubScopeFilter): Promise<Training[]> {
   const { data } = await supabase
     .from("trainings")
     .select("*")
-    .eq("owner_id", ownerId)
+    .eq(scope.column, scope.value)
     .order("date", { ascending: false })
   return data ?? []
 }
 
-export async function getClubMatchById(ownerId: string, matchId: string): Promise<Match | null> {
+export async function getClubMatchById(scope: ClubScopeFilter, matchId: string): Promise<Match | null> {
   if (!/^[0-9a-f-]{36}$/.test(matchId)) return null
   const { data, error } = await supabase
     .from("matches")
     .select("*")
     .eq("id", matchId)
-    .eq("owner_id", ownerId)
+    .eq(scope.column, scope.value)
     .single()
   if (error) return null
   return data
@@ -69,19 +148,19 @@ export interface MatchLineup {
   substitutes: Player[]
 }
 
-export async function getClubMatchLineup(ownerId: string, matchId: string): Promise<MatchLineup> {
+export async function getClubMatchLineup(scope: ClubScopeFilter, matchId: string): Promise<MatchLineup> {
   const { data: lineupRows } = await supabase
     .from("match_lineups")
     .select("player_id, role")
     .eq("match_id", matchId)
-    .eq("owner_id", ownerId)
+    .eq(scope.column, scope.value)
 
   if (!lineupRows || lineupRows.length === 0) return { starters: [], substitutes: [] }
 
   const { data: players } = await supabase
     .from("players")
     .select("*")
-    .eq("owner_id", ownerId)
+    .eq(scope.column, scope.value)
     .in("id", lineupRows.map(r => r.player_id))
 
   const byId = new Map((players ?? []).map(p => [p.id, p as Player]))
@@ -100,11 +179,11 @@ export interface MyPlayerStats {
   minutesPlayed: number
 }
 
-export async function getMyPlayerStats(ownerId: string, playerId: string): Promise<MyPlayerStats> {
+export async function getMyPlayerStats(scope: ClubScopeFilter, playerId: string): Promise<MyPlayerStats> {
   const { data: lineupRows } = await supabase
     .from("match_lineups")
     .select("role")
-    .eq("owner_id", ownerId)
+    .eq(scope.column, scope.value)
     .eq("player_id", playerId)
 
   const { data: statRows } = await supabase
@@ -127,18 +206,18 @@ export async function getMyPlayerStats(ownerId: string, playerId: string): Promi
   return result
 }
 
-export async function getMyMatchHistory(ownerId: string, playerId: string): Promise<PlayerMatchEntry[]> {
+export async function getMyMatchHistory(scope: ClubScopeFilter, playerId: string): Promise<PlayerMatchEntry[]> {
   const { data: lineupRows } = await supabase
     .from("match_lineups")
     .select("match_id, role")
-    .eq("owner_id", ownerId)
+    .eq(scope.column, scope.value)
     .eq("player_id", playerId)
 
   if (!lineupRows || lineupRows.length === 0) return []
   const matchIds = lineupRows.map(r => r.match_id)
 
   const [{ data: matches }, { data: stats }] = await Promise.all([
-    supabase.from("matches").select("*").eq("owner_id", ownerId).in("id", matchIds).order("date", { ascending: false }),
+    supabase.from("matches").select("*").eq(scope.column, scope.value).in("id", matchIds).order("date", { ascending: false }),
     supabase.from("match_stats").select("match_id, goals, assists, yellow_cards, red_cards, minutes_played").eq("player_id", playerId).in("match_id", matchIds),
   ])
   if (!matches) return []

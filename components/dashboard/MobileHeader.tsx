@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { usePathname } from "next/navigation"
 
 const NAV_GROUPS = [
@@ -18,6 +18,7 @@ const NAV_GROUPS = [
       { href: "/dashboard/effectif",       label: "Effectif",        icon: "◻" },
       { href: "/dashboard/matchs",         label: "Matchs",          icon: "◷" },
       { href: "/dashboard/entrainements",  label: "Entraînements",   icon: "◈" },
+      { href: "/dashboard/club/cotisations", label: "Cotisations",   icon: "€" },
     ],
   },
   {
@@ -30,16 +31,26 @@ const NAV_GROUPS = [
 ]
 
 interface Props {
-  clubName:  string
-  clubLevel: string | null
-  userName:  string
+  clubName:      string
+  clubLevel:     string | null
+  userName:      string
+  canManageFees: boolean
 }
 
-export default function MobileHeader({ clubName, clubLevel, userName }: Props) {
+export default function MobileHeader({ clubName, clubLevel, userName, canManageFees }: Props) {
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
 
-  useEffect(() => { setOpen(false) }, [pathname])
+  const [prevPathname, setPrevPathname] = useState(pathname)
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname)
+    setOpen(false)
+  }
+
+  const navGroups = NAV_GROUPS.map(group => ({
+    ...group,
+    items: group.items.filter(item => item.href !== "/dashboard/club/cotisations" || canManageFees),
+  }))
 
   return (
     <>
@@ -125,7 +136,7 @@ export default function MobileHeader({ clubName, clubLevel, userName }: Props) {
 
         {/* Nav */}
         <nav style={{ flex: 1, padding: "16px 12px", display: "flex", flexDirection: "column", gap: 24, overflowY: "auto" }}>
-          {NAV_GROUPS.map(group => (
+          {navGroups.map(group => (
             <div key={group.label}>
               <p style={{
                 fontFamily: "var(--font-mono), monospace",

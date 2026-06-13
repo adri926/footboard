@@ -11,6 +11,12 @@ const NAV_GROUPS = [
     ],
   },
   {
+    label: "Club",
+    items: [
+      { href: "/dashboard/club/equipe", label: "Équipe & accès", icon: "◎" },
+    ],
+  },
+  {
     label: "Mon Équipe",
     items: [
       { href: "/dashboard/calendrier",     label: "Calendrier",      icon: "▦" },
@@ -18,6 +24,7 @@ const NAV_GROUPS = [
       { href: "/dashboard/matchs",         label: "Matchs",          icon: "◷" },
       { href: "/dashboard/entrainements",  label: "Entraînements",   icon: "◈" },
       { href: "/dashboard/data",           label: "Data & stats",    icon: "▤" },
+      { href: "/dashboard/club/cotisations", label: "Cotisations",   icon: "€" },
     ],
   },
   {
@@ -30,13 +37,19 @@ const NAV_GROUPS = [
 ]
 
 interface Props {
-  clubName:  string
-  clubLevel: string | null
-  userName:  string
+  clubName:      string
+  clubLevel:     string | null
+  userName:      string
+  canManageFees: boolean
 }
 
-export default function Sidebar({ clubName, clubLevel, userName }: Props) {
+export default function Sidebar({ clubName, clubLevel, userName, canManageFees }: Props) {
   const pathname = usePathname()
+
+  const navGroups = NAV_GROUPS.map(group => ({
+    ...group,
+    items: group.items.filter(item => item.href !== "/dashboard/club/cotisations" || canManageFees),
+  }))
 
   return (
     <>
@@ -119,7 +132,7 @@ export default function Sidebar({ clubName, clubLevel, userName }: Props) {
 
         {/* Navigation */}
         <nav style={{ flex: 1, padding: "16px 12px", display: "flex", flexDirection: "column", gap: 24 }}>
-          {NAV_GROUPS.map(group => (
+          {navGroups.map(group => (
             <div key={group.label}>
               <p className="sb-group" style={{
                 fontFamily: "var(--font-mono), monospace",

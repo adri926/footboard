@@ -6,7 +6,7 @@ export default async function InvitationPage({ params }: { params: Promise<{ tok
 
   const { data: invite } = await supabase
     .from("player_invites")
-    .select("id, player_id, owner_id, email, expires_at")
+    .select("id, player_id, owner_id, org_id, email, expires_at")
     .eq("token", token)
     .single()
 
@@ -29,7 +29,7 @@ export default async function InvitationPage({ params }: { params: Promise<{ tok
             fontFamily: "var(--font-body), sans-serif", fontWeight: 400, fontSize: 13,
             lineHeight: 1.6, color: "rgba(255,255,255,0.35)",
           }}>
-            Demande à ton coach de t'envoyer une nouvelle invitation depuis ta fiche joueur.
+            Demande à ton coach de t&apos;envoyer une nouvelle invitation depuis ta fiche joueur.
           </p>
         </div>
       </div>
@@ -38,7 +38,9 @@ export default async function InvitationPage({ params }: { params: Promise<{ tok
 
   const [{ data: player }, { data: club }] = await Promise.all([
     supabase.from("players").select("first_name").eq("id", invite.player_id).single(),
-    supabase.from("clubs").select("name").eq("owner_id", invite.owner_id).single(),
+    invite.org_id
+      ? supabase.from("clubs").select("name").eq("org_id", invite.org_id).single()
+      : supabase.from("clubs").select("name").eq("owner_id", invite.owner_id).single(),
   ])
 
   return (

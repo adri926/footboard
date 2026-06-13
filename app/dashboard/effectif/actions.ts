@@ -1,10 +1,10 @@
 "use server"
 
-import { auth } from "@clerk/nextjs/server"
 import { z } from "zod"
 import { randomBytes } from "crypto"
 import { revalidatePath } from "next/cache"
 import { supabase } from "@/lib/supabase"
+import { getClubScope } from "@/lib/scope"
 import { resend, hasEmailKey, FROM, playerInviteTemplate } from "@/lib/email"
 import type { PhysicalEntry } from "@/types/physical"
 
@@ -39,31 +39,25 @@ const PlayerSchema = z.object({
   phone:       z.string().max(20).nullable().optional(),
 })
 
-async function requireUserId() {
-  const { userId } = await auth()
-  if (!userId) throw new Error("Non authentifié")
-  return userId
-}
-
 export async function getPlayerById(id: string): Promise<Player | null> {
-  const userId = await requireUserId()
+  const scope = await getClubScope()
   if (!/^[0-9a-f-]{36}$/.test(id)) return null
   const { data, error } = await supabase
     .from("players")
     .select("*")
     .eq("id", id)
-    .eq("owner_id", userId)
+    .eq(scope.column, scope.value)
     .single()
   if (error) return null
   return data
 }
 
 export async function getPlayers(): Promise<Player[]> {
-  const userId = await requireUserId()
+  const scope = await getClubScope()
   const { data, error } = await supabase
     .from("players")
     .select("*")
-    .eq("owner_id", userId)
+    .eq(scope.column, scope.value)
     .order("position")
     .order("number", { nullsFirst: false })
 
@@ -74,14 +68,14 @@ export async function getPlayers(): Promise<Player[]> {
 export async function createPlayer(
   raw: unknown
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const userId = await requireUserId()
+  const scope = await getClubScope()
 
   const parsed = PlayerSchema.safeParse(raw)
   if (!parsed.success) return { ok: false, error: "Données invalides." }
 
   const { error } = await supabase
     .from("players")
-    .insert({ ...parsed.data, owner_id: userId })
+    .insert({ ...parsed.data, owner_id: scope.userId, org_id: scope.orgId })
 
   if (error) return { ok: false, error: error.message }
   revalidatePath("/dashboard/effectif")
@@ -92,7 +86,7 @@ export async function updatePlayer(
   id: string,
   raw: unknown
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const userId = await requireUserId()
+  const scope = await getClubScope()
 
   if (!/^[0-9a-f-]{36}$/.test(id)) return { ok: false, error: "ID invalide." }
 
@@ -103,7 +97,7 @@ export async function updatePlayer(
     .from("players")
     .update(parsed.data)
     .eq("id", id)
-    .eq("owner_id", userId)  // impossible de modifier un joueur d'un autre coach
+    .eq(scope.column, scope.value)  // impossible de modifier un joueur d'un autre club
 
   if (error) return { ok: false, error: error.message }
   revalidatePath("/dashboard/effectif")
@@ -125,7 +119,7 @@ export async function importPlayers(
   rawRows: unknown[],
   rawPosition: unknown
 ): Promise<{ ok: true; count: number } | { ok: false; error: string }> {
-  const userId = await requireUserId()
+  const scope = await getClubScope()
 
   const position = PositionSchema.safeParse(rawPosition)
   if (!position.success) return { ok: false, error: "Poste invalide." }
@@ -146,7 +140,8 @@ export async function importPlayers(
     ...(r as { success: true; data: z.infer<typeof ImportRowSchema> }).data,
     position:    position.data,
     status:      "available" as const,
-    owner_id:    userId,
+    owner_id:    scope.userId,
+    org_id:      scope.orgId,
   }))
 
   const { error } = await supabase.from("players").insert(toInsert)
@@ -166,13 +161,13 @@ const PhysicalEntrySchema = z.object({
 })
 
 export async function getPlayerPhysicalStats(playerId: string): Promise<PhysicalEntry[]> {
-  const userId = await requireUserId()
+  const scope = await getClubScope()
   if (!/^[0-9a-f-]{36}$/.test(playerId)) return []
 
   const { data, error } = await supabase
     .from("player_physical_stats")
     .select("*")
-    .eq("owner_id", userId)
+    .eq(scope.column, scope.value)
     .eq("player_id", playerId)
     .order("date", { ascending: false })
 
@@ -193,7 +188,7 @@ export async function addPhysicalEntry(
   playerId: string,
   raw: unknown
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const userId = await requireUserId()
+  const scope = await getClubScope()
 
   if (!/^[0-9a-f-]{36}$/.test(playerId)) return { ok: false, error: "ID invalide." }
 
@@ -201,7 +196,8 @@ export async function addPhysicalEntry(
   if (!parsed.success) return { ok: false, error: "Données invalides." }
 
   const { error } = await supabase.from("player_physical_stats").insert({
-    owner_id:   userId,
+    owner_id:   scope.userId,
+    org_id:     scope.orgId,
     player_id:  playerId,
     date:       parsed.data.date,
     context:    parsed.data.context,
@@ -220,7 +216,7 @@ export async function deletePhysicalEntry(
   id: string,
   playerId: string
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const userId = await requireUserId()
+  const scope = await getClubScope()
 
   if (!/^[0-9a-f-]{36}$/.test(id)) return { ok: false, error: "ID invalide." }
 
@@ -228,7 +224,7 @@ export async function deletePhysicalEntry(
     .from("player_physical_stats")
     .delete()
     .eq("id", id)
-    .eq("owner_id", userId)
+    .eq(scope.column, scope.value)
 
   if (error) return { ok: false, error: error.message }
   revalidatePath(`/dashboard/effectif/${playerId}`)
@@ -238,7 +234,7 @@ export async function deletePhysicalEntry(
 export async function invitePlayer(
   playerId: string
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const userId = await requireUserId()
+  const scope = await getClubScope()
 
   if (!/^[0-9a-f-]{36}$/.test(playerId)) return { ok: false, error: "ID invalide." }
 
@@ -246,7 +242,7 @@ export async function invitePlayer(
     .from("players")
     .select("id, first_name, email, user_id")
     .eq("id", playerId)
-    .eq("owner_id", userId)
+    .eq(scope.column, scope.value)
     .single()
 
   if (playerErr || !player) return { ok: false, error: "Joueur introuvable." }
@@ -256,7 +252,7 @@ export async function invitePlayer(
   const { data: club } = await supabase
     .from("clubs")
     .select("name")
-    .eq("owner_id", userId)
+    .eq(scope.column, scope.value)
     .single()
 
   const token = randomBytes(24).toString("hex")
@@ -267,7 +263,8 @@ export async function invitePlayer(
 
   const { error: insertErr } = await supabase.from("player_invites").insert({
     player_id: playerId,
-    owner_id:  userId,
+    owner_id:  scope.userId,
+    org_id:    scope.orgId,
     email:     player.email,
     token,
     expires_at: expiresAt,
@@ -292,7 +289,7 @@ export async function invitePlayer(
 export async function deletePlayer(
   id: string
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const userId = await requireUserId()
+  const scope = await getClubScope()
 
   if (!/^[0-9a-f-]{36}$/.test(id)) return { ok: false, error: "ID invalide." }
 
@@ -300,7 +297,7 @@ export async function deletePlayer(
     .from("players")
     .delete()
     .eq("id", id)
-    .eq("owner_id", userId)
+    .eq(scope.column, scope.value)
 
   if (error) return { ok: false, error: error.message }
   revalidatePath("/dashboard/effectif")

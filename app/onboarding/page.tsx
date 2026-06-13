@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
+import { useClerk } from "@clerk/nextjs"
 import { createClub } from "@/app/dashboard/club/actions"
 
 const LEVELS = [
@@ -32,6 +33,7 @@ export default function OnboardingPage() {
   const [error, setError] = useState<string | null>(null)
   const [pending, start]  = useTransition()
   const router            = useRouter()
+  const clerk             = useClerk()
 
   function set(field: string, value: string) {
     setForm(prev => ({ ...prev, [field]: value }))
@@ -46,8 +48,10 @@ export default function OnboardingPage() {
         city:  form.city  || null,
         level: form.level || null,
       })
-      if (res.ok) router.push("/dashboard")
-      else setError(res.error)
+      if (res.ok) {
+        if (res.orgId) await clerk.setActive({ organization: res.orgId })
+        router.push("/dashboard")
+      } else setError(res.error)
     })
   }
 

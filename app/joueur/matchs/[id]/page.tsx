@@ -1,7 +1,8 @@
 import { notFound, redirect } from "next/navigation"
 import Link from "next/link"
 import PageHeader from "@/components/dashboard/PageHeader"
-import { getLinkedPlayer, getClubMatchById, getClubMatchLineup } from "../../actions"
+import { getLinkedPlayer, getClubMatchById, getClubMatchLineup, getMyAvailability } from "../../actions"
+import { getPlayerClubScope } from "@/lib/scope"
 import type { Player } from "@/app/dashboard/effectif/actions"
 
 const POSITION_LABELS: Record<string, string> = {
@@ -51,10 +52,13 @@ export default async function JoueurMatchDetailPage({ params }: { params: Promis
   const linked = await getLinkedPlayer()
   if (!linked) redirect("/onboarding")
 
-  const match = await getClubMatchById(linked.club.owner_id, id)
+  const scope = getPlayerClubScope(linked.club)
+  const match = await getClubMatchById(scope, id)
   if (!match) notFound()
 
-  const lineup = await getClubMatchLineup(linked.club.owner_id, id)
+  const lineup = await getClubMatchLineup(scope, id)
+  const myAvailability = await getMyAvailability(scope, linked.player.id)
+  const myStatus = myAvailability[id]
   const hasLineup = lineup.starters.length > 0 || lineup.substitutes.length > 0
   const hasScore = match.goals_for !== null && match.goals_against !== null
   const win  = hasScore && match.goals_for! > match.goals_against!
@@ -100,14 +104,27 @@ export default async function JoueurMatchDetailPage({ params }: { params: Promis
             </span>
           </div>
         ) : (
-          <span style={{
-            fontFamily: "var(--font-mono), monospace", fontSize: 9, fontWeight: 700,
-            letterSpacing: "0.08em", color: "rgba(212,168,71,0.7)",
-            backgroundColor: "rgba(212,168,71,0.1)", border: "1px solid rgba(212,168,71,0.3)",
-            padding: "3px 10px", borderRadius: 100,
-          }}>
-            À VENIR
-          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{
+              fontFamily: "var(--font-mono), monospace", fontSize: 9, fontWeight: 700,
+              letterSpacing: "0.08em", color: "rgba(212,168,71,0.7)",
+              backgroundColor: "rgba(212,168,71,0.1)", border: "1px solid rgba(212,168,71,0.3)",
+              padding: "3px 10px", borderRadius: 100,
+            }}>
+              À VENIR
+            </span>
+            {myStatus && (
+              <span style={{
+                fontFamily: "var(--font-mono), monospace", fontSize: 9, fontWeight: 700,
+                letterSpacing: "0.08em", color: myStatus === "present" ? "#7A9A82" : "#e07070",
+                backgroundColor: myStatus === "present" ? "rgba(122,154,130,0.1)" : "rgba(224,112,112,0.1)",
+                border: `1px solid ${myStatus === "present" ? "rgba(122,154,130,0.3)" : "rgba(224,112,112,0.3)"}`,
+                padding: "3px 10px", borderRadius: 100,
+              }}>
+                {myStatus === "present" ? "✓ PRÉSENT" : "✗ ABSENT"}
+              </span>
+            )}
+          </div>
         )}
 
         {match.competition && (
@@ -141,7 +158,7 @@ export default async function JoueurMatchDetailPage({ params }: { params: Promis
           fontFamily: "var(--font-body), sans-serif", fontWeight: 400, fontSize: 13,
           color: "rgba(255,255,255,0.3)",
         }}>
-          La composition n'a pas encore été communiquée par le coach.
+          La composition n&apos;a pas encore été communiquée par le coach.
         </p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
