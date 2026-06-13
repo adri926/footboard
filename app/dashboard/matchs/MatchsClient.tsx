@@ -233,9 +233,9 @@ function ConvocationModal({
   )
 }
 
-interface Props { matches: Match[]; players: ConvocablePlayer[]; club: Club | null; availability: Record<string, Record<string, "present" | "absent">> }
+interface Props { matches: Match[]; players: ConvocablePlayer[]; club: Club | null; availability: Record<string, Record<string, "present" | "absent">>; activeTeamName?: string | null }
 
-export default function MatchsClient({ matches, players, club, availability }: Props) {
+export default function MatchsClient({ matches, players, club, availability, activeTeamName }: Props) {
   const clubName = club?.name ?? "Mon club"
   const clubLogo = club?.logo ?? null
   const [showForm, setShowForm]         = useState(false)
@@ -263,6 +263,7 @@ export default function MatchsClient({ matches, players, club, availability }: P
       <PageHeader
         label="Mon Club"
         title="Matchs"
+        subtitle={activeTeamName ? `Équipe active : ${activeTeamName}` : undefined}
         action={
           <button onClick={openAdd} style={{
             fontFamily: "var(--font-mono), monospace",

@@ -140,9 +140,9 @@ function CalendarView({ trainings, year, onEdit }: { trainings: Training[]; year
 }
 
 /* ── Page principale ────────────────────────────────────── */
-interface Props { trainings: Training[]; savedSessions: SavedSession[] }
+interface Props { trainings: Training[]; savedSessions: SavedSession[]; activeTeamName?: string | null }
 
-export default function EntraineementsClient({ trainings, savedSessions }: Props) {
+export default function EntraineementsClient({ trainings, savedSessions, activeTeamName }: Props) {
   const [showForm, setShowForm] = useState(false)
   const [showPlanifier, setShowPlanifier] = useState(false)
   const [editing, setEditing]   = useState<Training | undefined>(undefined)
@@ -161,7 +161,7 @@ export default function EntraineementsClient({ trainings, savedSessions }: Props
       <PageHeader
         label="Mon Club"
         title="Entraînements"
-        subtitle={`${trainings.length} séance${trainings.length !== 1 ? "s" : ""}`}
+        subtitle={`${trainings.length} séance${trainings.length !== 1 ? "s" : ""}${activeTeamName ? ` · Équipe active : ${activeTeamName}` : ""}`}
         action={
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <div style={{

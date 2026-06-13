@@ -35,9 +35,10 @@ interface Props {
   trainings: Training[]
   myAvailability?: Record<string, "present" | "absent">
   onRespond?: (matchId: string, status: "present" | "absent") => Promise<{ ok: true } | { ok: false; error: string }>
+  activeTeamName?: string | null
 }
 
-export default function CalendrierClient({ matches, trainings, myAvailability, onRespond }: Props) {
+export default function CalendrierClient({ matches, trainings, myAvailability, onRespond, activeTeamName }: Props) {
   const now   = new Date()
   const [year, setYear]     = useState(now.getFullYear())
   const [month, setMonth]   = useState(now.getMonth())
@@ -94,6 +95,7 @@ export default function CalendrierClient({ matches, trainings, myAvailability, o
       <PageHeader
         label="Mon Club"
         title="Calendrier"
+        subtitle={activeTeamName ? `Équipe active : ${activeTeamName}` : undefined}
         action={
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <span style={{
