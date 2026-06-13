@@ -2,6 +2,8 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import TeamSelector from "./TeamSelector"
+import type { Team } from "@/lib/teams"
 
 const NAV_GROUPS = [
   {
@@ -21,6 +23,7 @@ const NAV_GROUPS = [
     items: [
       { href: "/dashboard/calendrier",     label: "Calendrier",      icon: "▦" },
       { href: "/dashboard/effectif",       label: "Effectif",        icon: "◻" },
+      { href: "/dashboard/effectif/equipes", label: "Équipes",       icon: "◐" },
       { href: "/dashboard/matchs",         label: "Matchs",          icon: "◷" },
       { href: "/dashboard/entrainements",  label: "Entraînements",   icon: "◈" },
       { href: "/dashboard/data",           label: "Data & stats",    icon: "▤" },
@@ -41,9 +44,11 @@ interface Props {
   clubLevel:     string | null
   userName:      string
   canManageFees: boolean
+  teams:         Team[]
+  activeTeamId:  string
 }
 
-export default function Sidebar({ clubName, clubLevel, userName, canManageFees }: Props) {
+export default function Sidebar({ clubName, clubLevel, userName, canManageFees, teams, activeTeamId }: Props) {
   const pathname = usePathname()
 
   const navGroups = NAV_GROUPS.map(group => ({
@@ -129,6 +134,8 @@ export default function Sidebar({ clubName, clubLevel, userName, canManageFees }
             )}
           </div>
         </Link>
+
+        <TeamSelector teams={teams} activeTeamId={activeTeamId} />
 
         {/* Navigation */}
         <nav style={{ flex: 1, padding: "16px 12px", display: "flex", flexDirection: "column", gap: 24 }}>

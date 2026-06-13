@@ -1,5 +1,8 @@
+import { cookies } from "next/headers"
 import { supabase } from "@/lib/supabase"
 import type { ClubScope, ClubScopeFilter } from "@/lib/scope"
+
+export const ACTIVE_TEAM_COOKIE = "fb_active_team_id"
 
 export interface Team {
   id:   string
@@ -28,4 +31,13 @@ export async function getOrCreateDefaultTeam(scope: ClubScope): Promise<Team> {
     .single()
   if (error || !data) throw new Error(error?.message ?? "Impossible de créer l'équipe par défaut")
   return data
+}
+
+// Équipe active du coach (cookie), repliée sur la première équipe du club si absente/invalide.
+export async function getActiveTeam(scope: ClubScope): Promise<Team> {
+  const teams = await getClubTeams({ column: scope.column, value: scope.value })
+  const fallback = teams[0] ?? await getOrCreateDefaultTeam(scope)
+  const cookieStore = await cookies()
+  const activeId = cookieStore.get(ACTIVE_TEAM_COOKIE)?.value
+  return teams.find(t => t.id === activeId) ?? fallback
 }
