@@ -1,10 +1,11 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Barlow_Condensed, Space_Mono, Barlow } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import CookieBanner from "@/components/CookieBanner";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
+import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import "./globals.css";
 
 const barlowCondensed = Barlow_Condensed({
@@ -57,6 +58,10 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  themeColor: "#181812",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -74,6 +79,7 @@ export default function RootLayout({
           <Footer />
           <CookieBanner />
           <GoogleAnalytics />
+          <ServiceWorkerRegister />
         </body>
       </html>
     </ClerkProvider>
