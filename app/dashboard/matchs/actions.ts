@@ -4,6 +4,7 @@ import { z } from "zod"
 import { revalidatePath } from "next/cache"
 import { supabase } from "@/lib/supabase"
 import { getClubScope } from "@/lib/scope"
+import { getOrCreateDefaultTeam } from "@/lib/teams"
 
 export interface Match {
   id:           string
@@ -136,9 +137,11 @@ export async function createMatch(
   const parsed = MatchSchema.safeParse(raw)
   if (!parsed.success) return { ok: false, error: "Données invalides." }
 
+  const team = await getOrCreateDefaultTeam(scope)
+
   const { error } = await supabase
     .from("matches")
-    .insert({ ...parsed.data, owner_id: scope.userId, org_id: scope.orgId })
+    .insert({ ...parsed.data, owner_id: scope.userId, org_id: scope.orgId, team_id: team.id })
 
   if (error) return { ok: false, error: error.message }
   revalidatePath("/dashboard/matchs")

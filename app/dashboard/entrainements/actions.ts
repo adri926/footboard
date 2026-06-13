@@ -4,6 +4,7 @@ import { z } from "zod"
 import { revalidatePath } from "next/cache"
 import { supabase } from "@/lib/supabase"
 import { getClubScope } from "@/lib/scope"
+import { getOrCreateDefaultTeam } from "@/lib/teams"
 import type { TrainingType } from "@/lib/training-types"
 
 export interface Training {
@@ -45,9 +46,11 @@ export async function createTraining(
   const parsed = TrainingSchema.safeParse(raw)
   if (!parsed.success) return { ok: false, error: "Données invalides." }
 
+  const team = await getOrCreateDefaultTeam(scope)
+
   const { error } = await supabase
     .from("trainings")
-    .insert({ ...parsed.data, owner_id: scope.userId, org_id: scope.orgId })
+    .insert({ ...parsed.data, owner_id: scope.userId, org_id: scope.orgId, team_id: team.id })
 
   if (error) return { ok: false, error: error.message }
   revalidatePath("/dashboard/entrainements")
