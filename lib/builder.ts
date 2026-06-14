@@ -82,6 +82,27 @@ export const FINALITY_CATEGORIES: { id: FinalityCategory; label: string }[] = [
   { id: "transition", label: "Transition"  },
 ]
 
+/* ── Vocabulaire tactique (principes de jeu) ────────────── */
+export interface TacticalTag {
+  id:    string
+  label: string
+}
+
+export const TACTICAL_TAGS: TacticalTag[] = [
+  { id: "surnombre",    label: "Surnombre" },
+  { id: "couverture",   label: "Couverture" },
+  { id: "appui-soutien", label: "Appui-soutien" },
+  { id: "permutation",  label: "Permutation de postes" },
+  { id: "fixation",     label: "Fixation" },
+  { id: "jeu-dos",      label: "Jeu dans le dos" },
+  { id: "largeur",      label: "Jeu en largeur" },
+  { id: "profondeur",   label: "Appel en profondeur" },
+  { id: "pressing",     label: "Pressing déclenché" },
+  { id: "repli",        label: "Repli défensif" },
+  { id: "transition",   label: "Transition rapide" },
+  { id: "temporisation", label: "Temporisation" },
+]
+
 /* ── Joueur dans le builder ─────────────────────────────── */
 export interface BuilderPlayer {
   id:   string   // ex. "h1", "a1"
@@ -99,6 +120,7 @@ export interface BuiltSituation {
   description: string
   players:     BuilderPlayer[]
   ball:        { x: number; y: number }
+  tags:        string[]   // TacticalTag.id[]
   created_at?: string
 }
 

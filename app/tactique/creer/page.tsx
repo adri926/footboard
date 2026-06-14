@@ -5,7 +5,7 @@ import Link from "next/link"
 import ZonePitch from "@/components/pitch/ZonePitch"
 import BuilderPitch from "@/components/pitch/BuilderPitch"
 import {
-  PITCH_ZONES, PLAYER_CONFIGS, FINALITIES, FINALITY_CATEGORIES,
+  PITCH_ZONES, PLAYER_CONFIGS, FINALITIES, FINALITY_CATEGORIES, TACTICAL_TAGS,
   autoPlace, zoneBallPosition, getZone,
   type ZoneId, type PitchZone, type BuilderPlayer, type FinalityCategory,
 } from "@/lib/builder"
@@ -92,6 +92,7 @@ export default function CreerPage() {
   const [ball,        setBall]        = useState({ x: 50, y: 50 })
   const [finality,    setFinality]    = useState<string | null>(null)
   const [description, setDescription] = useState("")
+  const [tags,        setTags]        = useState<string[]>([])
   const [catFilter,   setCatFilter]   = useState<FinalityCategory>("offensive")
   const [saveMsg,     setSaveMsg]     = useState<string | null>(null)
   const [isPending,   startTransition] = useTransition()
@@ -121,6 +122,12 @@ export default function CreerPage() {
     setPlayers(prev => prev.map(p => p.id === id ? { ...p, x, y } : p))
   }
 
+  function toggleTag(id: string) {
+    setTags(prev => prev.includes(id)
+      ? prev.filter(t => t !== id)
+      : prev.length < 5 ? [...prev, id] : prev)
+  }
+
   function save() {
     if (!zone || !configLabel || !finality) return
     startTransition(async () => {
@@ -131,6 +138,7 @@ export default function CreerPage() {
         description,
         players,
         ball,
+        tags,
       })
       setSaveMsg(res.ok ? "✓ SITUATION SAUVEGARDÉE" : `✗ ${res.error}`)
       setTimeout(() => setSaveMsg(null), 3000)
@@ -139,7 +147,7 @@ export default function CreerPage() {
 
   function reset() {
     setZone(null); setConfigLabel(null); setPlayers([])
-    setFinality(null); setDescription(""); setSaveMsg(null)
+    setFinality(null); setDescription(""); setTags([]); setSaveMsg(null)
   }
 
   const selectedFinality = FINALITIES.find(f => f.id === finality)
@@ -330,6 +338,33 @@ export default function CreerPage() {
                     outline: "none",
                   }}
                 />
+
+                {/* Vocabulaire tactique */}
+                <p style={{
+                  fontFamily: "var(--font-mono), monospace",
+                  fontSize: 9, fontWeight: 700, letterSpacing: "0.12em",
+                  color: "rgba(122,154,130,0.6)", marginTop: 12, marginBottom: 6,
+                  textTransform: "uppercase",
+                }}>
+                  Principes de jeu (max 5)
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {TACTICAL_TAGS.map(t => (
+                    <button key={t.id} onClick={() => toggleTag(t.id)} style={{
+                      fontFamily: "var(--font-mono), monospace",
+                      fontSize: 9, fontWeight: 700, letterSpacing: "0.06em",
+                      padding: "5px 10px", borderRadius: 6, cursor: "pointer",
+                      backgroundColor: tags.includes(t.id)
+                        ? "rgba(122,154,130,0.2)" : "rgba(255,255,255,0.03)",
+                      border: `1px solid ${tags.includes(t.id)
+                        ? "rgba(122,154,130,0.5)" : "rgba(255,255,255,0.08)"}`,
+                      color: tags.includes(t.id) ? "#7A9A82" : "rgba(255,255,255,0.4)",
+                      transition: "all 0.2s",
+                    }}>
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
 
                 {/* Récap */}
                 <div className="mt-3 mb-3 flex flex-wrap gap-2">

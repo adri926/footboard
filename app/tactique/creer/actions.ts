@@ -3,7 +3,10 @@
 import { auth } from "@clerk/nextjs/server"
 import { z } from "zod"
 import { supabase } from "@/lib/supabase"
-import type { BuiltSituation } from "@/lib/builder"
+import { getClubScope } from "@/lib/scope"
+import { TACTICAL_TAGS, type BuiltSituation } from "@/lib/builder"
+
+const TAG_IDS = TACTICAL_TAGS.map(t => t.id) as [string, ...string[]]
 
 const ZONE_IDS = [
   "def-left", "def-center", "def-right",
@@ -33,6 +36,7 @@ const SaveSchema = z.object({
     x: z.number().min(0).max(100),
     y: z.number().min(0).max(100),
   }),
+  tags: z.array(z.enum(TAG_IDS)).max(5).default([]),
 })
 
 export async function saveBuiltSituation(
@@ -40,6 +44,7 @@ export async function saveBuiltSituation(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const { userId } = await auth()
   if (!userId) return { ok: false, error: "Connecte-toi pour sauvegarder." }
+  const scope = await getClubScope()
 
   const parsed = SaveSchema.safeParse(raw)
   if (!parsed.success) return { ok: false, error: "Données invalides." }
@@ -48,13 +53,15 @@ export async function saveBuiltSituation(
   const { error } = await supabase
     .from("built_situations")
     .insert({
-      owner_id:    userId,
+      owner_id:    scope.userId,
+      org_id:      scope.orgId,
       zone:        data.zone,
       config:      data.config,
       finality:    data.finality,
       description: data.description,
       players:     data.players,
       ball:        data.ball,
+      tags:        data.tags,
     })
 
   if (error) return { ok: false, error: error.message }
@@ -64,11 +71,12 @@ export async function saveBuiltSituation(
 export async function getBuiltSituations(): Promise<BuiltSituation[]> {
   const { userId } = await auth()
   if (!userId) return []
+  const scope = await getClubScope()
 
   const { data, error } = await supabase
     .from("built_situations")
-    .select("id, zone, config, finality, description, players, ball, created_at")
-    .eq("owner_id", userId)
+    .select("id, zone, config, finality, description, players, ball, tags, created_at")
+    .eq(scope.column, scope.value)
     .order("created_at", { ascending: false })
 
   if (error || !data) return []
@@ -78,11 +86,12 @@ export async function getBuiltSituations(): Promise<BuiltSituation[]> {
 export async function getBuiltSituation(id: string): Promise<BuiltSituation | null> {
   const { userId } = await auth()
   if (!userId) return null
+  const scope = await getClubScope()
 
   const { data, error } = await supabase
     .from("built_situations")
-    .select("id, zone, config, finality, description, players, ball, created_at")
-    .eq("owner_id", userId)
+    .select("id, zone, config, finality, description, players, ball, tags, created_at")
+    .eq(scope.column, scope.value)
     .eq("id", id)
     .maybeSingle()
 
@@ -95,12 +104,13 @@ export async function deleteBuiltSituation(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const { userId } = await auth()
   if (!userId) return { ok: false, error: "Connecte-toi pour supprimer." }
+  const scope = await getClubScope()
 
   const { error } = await supabase
     .from("built_situations")
     .delete()
     .eq("id", id)
-    .eq("owner_id", userId)
+    .eq(scope.column, scope.value)
 
   if (error) return { ok: false, error: error.message }
   return { ok: true }

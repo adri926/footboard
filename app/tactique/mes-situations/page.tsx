@@ -1,15 +1,27 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { getBuiltSituations } from "@/app/tactique/creer/actions"
-import { PITCH_ZONES, PLAYER_CONFIGS, FINALITIES } from "@/lib/builder"
+import { PITCH_ZONES, PLAYER_CONFIGS, FINALITIES, TACTICAL_TAGS } from "@/lib/builder"
 import DeleteButton from "./DeleteButton"
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }
 
-export default async function MesSituationsPage() {
-  const situations = await getBuiltSituations()
+export default async function MesSituationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tag?: string }>
+}) {
+  const { tag: activeTag } = await searchParams
+  const allSituations = await getBuiltSituations()
+  const situations = activeTag
+    ? allSituations.filter(s => s.tags?.includes(activeTag))
+    : allSituations
+
+  const availableTags = TACTICAL_TAGS.filter(t =>
+    allSituations.some(s => s.tags?.includes(t.id))
+  )
 
   return (
     <div style={{ background: "#181812", minHeight: "100vh", color: "rgba(255,255,255,0.92)" }}>
@@ -33,6 +45,34 @@ export default async function MesSituationsPage() {
             <span style={{ color: "#7A9A82" }}>SAUVEGARDÉES</span>
           </h1>
         </div>
+
+        {/* Filtres par tag */}
+        {availableTags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-6">
+            <Link href="/tactique/mes-situations" style={{
+              fontFamily: "var(--font-mono), monospace",
+              fontSize: 9, fontWeight: 700, letterSpacing: "0.06em",
+              padding: "5px 10px", borderRadius: 6,
+              backgroundColor: !activeTag ? "rgba(122,154,130,0.2)" : "rgba(255,255,255,0.03)",
+              border: `1px solid ${!activeTag ? "rgba(122,154,130,0.5)" : "rgba(255,255,255,0.08)"}`,
+              color: !activeTag ? "#7A9A82" : "rgba(255,255,255,0.4)",
+            }}>
+              TOUS
+            </Link>
+            {availableTags.map(t => (
+              <Link key={t.id} href={`/tactique/mes-situations?tag=${t.id}`} style={{
+                fontFamily: "var(--font-mono), monospace",
+                fontSize: 9, fontWeight: 700, letterSpacing: "0.06em",
+                padding: "5px 10px", borderRadius: 6,
+                backgroundColor: activeTag === t.id ? "rgba(122,154,130,0.2)" : "rgba(255,255,255,0.03)",
+                border: `1px solid ${activeTag === t.id ? "rgba(122,154,130,0.5)" : "rgba(255,255,255,0.08)"}`,
+                color: activeTag === t.id ? "#7A9A82" : "rgba(255,255,255,0.4)",
+              }}>
+                {t.label}
+              </Link>
+            ))}
+          </div>
+        )}
 
         {situations.length === 0 ? (
           <div style={{
@@ -105,6 +145,25 @@ export default async function MesSituationsPage() {
                       }}>
                         {s.description}
                       </p>
+                    )}
+                    {s.tags?.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {s.tags.map(tagId => {
+                          const tag = TACTICAL_TAGS.find(t => t.id === tagId)
+                          return (
+                            <span key={tagId} style={{
+                              fontFamily: "var(--font-mono), monospace",
+                              fontSize: 8, fontWeight: 700, letterSpacing: "0.06em",
+                              backgroundColor: "rgba(255,255,255,0.04)",
+                              border: "1px solid rgba(255,255,255,0.08)",
+                              color: "rgba(255,255,255,0.4)",
+                              padding: "2px 6px", borderRadius: 4,
+                            }}>
+                              {tag?.label ?? tagId}
+                            </span>
+                          )
+                        })}
+                      </div>
                     )}
                   </div>
 
