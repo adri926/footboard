@@ -2,8 +2,7 @@
 
 import { useRef, useState } from "react"
 import Pitch from "./Pitch"
-import type { BuilderPlayer, PitchZone } from "@/lib/builder"
-import { getGhostPlayers } from "@/lib/builder"
+import type { BuilderPlayer } from "@/lib/builder"
 
 type DrawType = "pass" | "run" | "shot"
 
@@ -15,8 +14,8 @@ interface Arrow {
 }
 
 interface Props {
-  zone:       PitchZone
   players:    BuilderPlayer[]
+  ghosts:     { home: { x: number; y: number }[]; away: { x: number; y: number }[] }
   ball:       { x: number; y: number }
   onMove:     (id: string, x: number, y: number) => void
   onMoveBall: (x: number, y: number) => void
@@ -37,17 +36,14 @@ const DRAW_CFG: Record<DrawType, { label: string; color: string; dash: string; w
   shot: { label: "Tir",         color: "#e07070", dash: "none", w: 0.8  },
 }
 
-export default function BuilderPitch({ zone, players, ball, onMove, onMoveBall }: Props) {
+export default function BuilderPitch({ players, ghosts, ball, onMove, onMoveBall }: Props) {
   const ref = useRef<HTMLDivElement>(null)
 
   const [mode,        setMode]        = useState<"move" | "draw">("move")
   const [drawType,    setDrawType]    = useState<DrawType>("pass")
   const [arrows,      setArrows]      = useState<Arrow[]>([])
   const [pendingFrom, setPendingFrom] = useState<{ x: number; y: number; id: string } | null>(null)
-
-  const homeCount = players.filter(p => p.team === "home").length
-  const awayCount = players.filter(p => p.team === "away").length
-  const ghosts    = getGhostPlayers(zone, homeCount, awayCount)
+  const [dragState,   setDragState]   = useState<{ id: string; x: number; y: number } | null>(null)
 
   function getPos(clientX: number, clientY: number) {
     const rect = ref.current?.getBoundingClientRect()
@@ -58,19 +54,28 @@ export default function BuilderPitch({ zone, players, ball, onMove, onMoveBall }
     }
   }
 
-  function dragHandlers(onDrop: (x: number, y: number) => void) {
+  function dragHandlers(id: string, onDrop: (x: number, y: number) => void) {
     if (mode !== "move") return {}
     return {
-      draggable: true as const,
-      onDragEnd: (e: React.DragEvent) => {
+      onPointerDown: (e: React.PointerEvent) => {
+        e.preventDefault()
+        e.stopPropagation()
+        e.currentTarget.setPointerCapture(e.pointerId)
+        const p = getPos(e.clientX, e.clientY)
+        if (p) setDragState({ id, x: p.x, y: p.y })
+      },
+      onPointerMove: (e: React.PointerEvent) => {
+        if (!dragState || dragState.id !== id) return
+        const p = getPos(e.clientX, e.clientY)
+        if (p) setDragState({ id, x: p.x, y: p.y })
+      },
+      onPointerUp: (e: React.PointerEvent) => {
+        if (!dragState || dragState.id !== id) return
         const p = getPos(e.clientX, e.clientY)
         if (p) onDrop(p.x, p.y)
+        setDragState(null)
       },
-      onTouchEnd: (e: React.TouchEvent) => {
-        const t = e.changedTouches[0]
-        const p = getPos(t.clientX, t.clientY)
-        if (p) onDrop(p.x, p.y)
-      },
+      style: { touchAction: "none" as const, cursor: "grab" },
     }
   }
 
@@ -201,16 +206,6 @@ export default function BuilderPitch({ zone, players, ball, onMove, onMoveBall }
         {/* Fond terrain */}
         <div className="absolute inset-0"><Pitch /></div>
 
-        {/* Zone highlight */}
-        <div style={{
-          position: "absolute",
-          left: `${zone.x1}%`, top:  `${zone.y1}%`,
-          width: `${zone.x2 - zone.x1}%`, height: `${zone.y2 - zone.y1}%`,
-          backgroundColor: "rgba(122,154,130,0.08)",
-          border: "1.5px dashed rgba(122,154,130,0.35)",
-          pointerEvents: "none",
-        }} />
-
         {/* ── Joueurs fantômes (formation) ─────────────────── */}
         {(["home", "away"] as const).map(team =>
           ghosts[team].map((pos, i) => {
@@ -289,14 +284,16 @@ export default function BuilderPitch({ zone, players, ball, onMove, onMoveBall }
         {players.map(p => {
           const c = COLORS[p.team]
           const selected = pendingFrom?.id === p.id
+          const pos = dragState?.id === p.id ? dragState : p
+          const { style: dragStyle, ...handlers } = dragHandlers(p.id, (x, y) => onMove(p.id, x, y))
           return (
             <div
               key={p.id}
               onClick={e => handlePlayerClick(p.id, p.x, p.y, e)}
-              {...dragHandlers((x, y) => onMove(p.id, x, y))}
+              {...handlers}
               style={{
                 position: "absolute",
-                left: `${p.x}%`, top: `${p.y}%`,
+                left: `${pos.x}%`, top: `${pos.y}%`,
                 marginLeft: -TOKEN / 2, marginTop: -TOKEN / 2,
                 width: TOKEN, height: TOKEN, borderRadius: "50%",
                 backgroundColor: c.bg,
@@ -308,8 +305,9 @@ export default function BuilderPitch({ zone, players, ball, onMove, onMoveBall }
                 color: c.text, fontSize: 9, fontWeight: 700,
                 fontFamily: "var(--font-mono), monospace",
                 cursor: isDrawing ? "pointer" : "grab",
-                zIndex: 10,
-                transition: "border-color 0.15s, box-shadow 0.15s",
+                zIndex: dragState?.id === p.id ? 30 : 10,
+                transition: dragState?.id === p.id ? "none" : "border-color 0.15s, box-shadow 0.15s",
+                ...dragStyle,
               }}
             >
               {p.id.replace(/[ha]/, "")}
@@ -318,24 +316,31 @@ export default function BuilderPitch({ zone, players, ball, onMove, onMoveBall }
         })}
 
         {/* ── Ballon ────────────────────────────────────────── */}
-        <div
-          onClick={handleBallClick}
-          {...dragHandlers((x, y) => onMoveBall(x, y))}
-          style={{
-            position: "absolute",
-            left: `${ball.x}%`, top: `${ball.y}%`,
-            marginLeft: -BALL / 2, marginTop: -BALL / 2,
-            width: BALL, height: BALL, borderRadius: "50%",
-            background: "radial-gradient(circle at 35% 30%, #ffffff, #cccccc)",
-            border: `1.5px solid ${pendingFrom?.id === "ball" ? "#f5d84e" : "rgba(0,0,0,0.25)"}`,
-            boxShadow: pendingFrom?.id === "ball"
-              ? "0 0 12px 4px rgba(245,216,78,0.4)"
-              : "0 2px 6px rgba(0,0,0,0.5), 0 0 8px rgba(255,255,255,0.3)",
-            cursor: isDrawing ? "pointer" : "grab",
-            zIndex: 15,
-            transition: "border-color 0.15s, box-shadow 0.15s",
-          }}
-        />
+        {(() => {
+          const pos = dragState?.id === "ball" ? dragState : ball
+          const { style: dragStyle, ...handlers } = dragHandlers("ball", (x, y) => onMoveBall(x, y))
+          return (
+            <div
+              onClick={handleBallClick}
+              {...handlers}
+              style={{
+                position: "absolute",
+                left: `${pos.x}%`, top: `${pos.y}%`,
+                marginLeft: -BALL / 2, marginTop: -BALL / 2,
+                width: BALL, height: BALL, borderRadius: "50%",
+                background: "radial-gradient(circle at 35% 30%, #ffffff, #cccccc)",
+                border: `1.5px solid ${pendingFrom?.id === "ball" ? "#f5d84e" : "rgba(0,0,0,0.25)"}`,
+                boxShadow: pendingFrom?.id === "ball"
+                  ? "0 0 12px 4px rgba(245,216,78,0.4)"
+                  : "0 2px 6px rgba(0,0,0,0.5), 0 0 8px rgba(255,255,255,0.3)",
+                cursor: isDrawing ? "pointer" : "grab",
+                zIndex: dragState?.id === "ball" ? 30 : 15,
+                transition: dragState?.id === "ball" ? "none" : "border-color 0.15s, box-shadow 0.15s",
+                ...dragStyle,
+              }}
+            />
+          )
+        })()}
       </div>
     </div>
   )

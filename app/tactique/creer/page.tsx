@@ -2,17 +2,16 @@
 
 import { useState, useTransition } from "react"
 import Link from "next/link"
-import ZonePitch from "@/components/pitch/ZonePitch"
+import Pitch from "@/components/pitch/Pitch"
 import BuilderPitch from "@/components/pitch/BuilderPitch"
 import {
-  PITCH_ZONES, PLAYER_CONFIGS, FINALITIES, FINALITY_CATEGORIES, TACTICAL_TAGS,
-  MAX_FRAMES, MAX_BRANCHES,
-  autoPlace, zoneBallPosition, getZone,
-  type ZoneId, type PitchZone, type BuilderPlayer, type FinalityCategory, type SituationFrame,
+  FINALITIES, FINALITY_CATEGORIES, TACTICAL_TAGS,
+  TRIGGERS, TRIGGER_CATEGORIES, FULL_FORMATION,
+  MAX_FRAMES, MAX_BRANCHES, MAX_SQUAD_SELECTION,
+  getGhostPlayers, playersFromSelection, suggestTriggerPositions,
+  type BuilderPlayer, type FinalityCategory, type TriggerCategory, type SituationFrame,
 } from "@/lib/builder"
 import { saveBuiltSituation } from "./actions"
-
-type Step = 1 | 2 | 3 | 4 | 5
 
 const CONFIG_HINTS: Record<string, string> = {
   "1v1": "Duel individuel",
@@ -23,6 +22,14 @@ const CONFIG_HINTS: Record<string, string> = {
   "4v3": "Avantage collectif",
   "4v4": "Phase de jeu organisée",
   "5v4": "Forte densité dans le dernier tiers",
+}
+
+function configHint(home: number, away: number): string {
+  const label = `${home}v${away}`
+  if (CONFIG_HINTS[label]) return CONFIG_HINTS[label]
+  if (home === away) return "Égalité numérique"
+  if (home > away) return home - away >= 2 ? "Supériorité numérique" : "Légère supériorité numérique"
+  return home - away <= -2 ? "Infériorité numérique" : "Légère infériorité numérique"
 }
 
 const FINALITY_HINTS: Record<string, string> = {
@@ -40,39 +47,6 @@ const FINALITY_HINTS: Record<string, string> = {
 }
 
 /* ── Helpers UI ─────────────────────────────────────────── */
-function StepBadge({ n, active, done }: { n: number; active: boolean; done: boolean }) {
-  return (
-    <div style={{
-      width: 22, height: 22, borderRadius: "50%", flexShrink: 0,
-      display: "flex", alignItems: "center", justifyContent: "center",
-      fontFamily: "var(--font-mono), monospace", fontSize: 9, fontWeight: 700,
-      backgroundColor: done ? "#7A9A82" : active ? "rgba(122,154,130,0.18)" : "rgba(255,255,255,0.05)",
-      border: `1.5px solid ${done ? "#7A9A82" : active ? "rgba(122,154,130,0.5)" : "rgba(255,255,255,0.1)"}`,
-      color: done ? "#181812" : active ? "#7A9A82" : "rgba(255,255,255,0.25)",
-      transition: "all 0.3s",
-    }}>
-      {done ? "✓" : n}
-    </div>
-  )
-}
-
-function Card({ children, active, done }: {
-  children: React.ReactNode; active: boolean; done: boolean
-}) {
-  return (
-    <div style={{
-      padding: "14px 16px", borderRadius: 14,
-      backgroundColor: "#1f1f19",
-      border: `1px solid ${active ? "rgba(122,154,130,0.35)" : "rgba(122,154,130,0.1)"}`,
-      opacity: !active && !done ? 0.4 : 1,
-      transition: "all 0.3s",
-      pointerEvents: !active && !done ? "none" : "auto",
-    }}>
-      {children}
-    </div>
-  )
-}
-
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <p style={{
@@ -85,10 +59,80 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   )
 }
 
+const SQUAD_COLORS = {
+  home: { bg: "#8a1f1f", border: "rgba(210,90,90,0.75)", text: "rgba(255,255,255,0.92)" },
+  away: { bg: "#2e3e31", border: "rgba(122,154,130,0.65)", text: "rgba(180,220,190,0.95)" },
+}
+
+function SquadPicker({ selectedHome, selectedAway, onToggle }: {
+  selectedHome: Set<number>
+  selectedAway: Set<number>
+  onToggle: (team: "home" | "away", index: number) => void
+}) {
+  return (
+    <div className="relative w-full select-none" style={{
+      aspectRatio: "600/900",
+      boxShadow: "0 0 60px rgba(122,154,130,0.08), 0 0 0 1px rgba(122,154,130,0.15)",
+      borderRadius: 16, overflow: "hidden",
+    }}>
+      <div className="absolute inset-0"><Pitch /></div>
+
+      {/* Légende */}
+      <div style={{
+        position: "absolute", top: 8, left: 8, right: 8,
+        display: "flex", justifyContent: "space-between",
+        pointerEvents: "none", zIndex: 20,
+      }}>
+        {(["home", "away"] as const).map(team => (
+          <span key={team} style={{
+            fontFamily: "var(--font-mono), monospace",
+            fontSize: 8, fontWeight: 700, letterSpacing: "0.1em",
+            color: team === "home" ? "rgba(210,90,90,0.9)" : "rgba(122,154,130,0.9)",
+            backgroundColor: "rgba(24,24,18,0.75)",
+            padding: "2px 7px", borderRadius: 4,
+          }}>
+            {team === "home" ? "TON ÉQUIPE" : "ADVERSAIRE"}
+          </span>
+        ))}
+      </div>
+
+      {/* Joueurs en formation, cliquables */}
+      {(["home", "away"] as const).map(team =>
+        FULL_FORMATION[team].map((slot, i) => {
+          const c = SQUAD_COLORS[team]
+          const selected = (team === "home" ? selectedHome : selectedAway).has(i)
+          return (
+            <button key={`${team}-${i}`} onClick={() => onToggle(team, i)} style={{
+              position: "absolute",
+              left: `${slot.x}%`, top: `${slot.y}%`,
+              marginLeft: -15, marginTop: -15,
+              width: 30, height: 30, borderRadius: "50%",
+              backgroundColor: c.bg,
+              border: `2px solid ${selected ? "#f5d84e" : c.border}`,
+              boxShadow: selected
+                ? "0 0 14px 4px rgba(245,216,78,0.45)"
+                : "0 0 10px 2px rgba(0,0,0,0.4)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              color: c.text, fontSize: 9, fontWeight: 700,
+              fontFamily: "var(--font-mono), monospace",
+              cursor: "pointer", zIndex: 10,
+              opacity: selected ? 1 : 0.55,
+              transition: "border-color 0.15s, box-shadow 0.15s, opacity 0.15s",
+            }}>
+              {slot.post}
+            </button>
+          )
+        })
+      )}
+    </div>
+  )
+}
+
 /* ── Page ───────────────────────────────────────────────── */
 export default function CreerPage() {
-  const [zone,        setZone]        = useState<PitchZone | null>(null)
-  const [configLabel, setConfigLabel] = useState<string | null>(null)
+  const [selectedHome,  setSelectedHome]  = useState<Set<number>>(new Set())
+  const [selectedAway,  setSelectedAway]  = useState<Set<number>>(new Set())
+  const [squadValidated, setSquadValidated] = useState(false)
   const [players,     setPlayers]     = useState<BuilderPlayer[]>([])
   const [ball,        setBall]        = useState({ x: 50, y: 50 })
   const [finality,    setFinality]    = useState<string | null>(null)
@@ -97,35 +141,38 @@ export default function CreerPage() {
   const [frames,      setFrames]      = useState<SituationFrame[]>([])
   const [branches,    setBranches]    = useState<SituationFrame[]>([])
   const [active,      setActive]      = useState<{ kind: "frame" | "branch"; index: number }>({ kind: "frame", index: 0 })
+  const [touched,     setTouched]     = useState<Set<string>>(new Set())
+  const [triggerCat,  setTriggerCat]  = useState<TriggerCategory>("recovery")
   const [catFilter,   setCatFilter]   = useState<FinalityCategory>("offensive")
+  const [tab,         setTab]         = useState<"terrain" | "infos">("terrain")
   const [saveMsg,     setSaveMsg]     = useState<string | null>(null)
   const [isPending,   startTransition] = useTransition()
 
-  const step: Step =
-    !zone        ? 1 :
-    !configLabel ? 2 :
-    !finality    ? 3 : 4
+  const homeCount = squadValidated ? selectedHome.size : null
+  const awayCount = squadValidated ? selectedAway.size : null
+  const configLabel = homeCount && awayCount ? `${homeCount}v${awayCount}` : null
 
   /* ── Handlers ── */
-  function selectZone(z: PitchZone) {
-    setZone(z)
-    setConfigLabel(null)
-    setPlayers([])
-    setFinality(null)
-    setBall(zoneBallPosition(z))
-    setFrames([])
-    setBranches([])
-    setActive({ kind: "frame", index: 0 })
+  function toggleSquadPlayer(team: "home" | "away", index: number) {
+    const setter = team === "home" ? setSelectedHome : setSelectedAway
+    setter(prev => {
+      const next = new Set(prev)
+      if (next.has(index)) next.delete(index)
+      else if (next.size < MAX_SQUAD_SELECTION) next.add(index)
+      return next
+    })
   }
 
-  function selectConfig(label: string) {
-    if (!zone) return
-    const cfg = PLAYER_CONFIGS.find(c => c.label === label)!
-    setConfigLabel(label)
-    setPlayers(autoPlace(zone, cfg))
+  function validateSquad() {
+    if (selectedHome.size === 0 || selectedAway.size === 0) return
+    setSquadValidated(true)
+    setPlayers(playersFromSelection(selectedHome, selectedAway))
+    setBall({ x: 50, y: 50 })
     setFrames([])
     setBranches([])
     setActive({ kind: "frame", index: 0 })
+    setTouched(new Set())
+    setTab("terrain")
   }
 
   /* Positions de la frame/branche actuellement éditée */
@@ -141,6 +188,11 @@ export default function CreerPage() {
     return branches[active.index]
   }
 
+  /* Clé "touché" de la frame/branche actuellement éditée */
+  function activeKey(): string {
+    return active.kind === "frame" ? `frame-${active.index}` : `branch-${active.index}`
+  }
+
   function movePlayer(id: string, x: number, y: number) {
     if (active.kind === "frame" && active.index === 0) {
       setPlayers(prev => prev.map(p => p.id === id ? { ...p, x, y } : p))
@@ -151,6 +203,7 @@ export default function CreerPage() {
       const idx = active.index
       setBranches(prev => prev.map((b, i) => i === idx ? { ...b, players: { ...b.players, [id]: { x, y } } } : b))
     }
+    setTouched(prev => new Set(prev).add(activeKey()))
   }
 
   function moveBall(x: number, y: number) {
@@ -163,6 +216,33 @@ export default function CreerPage() {
       const idx = active.index
       setBranches(prev => prev.map((b, i) => i === idx ? { ...b, ball: { x, y } } : b))
     }
+    setTouched(prev => new Set(prev).add(activeKey()))
+  }
+
+  function setFrameTrigger(id: string) {
+    const trigger = TRIGGERS.find(t => t.id === id)!
+    const suggestion = suggestTriggerPositions(trigger.category, players, ball)
+    setFrames(prev => prev.map((f, i) => i === 0
+      ? { ...f, trigger: id, players: suggestion.players, ball: suggestion.ball }
+      : f))
+    setTouched(prev => new Set(prev).add("frame-1"))
+  }
+
+  /* Texte d'aide contextuel selon l'étape de la timeline en cours d'édition */
+  function hintFor(): string {
+    if (active.kind === "branch") {
+      return "Variante : une autre issue possible depuis le déclencheur — ajuste les positions de ce scénario alternatif."
+    }
+    if (active.index === 0) {
+      return "Place les joueurs et le ballon dans leur position de départ."
+    }
+    if (active.index === 1) {
+      const trigger = frames[0]?.trigger ? TRIGGERS.find(t => t.id === frames[0].trigger) : undefined
+      return trigger
+        ? `${trigger.emoji} ${trigger.label} — ajuste les positions à cet instant.`
+        : "Choisis ce qui déclenche l'action, puis ajuste les positions à cet instant."
+    }
+    return "Place les positions au moment où l'action se termine."
   }
 
   function addFrame() {
@@ -208,10 +288,10 @@ export default function CreerPage() {
   }
 
   function save() {
-    if (!zone || !configLabel || !finality) return
+    if (!configLabel || !finality) return
     startTransition(async () => {
       const res = await saveBuiltSituation({
-        zone: zone.id,
+        zone: "mid-center",
         config: configLabel,
         finality,
         description,
@@ -227,9 +307,11 @@ export default function CreerPage() {
   }
 
   function reset() {
-    setZone(null); setConfigLabel(null); setPlayers([])
+    setSelectedHome(new Set()); setSelectedAway(new Set()); setSquadValidated(false)
+    setPlayers([])
     setFinality(null); setDescription(""); setTags([]); setSaveMsg(null)
     setFrames([]); setBranches([]); setActive({ kind: "frame", index: 0 })
+    setTouched(new Set()); setTriggerCat("recovery"); setTab("terrain")
   }
 
   const selectedFinality = FINALITIES.find(f => f.id === finality)
@@ -256,375 +338,466 @@ export default function CreerPage() {
           </h1>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-8 items-start">
+        {/* ── Outil (colonne unique centrée) ── */}
+        <div className="flex flex-col gap-4" style={{ maxWidth: 480, margin: "0 auto" }}>
 
-          {/* ── TUNNEL (gauche) ── */}
-          <div className="w-full lg:w-[42%] flex flex-col gap-4 lg:sticky lg:top-20">
+          {!squadValidated ? (
+            <>
+              {/* Sélection des joueurs impliqués sur le terrain */}
+              <SquadPicker selectedHome={selectedHome} selectedAway={selectedAway} onToggle={toggleSquadPlayer} />
 
-            {/* ÉTAPE 1 — Zone */}
-            <Card active={step === 1} done={!!zone}>
-              <div className="flex items-center gap-2 mb-3">
-                <StepBadge n={1} active={step === 1} done={!!zone} />
-                <SectionLabel>Zone du terrain</SectionLabel>
-              </div>
-              {zone && (
-                <button onClick={() => selectZone(zone)} style={{
-                  fontFamily: "var(--font-mono), monospace",
-                  fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
-                  color: "#7A9A82", background: "rgba(122,154,130,0.1)",
-                  border: "1px solid rgba(122,154,130,0.3)",
-                  padding: "6px 12px", borderRadius: 8, cursor: "pointer",
-                  marginBottom: 8, display: "block",
-                }}>
-                  {zone.label.toUpperCase()} — changer ↩
-                </button>
-              )}
-              {!zone && (
-                <p style={{
-                  fontFamily: "var(--font-body), sans-serif",
-                  fontSize: 12, color: "rgba(255,255,255,0.35)",
-                }}>
-                  Clique sur une zone du terrain à droite →
-                </p>
-              )}
-            </Card>
-
-            {/* ÉTAPE 2 — Joueurs */}
-            <Card active={step === 2} done={!!configLabel}>
-              <div className="flex items-center gap-2 mb-3">
-                <StepBadge n={2} active={step === 2} done={!!configLabel} />
-                <SectionLabel>Joueurs impliqués</SectionLabel>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {PLAYER_CONFIGS.map(cfg => (
-                  <button key={cfg.label} onClick={() => selectConfig(cfg.label)} style={{
-                    display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2,
-                    padding: "7px 14px", borderRadius: 8, cursor: "pointer", textAlign: "left",
-                    backgroundColor: configLabel === cfg.label
-                      ? "rgba(122,154,130,0.2)" : "rgba(255,255,255,0.04)",
-                    border: `1px solid ${configLabel === cfg.label
-                      ? "rgba(122,154,130,0.5)" : "rgba(255,255,255,0.08)"}`,
-                    transition: "all 0.2s",
-                  }}>
-                    <span style={{
-                      fontFamily: "var(--font-mono), monospace",
-                      fontWeight: 700, fontSize: 11, letterSpacing: "0.06em",
-                      color: configLabel === cfg.label ? "#7A9A82" : "rgba(255,255,255,0.45)",
-                    }}>
-                      {cfg.label}
-                    </span>
-                    <span style={{
-                      fontFamily: "var(--font-body), sans-serif",
-                      fontWeight: 400, fontSize: 9,
-                      color: "rgba(255,255,255,0.25)",
-                    }}>
-                      {CONFIG_HINTS[cfg.label]}
-                    </span>
-                  </button>
-                ))}
-              </div>
-              {configLabel && (
-                <p style={{
-                  fontFamily: "var(--font-body), sans-serif",
-                  fontSize: 11, color: "rgba(255,255,255,0.3)",
-                  marginTop: 8,
-                }}>
-                  Glisse les joueurs sur le terrain pour les repositionner.
-                </p>
-              )}
-            </Card>
-
-            {/* ÉTAPE 3 — Finalité */}
-            <Card active={step === 3} done={!!finality}>
-              <div className="flex items-center gap-2 mb-3">
-                <StepBadge n={3} active={step === 3} done={!!finality} />
-                <SectionLabel>Finalité de l'action</SectionLabel>
-              </div>
-              {/* Filtres catégorie */}
-              <div className="flex gap-1 mb-3">
-                {FINALITY_CATEGORIES.map(cat => (
-                  <button key={cat.id} onClick={() => setCatFilter(cat.id)} style={{
-                    fontFamily: "var(--font-mono), monospace",
-                    fontSize: 8, fontWeight: 700, letterSpacing: "0.08em",
-                    padding: "4px 10px", borderRadius: 6, cursor: "pointer",
-                    backgroundColor: catFilter === cat.id
-                      ? "rgba(122,154,130,0.18)" : "transparent",
-                    border: `1px solid ${catFilter === cat.id
-                      ? "rgba(122,154,130,0.4)" : "rgba(255,255,255,0.08)"}`,
-                    color: catFilter === cat.id ? "#7A9A82" : "rgba(255,255,255,0.3)",
-                    transition: "all 0.2s",
-                  }}>
-                    {cat.label.toUpperCase()}
-                  </button>
-                ))}
-              </div>
-              {/* Options */}
-              <div className="flex flex-col gap-1.5">
-                {FINALITIES.filter(f => f.category === catFilter).map(f => (
-                  <button key={f.id} onClick={() => setFinality(f.id)} style={{
-                    display: "flex", alignItems: "center", gap: 10,
-                    padding: "9px 12px", borderRadius: 10, cursor: "pointer",
-                    textAlign: "left",
-                    backgroundColor: finality === f.id
-                      ? "rgba(122,154,130,0.14)" : "rgba(255,255,255,0.03)",
-                    border: `1px solid ${finality === f.id
-                      ? "rgba(122,154,130,0.45)" : "rgba(122,154,130,0.08)"}`,
-                    transition: "all 0.2s",
-                  }}>
-                    <span style={{ fontSize: 14 }}>{f.emoji}</span>
-                    <span style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                      <span style={{
-                        fontFamily: "var(--font-body), sans-serif",
-                        fontWeight: finality === f.id ? 500 : 300, fontSize: 13,
-                        color: finality === f.id ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.5)",
-                      }}>
-                        {f.label}
-                      </span>
-                      <span style={{
-                        fontFamily: "var(--font-body), sans-serif",
-                        fontWeight: 400, fontSize: 10,
-                        color: "rgba(255,255,255,0.25)",
-                      }}>
-                        {FINALITY_HINTS[f.id]}
-                      </span>
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </Card>
-
-            {/* ÉTAPE 4 — Description + Save */}
-            {step === 4 && (
               <div style={{
                 padding: "14px 16px", borderRadius: 14,
                 backgroundColor: "#1f1f19",
-                border: "1px solid rgba(122,154,130,0.18)",
+                border: "1px solid rgba(122,154,130,0.1)",
               }}>
-                <div className="flex items-center gap-2 mb-3">
-                  <StepBadge n={4} active done={false} />
-                  <SectionLabel>Description (optionnel)</SectionLabel>
-                </div>
-                <textarea
-                  value={description}
-                  onChange={e => setDescription(e.target.value)}
-                  placeholder="Décris la situation, les consignes pour tes joueurs..."
-                  rows={3}
-                  style={{
-                    width: "100%", resize: "none",
-                    backgroundColor: "rgba(255,255,255,0.03)",
-                    border: "1px solid rgba(122,154,130,0.15)",
-                    borderRadius: 8, padding: "10px 12px",
-                    fontFamily: "var(--font-body), sans-serif",
-                    fontWeight: 400, fontSize: 13, lineHeight: 1.5,
-                    color: "rgba(255,255,255,0.7)",
-                    outline: "none",
-                  }}
-                />
-
-                {/* Vocabulaire tactique */}
+                <SectionLabel>Joueurs impliqués</SectionLabel>
                 <p style={{
-                  fontFamily: "var(--font-mono), monospace",
-                  fontSize: 9, fontWeight: 700, letterSpacing: "0.12em",
-                  color: "rgba(122,154,130,0.6)", marginTop: 12, marginBottom: 6,
-                  textTransform: "uppercase",
+                  fontFamily: "var(--font-body), sans-serif",
+                  fontSize: 12, color: "rgba(255,255,255,0.35)", marginBottom: 10,
                 }}>
-                  Principes de jeu (max 5)
+                  Clique sur les joueurs concernés par la situation, des deux côtés ↑
                 </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {TACTICAL_TAGS.map(t => (
-                    <button key={t.id} onClick={() => toggleTag(t.id)} style={{
-                      fontFamily: "var(--font-mono), monospace",
-                      fontSize: 9, fontWeight: 700, letterSpacing: "0.06em",
-                      padding: "5px 10px", borderRadius: 6, cursor: "pointer",
-                      backgroundColor: tags.includes(t.id)
-                        ? "rgba(122,154,130,0.2)" : "rgba(255,255,255,0.03)",
-                      border: `1px solid ${tags.includes(t.id)
-                        ? "rgba(122,154,130,0.5)" : "rgba(255,255,255,0.08)"}`,
-                      color: tags.includes(t.id) ? "#7A9A82" : "rgba(255,255,255,0.4)",
-                      transition: "all 0.2s",
-                    }}>
-                      {t.label}
-                    </button>
-                  ))}
+                <div className="flex items-center gap-4 mb-3">
+                  {(["home", "away"] as const).map(team => {
+                    const count = team === "home" ? selectedHome.size : selectedAway.size
+                    const color = team === "home" ? "#8a1f1f" : "#7A9A82"
+                    return (
+                      <div key={team} className="flex items-center gap-2">
+                        <span style={{
+                          display: "inline-block", width: 8, height: 8, borderRadius: "50%",
+                          backgroundColor: color, flexShrink: 0,
+                        }} />
+                        <span style={{
+                          fontFamily: "var(--font-mono), monospace",
+                          fontSize: 9, fontWeight: 700, letterSpacing: "0.08em",
+                          color: "rgba(255,255,255,0.45)",
+                        }}>
+                          {team === "home" ? "TON ÉQUIPE" : "ADVERSAIRE"} : {count}
+                        </span>
+                      </div>
+                    )
+                  })}
                 </div>
+                <button
+                  onClick={validateSquad}
+                  disabled={selectedHome.size === 0 || selectedAway.size === 0}
+                  style={{
+                    fontFamily: "var(--font-mono), monospace",
+                    fontWeight: 700, fontSize: 10, letterSpacing: "0.08em",
+                    backgroundColor: selectedHome.size && selectedAway.size ? "#7A9A82" : "rgba(255,255,255,0.05)",
+                    color: selectedHome.size && selectedAway.size ? "#181812" : "rgba(255,255,255,0.25)",
+                    padding: "9px 16px", borderRadius: 10, width: "100%",
+                    cursor: selectedHome.size && selectedAway.size ? "pointer" : "default",
+                    border: "none", transition: "all 0.2s",
+                  }}>
+                  {selectedHome.size && selectedAway.size
+                    ? `VALIDER LA SÉLECTION (${selectedHome.size}V${selectedAway.size})`
+                    : "VALIDER LA SÉLECTION"}
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Bandeau récap équipe */}
+              <button onClick={() => setSquadValidated(false)} style={{
+                fontFamily: "var(--font-mono), monospace",
+                fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
+                color: "#7A9A82", background: "rgba(122,154,130,0.1)",
+                border: "1px solid rgba(122,154,130,0.3)",
+                padding: "8px 12px", borderRadius: 8, cursor: "pointer",
+                display: "block", width: "100%", textAlign: "left",
+              }}>
+                {configLabel} — {configHint(homeCount!, awayCount!)} — modifier ↩
+              </button>
 
-                {/* Récap */}
-                <div className="mt-3 mb-3 flex flex-wrap gap-2">
-                  {[zone?.label, configLabel, selectedFinality?.label].filter(Boolean).map(tag => (
-                    <span key={tag} style={{
-                      fontFamily: "var(--font-mono), monospace",
-                      fontSize: 8, fontWeight: 700, letterSpacing: "0.08em",
-                      backgroundColor: "rgba(122,154,130,0.1)",
-                      border: "1px solid rgba(122,154,130,0.2)",
-                      color: "#7A9A82", padding: "3px 8px", borderRadius: 4,
-                    }}>
-                      {tag!.toUpperCase()}
-                    </span>
-                  ))}
-                </div>
-
-                {/* Actions */}
-                <div className="flex gap-2">
-                  <button onClick={save} disabled={isPending} style={{
+              {/* Onglets */}
+              <div className="flex gap-2">
+                {(["terrain", "infos"] as const).map(t => (
+                  <button key={t} onClick={() => setTab(t)} style={{
                     flex: 1,
                     fontFamily: "var(--font-mono), monospace",
-                    fontWeight: 700, fontSize: 10, letterSpacing: "0.08em",
-                    backgroundColor: "#7A9A82", color: "#181812",
-                    padding: "11px 16px", borderRadius: 10,
-                    cursor: isPending ? "wait" : "pointer",
-                    border: "none", opacity: isPending ? 0.6 : 1, transition: "opacity 0.2s",
+                    fontWeight: 700, fontSize: 10, letterSpacing: "0.1em",
+                    padding: "9px 16px", borderRadius: 10, cursor: "pointer",
+                    backgroundColor: tab === t ? "rgba(122,154,130,0.15)" : "transparent",
+                    border: `1px solid ${tab === t ? "rgba(122,154,130,0.4)" : "rgba(122,154,130,0.15)"}`,
+                    color: tab === t ? "#7A9A82" : "rgba(255,255,255,0.35)",
+                    transition: "all 0.2s",
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
                   }}>
-                    {isPending ? "SAUVEGARDE..." : "☆ SAUVEGARDER"}
+                    {t === "terrain" ? "TERRAIN" : "INFOS"}
+                    {t === "infos" && !finality && (
+                      <span style={{
+                        display: "inline-block", width: 6, height: 6, borderRadius: "50%",
+                        backgroundColor: "#f5d84e",
+                      }} />
+                    )}
                   </button>
-                  <button onClick={reset} style={{
-                    fontFamily: "var(--font-mono), monospace",
-                    fontWeight: 700, fontSize: 10, letterSpacing: "0.08em",
-                    backgroundColor: "transparent",
-                    border: "1px solid rgba(255,255,255,0.1)",
-                    color: "rgba(255,255,255,0.3)",
-                    padding: "11px 14px", borderRadius: 10, cursor: "pointer",
-                  }}>
-                    ↺
-                  </button>
-                </div>
+                ))}
+              </div>
 
-                {saveMsg && (
+              {tab === "terrain" ? (
+                <>
                   <p style={{
                     fontFamily: "var(--font-mono), monospace",
-                    fontSize: 9, letterSpacing: "0.1em", marginTop: 8, textAlign: "center",
-                    color: saveMsg.startsWith("✓") ? "#7A9A82" : "rgba(220,80,80,0.8)",
+                    fontSize: 9, fontWeight: 700, letterSpacing: "0.16em",
+                    color: "rgba(122,154,130,0.5)", textTransform: "uppercase", marginBottom: 4,
                   }}>
-                    {saveMsg}
+                    Mise en scène — fais vivre la situation
                   </p>
-                )}
 
-                <Link href="/tactique/mes-situations" style={{
-                  display: "block", textAlign: "center", marginTop: 8,
-                  fontFamily: "var(--font-mono), monospace",
-                  fontSize: 9, letterSpacing: "0.1em",
-                  color: "rgba(122,154,130,0.4)",
-                }}>
-                  VOIR MES SITUATIONS →
-                </Link>
-              </div>
-            )}
-          </div>
+                  {/* Bandeau d'aide contextuel */}
+                  <p style={{
+                    fontFamily: "var(--font-body), sans-serif",
+                    fontSize: 12, fontWeight: 400, lineHeight: 1.4,
+                    color: "rgba(255,255,255,0.4)", marginBottom: 6,
+                  }}>
+                    {hintFor()}
+                  </p>
 
-          {/* ── TERRAIN (droite) ── */}
-          <div className="w-full lg:flex-1 lg:sticky lg:top-20">
-            {!zone ? (
-              /* Sélecteur de zone */
-              <ZonePitch selected={null} onSelect={selectZone} />
-            ) : !configLabel ? (
-              /* Builder avec joueurs draggables */
-              <BuilderPitch
-                zone={zone}
-                players={players}
-                ball={ball}
-                onMove={movePlayer}
-                onMoveBall={(x, y) => setBall({ x, y })}
-              />
-            ) : (
-              <>
-                {/* Timeline frames / branches */}
-                <div className="flex flex-wrap items-center gap-1.5 mb-2">
-                  {["Départ", ...frames.map(f => f.label)].map((label, i) => (
-                    <button key={i} onClick={() => setActive({ kind: "frame", index: i })} style={{
-                      fontFamily: "var(--font-mono), monospace",
-                      fontSize: 9, fontWeight: 700, letterSpacing: "0.06em",
-                      padding: "5px 10px", borderRadius: 6, cursor: "pointer",
-                      backgroundColor: active.kind === "frame" && active.index === i
-                        ? "rgba(122,154,130,0.2)" : "rgba(255,255,255,0.03)",
-                      border: `1px solid ${active.kind === "frame" && active.index === i
-                        ? "rgba(122,154,130,0.5)" : "rgba(255,255,255,0.08)"}`,
-                      color: active.kind === "frame" && active.index === i ? "#7A9A82" : "rgba(255,255,255,0.4)",
-                    }}>
-                      {label}
-                    </button>
-                  ))}
-                  {frames.length < MAX_FRAMES - 1 && (
-                    <button onClick={addFrame} style={{
-                      fontFamily: "var(--font-mono), monospace",
-                      fontSize: 9, fontWeight: 700, letterSpacing: "0.06em",
-                      padding: "5px 10px", borderRadius: 6, cursor: "pointer",
-                      backgroundColor: "transparent",
-                      border: "1px dashed rgba(122,154,130,0.3)",
-                      color: "rgba(122,154,130,0.6)",
-                    }}>
-                      + ÉTAPE
-                    </button>
-                  )}
-                  {frames.length > 0 && (
-                    <button onClick={removeLastFrame} style={{
-                      fontFamily: "var(--font-mono), monospace",
-                      fontSize: 9, letterSpacing: "0.06em",
-                      padding: "5px 8px", borderRadius: 6, cursor: "pointer",
-                      backgroundColor: "transparent", border: "none",
-                      color: "rgba(220,80,80,0.5)",
-                    }}>
-                      ✕
-                    </button>
+                  {/* Sélecteur de déclencheur */}
+                  {active.kind === "frame" && active.index === 1 && (
+                    <div>
+                      <div className="flex gap-1 mb-2 flex-wrap">
+                        {TRIGGER_CATEGORIES.map(cat => (
+                          <button key={cat.id} onClick={() => setTriggerCat(cat.id)} style={{
+                            fontFamily: "var(--font-mono), monospace",
+                            fontSize: 8, fontWeight: 700, letterSpacing: "0.08em",
+                            padding: "4px 10px", borderRadius: 6, cursor: "pointer",
+                            backgroundColor: triggerCat === cat.id
+                              ? "rgba(122,154,130,0.18)" : "transparent",
+                            border: `1px solid ${triggerCat === cat.id
+                              ? "rgba(122,154,130,0.4)" : "rgba(255,255,255,0.08)"}`,
+                            color: triggerCat === cat.id ? "#7A9A82" : "rgba(255,255,255,0.3)",
+                            transition: "all 0.2s",
+                          }}>
+                            {cat.label.toUpperCase()}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {TRIGGERS.filter(t => t.category === triggerCat).map(t => {
+                          const selected = frames[0]?.trigger === t.id
+                          return (
+                            <button key={t.id} onClick={() => setFrameTrigger(t.id)} style={{
+                              fontFamily: "var(--font-mono), monospace",
+                              fontSize: 9, fontWeight: 700, letterSpacing: "0.04em",
+                              padding: "5px 10px", borderRadius: 6, cursor: "pointer",
+                              backgroundColor: selected
+                                ? "rgba(122,154,130,0.2)" : "rgba(255,255,255,0.03)",
+                              border: `1px solid ${selected
+                                ? "rgba(122,154,130,0.5)" : "rgba(255,255,255,0.08)"}`,
+                              color: selected ? "#7A9A82" : "rgba(255,255,255,0.4)",
+                              transition: "all 0.2s",
+                            }}>
+                              {t.emoji} {t.label}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
                   )}
 
-                  {branches.length > 0 && (
-                    <div style={{ width: 1, height: 16, backgroundColor: "rgba(122,154,130,0.12)" }} />
-                  )}
-                  {branches.map((b, i) => (
-                    <button key={i} onClick={() => setActive({ kind: "branch", index: i })} style={{
-                      fontFamily: "var(--font-mono), monospace",
-                      fontSize: 9, fontWeight: 700, letterSpacing: "0.06em",
-                      padding: "5px 10px", borderRadius: 6, cursor: "pointer",
-                      backgroundColor: active.kind === "branch" && active.index === i
-                        ? "rgba(245,216,78,0.15)" : "rgba(255,255,255,0.03)",
-                      border: `1px solid ${active.kind === "branch" && active.index === i
-                        ? "rgba(245,216,78,0.4)" : "rgba(255,255,255,0.08)"}`,
-                      color: active.kind === "branch" && active.index === i ? "#f5d84e" : "rgba(255,255,255,0.4)",
-                    }}>
-                      {b.label}
-                      <span onClick={e => { e.stopPropagation(); removeBranch(i) }} style={{ marginLeft: 6, opacity: 0.6 }}>
+                  {/* Timeline frames / branches */}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {["Départ", ...frames.map(f => f.label)].map((label, i) => {
+                      const isActive = active.kind === "frame" && active.index === i
+                      const isTouched = touched.has(`frame-${i}`)
+                      let prefix: string | null = null
+                      if (i === 1) {
+                        const trig = frames[0]?.trigger ? TRIGGERS.find(t => t.id === frames[0].trigger) : undefined
+                        prefix = trig ? trig.emoji : "❔"
+                      } else if (i === 2 && selectedFinality) {
+                        prefix = selectedFinality.emoji
+                      }
+                      return (
+                        <button key={i} onClick={() => setActive({ kind: "frame", index: i })} style={{
+                          fontFamily: "var(--font-mono), monospace",
+                          fontSize: 9, fontWeight: 700, letterSpacing: "0.06em",
+                          padding: "5px 10px", borderRadius: 6, cursor: "pointer",
+                          backgroundColor: isActive
+                            ? "rgba(122,154,130,0.2)" : "rgba(255,255,255,0.03)",
+                          border: `1px solid ${isActive
+                            ? "rgba(122,154,130,0.5)" : "rgba(255,255,255,0.08)"}`,
+                          color: isActive ? "#7A9A82" : "rgba(255,255,255,0.4)",
+                        }}>
+                          {prefix && <span style={{ marginRight: 4 }}>{prefix}</span>}
+                          {label}
+                          {isTouched && (
+                            <span style={{
+                              display: "inline-block", width: 6, height: 6, borderRadius: "50%",
+                              backgroundColor: "#7A9A82", marginLeft: 5, verticalAlign: "middle",
+                            }} />
+                          )}
+                        </button>
+                      )
+                    })}
+                    {frames.length < MAX_FRAMES - 1 && (
+                      <button onClick={addFrame} style={{
+                        fontFamily: "var(--font-mono), monospace",
+                        fontSize: 9, fontWeight: 700, letterSpacing: "0.06em",
+                        padding: "5px 10px", borderRadius: 6, cursor: "pointer",
+                        backgroundColor: "transparent",
+                        border: "1px dashed rgba(122,154,130,0.3)",
+                        color: "rgba(122,154,130,0.6)",
+                      }}>
+                        {frames.length === 0 ? "+ DÉCLENCHEUR" : frames.length === 1 ? "+ ISSUE" : "+ ÉTAPE"}
+                      </button>
+                    )}
+                    {frames.length > 0 && (
+                      <button onClick={removeLastFrame} style={{
+                        fontFamily: "var(--font-mono), monospace",
+                        fontSize: 9, letterSpacing: "0.06em",
+                        padding: "5px 8px", borderRadius: 6, cursor: "pointer",
+                        backgroundColor: "transparent", border: "none",
+                        color: "rgba(220,80,80,0.5)",
+                      }}>
                         ✕
-                      </span>
-                    </button>
-                  ))}
-                  {branches.length < MAX_BRANCHES && active.kind === "frame" && active.index === frames.length && (
-                    <button onClick={addBranch} style={{
+                      </button>
+                    )}
+
+                    {branches.length > 0 && (
+                      <div style={{ width: 1, height: 16, backgroundColor: "rgba(122,154,130,0.12)" }} />
+                    )}
+                    {branches.map((b, i) => (
+                      <button key={i} onClick={() => setActive({ kind: "branch", index: i })} style={{
+                        fontFamily: "var(--font-mono), monospace",
+                        fontSize: 9, fontWeight: 700, letterSpacing: "0.06em",
+                        padding: "5px 10px", borderRadius: 6, cursor: "pointer",
+                        backgroundColor: active.kind === "branch" && active.index === i
+                          ? "rgba(245,216,78,0.15)" : "rgba(255,255,255,0.03)",
+                        border: `1px solid ${active.kind === "branch" && active.index === i
+                          ? "rgba(245,216,78,0.4)" : "rgba(255,255,255,0.08)"}`,
+                        color: active.kind === "branch" && active.index === i ? "#f5d84e" : "rgba(255,255,255,0.4)",
+                      }}>
+                        🌿 {b.label}
+                        {touched.has(`branch-${i}`) && (
+                          <span style={{
+                            display: "inline-block", width: 6, height: 6, borderRadius: "50%",
+                            backgroundColor: "#7A9A82", marginLeft: 5, verticalAlign: "middle",
+                          }} />
+                        )}
+                        <span onClick={e => { e.stopPropagation(); removeBranch(i) }} style={{ marginLeft: 6, opacity: 0.6 }}>
+                          ✕
+                        </span>
+                      </button>
+                    ))}
+                    {branches.length < MAX_BRANCHES && active.kind === "frame" && active.index === frames.length && (
+                      <button onClick={addBranch} style={{
+                        fontFamily: "var(--font-mono), monospace",
+                        fontSize: 9, fontWeight: 700, letterSpacing: "0.06em",
+                        padding: "5px 10px", borderRadius: 6, cursor: "pointer",
+                        backgroundColor: "transparent",
+                        border: "1px dashed rgba(245,216,78,0.3)",
+                        color: "rgba(245,216,78,0.6)",
+                      }}>
+                        + BRANCHE
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Builder avec joueurs draggables */}
+                  <BuilderPitch
+                    ghosts={getGhostPlayers(selectedHome, selectedAway)}
+                    players={players.map(p => ({ ...p, ...(activePositions().players[p.id] ?? p) }))}
+                    ball={activePositions().ball}
+                    onMove={movePlayer}
+                    onMoveBall={moveBall}
+                  />
+                </>
+              ) : (
+                <>
+                  {/* Finalité de l'action */}
+                  <div style={{
+                    padding: "14px 16px", borderRadius: 14,
+                    backgroundColor: "#1f1f19",
+                    border: "1px solid rgba(122,154,130,0.1)",
+                  }}>
+                    <SectionLabel>Finalité de l'action</SectionLabel>
+                    {/* Filtres catégorie */}
+                    <div className="flex gap-1 mb-3">
+                      {FINALITY_CATEGORIES.map(cat => (
+                        <button key={cat.id} onClick={() => setCatFilter(cat.id)} style={{
+                          fontFamily: "var(--font-mono), monospace",
+                          fontSize: 8, fontWeight: 700, letterSpacing: "0.08em",
+                          padding: "4px 10px", borderRadius: 6, cursor: "pointer",
+                          backgroundColor: catFilter === cat.id
+                            ? "rgba(122,154,130,0.18)" : "transparent",
+                          border: `1px solid ${catFilter === cat.id
+                            ? "rgba(122,154,130,0.4)" : "rgba(255,255,255,0.08)"}`,
+                          color: catFilter === cat.id ? "#7A9A82" : "rgba(255,255,255,0.3)",
+                          transition: "all 0.2s",
+                        }}>
+                          {cat.label.toUpperCase()}
+                        </button>
+                      ))}
+                    </div>
+                    {/* Options */}
+                    <div className="flex flex-col gap-1.5">
+                      {FINALITIES.filter(f => f.category === catFilter).map(f => (
+                        <button key={f.id} onClick={() => setFinality(f.id)} style={{
+                          display: "flex", alignItems: "center", gap: 10,
+                          padding: "9px 12px", borderRadius: 10, cursor: "pointer",
+                          textAlign: "left",
+                          backgroundColor: finality === f.id
+                            ? "rgba(122,154,130,0.14)" : "rgba(255,255,255,0.03)",
+                          border: `1px solid ${finality === f.id
+                            ? "rgba(122,154,130,0.45)" : "rgba(122,154,130,0.08)"}`,
+                          transition: "all 0.2s",
+                        }}>
+                          <span style={{ fontSize: 14 }}>{f.emoji}</span>
+                          <span style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                            <span style={{
+                              fontFamily: "var(--font-body), sans-serif",
+                              fontWeight: finality === f.id ? 500 : 300, fontSize: 13,
+                              color: finality === f.id ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.5)",
+                            }}>
+                              {f.label}
+                            </span>
+                            <span style={{
+                              fontFamily: "var(--font-body), sans-serif",
+                              fontWeight: 400, fontSize: 10,
+                              color: "rgba(255,255,255,0.25)",
+                            }}>
+                              {FINALITY_HINTS[f.id]}
+                            </span>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Description + Save */}
+                  <div style={{
+                    padding: "14px 16px", borderRadius: 14,
+                    backgroundColor: "#1f1f19",
+                    border: "1px solid rgba(122,154,130,0.18)",
+                  }}>
+                    <SectionLabel>Description (optionnel)</SectionLabel>
+                    <textarea
+                      value={description}
+                      onChange={e => setDescription(e.target.value)}
+                      placeholder="Décris la situation, les consignes pour tes joueurs..."
+                      rows={3}
+                      style={{
+                        width: "100%", resize: "none",
+                        backgroundColor: "rgba(255,255,255,0.03)",
+                        border: "1px solid rgba(122,154,130,0.15)",
+                        borderRadius: 8, padding: "10px 12px",
+                        fontFamily: "var(--font-body), sans-serif",
+                        fontWeight: 400, fontSize: 13, lineHeight: 1.5,
+                        color: "rgba(255,255,255,0.7)",
+                        outline: "none",
+                      }}
+                    />
+
+                    {/* Vocabulaire tactique */}
+                    <p style={{
                       fontFamily: "var(--font-mono), monospace",
-                      fontSize: 9, fontWeight: 700, letterSpacing: "0.06em",
-                      padding: "5px 10px", borderRadius: 6, cursor: "pointer",
-                      backgroundColor: "transparent",
-                      border: "1px dashed rgba(245,216,78,0.3)",
-                      color: "rgba(245,216,78,0.6)",
+                      fontSize: 9, fontWeight: 700, letterSpacing: "0.12em",
+                      color: "rgba(122,154,130,0.6)", marginTop: 12, marginBottom: 6,
+                      textTransform: "uppercase",
                     }}>
-                      + BRANCHE
-                    </button>
-                  )}
-                </div>
+                      Principes de jeu (max 5)
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {TACTICAL_TAGS.map(t => (
+                        <button key={t.id} onClick={() => toggleTag(t.id)} style={{
+                          fontFamily: "var(--font-mono), monospace",
+                          fontSize: 9, fontWeight: 700, letterSpacing: "0.06em",
+                          padding: "5px 10px", borderRadius: 6, cursor: "pointer",
+                          backgroundColor: tags.includes(t.id)
+                            ? "rgba(122,154,130,0.2)" : "rgba(255,255,255,0.03)",
+                          border: `1px solid ${tags.includes(t.id)
+                            ? "rgba(122,154,130,0.5)" : "rgba(255,255,255,0.08)"}`,
+                          color: tags.includes(t.id) ? "#7A9A82" : "rgba(255,255,255,0.4)",
+                          transition: "all 0.2s",
+                        }}>
+                          {t.label}
+                        </button>
+                      ))}
+                    </div>
 
-                {/* Builder avec joueurs draggables */}
-                <BuilderPitch
-                  zone={zone}
-                  players={players.map(p => ({ ...p, ...(activePositions().players[p.id] ?? p) }))}
-                  ball={activePositions().ball}
-                  onMove={movePlayer}
-                  onMoveBall={moveBall}
-                />
-              </>
-            )}
+                    {/* Récap */}
+                    <div className="mt-3 mb-3 flex flex-wrap gap-2 items-center">
+                      {[selectedFinality?.label].filter(Boolean).map(tag => (
+                        <span key={tag} style={{
+                          fontFamily: "var(--font-mono), monospace",
+                          fontSize: 8, fontWeight: 700, letterSpacing: "0.08em",
+                          backgroundColor: "rgba(122,154,130,0.1)",
+                          border: "1px solid rgba(122,154,130,0.2)",
+                          color: "#7A9A82", padding: "3px 8px", borderRadius: 4,
+                        }}>
+                          {tag!.toUpperCase()}
+                        </span>
+                      ))}
+                      {homeCount && awayCount && (
+                        <span style={{
+                          display: "inline-flex", alignItems: "center", gap: 4,
+                          fontFamily: "var(--font-mono), monospace",
+                          fontSize: 8, fontWeight: 700, letterSpacing: "0.08em",
+                          backgroundColor: "rgba(122,154,130,0.1)",
+                          border: "1px solid rgba(122,154,130,0.2)",
+                          color: "rgba(255,255,255,0.6)", padding: "3px 8px", borderRadius: 4,
+                        }}>
+                          <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", backgroundColor: "#8a1f1f" }} />
+                          {homeCount}
+                          <span style={{ opacity: 0.4 }}>VS</span>
+                          <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", backgroundColor: "#7A9A82" }} />
+                          {awayCount}
+                        </span>
+                      )}
+                    </div>
 
-            {/* Hint changement de zone */}
-            {zone && (
-              <button onClick={() => { setZone(null); setConfigLabel(null); setPlayers([]) }}
-                style={{
-                  display: "block", margin: "10px auto 0",
-                  fontFamily: "var(--font-mono), monospace",
-                  fontSize: 9, letterSpacing: "0.1em",
-                  color: "rgba(122,154,130,0.4)", background: "none",
-                  border: "none", cursor: "pointer",
-                }}>
-                ← CHANGER DE ZONE
-              </button>
-            )}
-          </div>
+                    {/* Actions */}
+                    <div className="flex gap-2">
+                      <button onClick={save} disabled={isPending || !finality} style={{
+                        flex: 1,
+                        fontFamily: "var(--font-mono), monospace",
+                        fontWeight: 700, fontSize: 10, letterSpacing: "0.08em",
+                        backgroundColor: finality ? "#7A9A82" : "rgba(255,255,255,0.05)",
+                        color: finality ? "#181812" : "rgba(255,255,255,0.25)",
+                        padding: "11px 16px", borderRadius: 10,
+                        cursor: isPending ? "wait" : finality ? "pointer" : "default",
+                        border: "none", opacity: isPending ? 0.6 : 1, transition: "opacity 0.2s",
+                      }}>
+                        {isPending ? "SAUVEGARDE..." : "☆ SAUVEGARDER"}
+                      </button>
+                      <button onClick={reset} style={{
+                        fontFamily: "var(--font-mono), monospace",
+                        fontWeight: 700, fontSize: 10, letterSpacing: "0.08em",
+                        backgroundColor: "transparent",
+                        border: "1px solid rgba(255,255,255,0.1)",
+                        color: "rgba(255,255,255,0.3)",
+                        padding: "11px 14px", borderRadius: 10, cursor: "pointer",
+                      }}>
+                        ↺
+                      </button>
+                    </div>
+
+                    {saveMsg && (
+                      <p style={{
+                        fontFamily: "var(--font-mono), monospace",
+                        fontSize: 9, letterSpacing: "0.1em", marginTop: 8, textAlign: "center",
+                        color: saveMsg.startsWith("✓") ? "#7A9A82" : "rgba(220,80,80,0.8)",
+                      }}>
+                        {saveMsg}
+                      </p>
+                    )}
+
+                    <Link href="/tactique/mes-situations" style={{
+                      display: "block", textAlign: "center", marginTop: 8,
+                      fontFamily: "var(--font-mono), monospace",
+                      fontSize: 9, letterSpacing: "0.1em",
+                      color: "rgba(122,154,130,0.4)",
+                    }}>
+                      VOIR MES SITUATIONS →
+                    </Link>
+                  </div>
+                </>
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>

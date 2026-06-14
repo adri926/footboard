@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { getBuiltSituations } from "@/app/tactique/creer/actions"
-import { PITCH_ZONES, PLAYER_CONFIGS, FINALITIES, TACTICAL_TAGS } from "@/lib/builder"
+import { PLAYER_CONFIGS, FINALITIES, TACTICAL_TAGS } from "@/lib/builder"
 import DeleteButton from "./DeleteButton"
 
 export const metadata: Metadata = {
@@ -99,7 +99,6 @@ export default async function MesSituationsPage({
         ) : (
           <div className="flex flex-col gap-3">
             {situations.map(s => {
-              const zone     = PITCH_ZONES.find(z => z.id === s.zone)
               const config   = PLAYER_CONFIGS.find(c => c.label === s.config)
               const finality = FINALITIES.find(f => f.id === s.finality)
 
@@ -113,15 +112,6 @@ export default async function MesSituationsPage({
                   {/* Infos */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <span style={{
-                        fontFamily: "var(--font-mono), monospace",
-                        fontSize: 8, fontWeight: 700, letterSpacing: "0.1em",
-                        backgroundColor: "rgba(122,154,130,0.1)",
-                        border: "1px solid rgba(122,154,130,0.2)",
-                        color: "#7A9A82", padding: "2px 7px", borderRadius: 4,
-                      }}>
-                        {zone?.label.toUpperCase() ?? s.zone}
-                      </span>
                       <span style={{
                         fontFamily: "var(--font-mono), monospace",
                         fontSize: 8, letterSpacing: "0.08em",

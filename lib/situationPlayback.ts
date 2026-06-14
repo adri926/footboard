@@ -6,8 +6,8 @@
  * le porteur l'accompagne, ses partenaires font un appui de soutien, et l'équipe
  * adverse resserre pour suivre le danger.
  */
-import type { BuiltSituation, BuilderPlayer } from "./builder"
-import { FINALITIES } from "./builder"
+import type { BuiltSituation } from "./builder"
+import { FINALITIES, TRIGGERS, clamp, lerpPoint, nearestTo } from "./builder"
 
 export interface PlaybackFrame {
   label:   string
@@ -17,23 +17,6 @@ export interface PlaybackFrame {
   ball:    { x: number; y: number }
 }
 
-function clamp(v: number, lo: number, hi: number) { return Math.max(lo, Math.min(hi, v)) }
-
-function lerpPoint(a: { x: number; y: number }, b: { x: number; y: number }, t: number) {
-  return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t }
-}
-
-function nearestTo(players: BuilderPlayer[], point: { x: number; y: number }, team: "home" | "away") {
-  let best: BuilderPlayer | null = null
-  let bestDist = Infinity
-  for (const p of players) {
-    if (p.team !== team) continue
-    const d = Math.hypot(p.x - point.x, p.y - point.y)
-    if (d < bestDist) { bestDist = d; best = p }
-  }
-  return best
-}
-
 // Combien le ballon progresse vers le but adverse (0 = sur place, 1 = jusqu'au but) :
 // une finalité ambitieuse (tir, contre) fait avancer le jeu loin, une finalité de
 // gestion (conservation, dégagement) ne fait que soulager la zone de départ
@@ -41,6 +24,21 @@ const FINALITY_PROGRESS: Record<string, number> = {
   shot: 0.82, chance: 0.62, combine: 0.42, keep: 0.18,
   recover: 0.28, press: 0.22, clear: 0.32, "force-long": 0.3,
   counter: 0.7, "build-out": 0.35, fix: 0.38,
+}
+
+const TRIGGER_INFO: Record<string, string> = {
+  interception:    "Le ballon est intercepté avant d'arriver à son destinataire.",
+  tackle:          "Un duel remporté permet de récupérer le ballon proprement.",
+  "second-ball":   "Le ballon repoussé retombe favorablement pour relancer l'action.",
+  "back-pass":     "L'adversaire joue en retrait ou latéralement : signal pour déclencher le pressing.",
+  "keeper-release": "Le gardien adverse relance : le bloc oriente son pressing.",
+  "bad-control":   "Un contrôle mal orienté de l'adversaire ouvre une fenêtre de récupération.",
+  "switch-play":   "L'adversaire change de côté : le bloc se réoriente pour suivre le ballon.",
+  dribble:         "Un dribble réussi déséquilibre le bloc adverse.",
+  "run-in-space":  "Une course dans l'espace libre crée une option de passe immédiate.",
+  "switch-pass":   "Le ballon est décalé vers un joueur libre, créant une option franche.",
+  "set-piece":     "Une phase arrêtée (touche, corner, coup franc) relance l'action.",
+  turnover:        "La perte du ballon déclenche immédiatement le repli ou le contre adverse.",
 }
 
 const FINALITY_INFO: Record<string, string> = {
@@ -90,9 +88,21 @@ export function buildAuthoredPlayback(situation: BuiltSituation): {
 
   situation.frames.forEach((f, i) => {
     const isLast = i === situation.frames.length - 1
+    const trigger = f.trigger ? TRIGGERS.find(t => t.id === f.trigger) : undefined
+
+    let label = f.label || `Étape ${i + 2}`
+    let info = ""
+    if (isLast && finality) {
+      label = `${finality.emoji} ${f.label || finality.label}`
+      info = FINALITY_INFO[situation.finality] ?? ""
+    } else if (trigger) {
+      label = `${trigger.emoji} ${f.label || trigger.label}`
+      info = TRIGGER_INFO[trigger.id] ?? ""
+    }
+
     main.push({
-      label: isLast && finality ? `${finality.emoji} ${f.label || finality.label}` : (f.label || `Étape ${i + 2}`),
-      info: isLast ? (FINALITY_INFO[situation.finality] ?? "") : "",
+      label,
+      info,
       duration: 1500,
       players: buildFramePlayers(situation, f),
       ball: f.ball,

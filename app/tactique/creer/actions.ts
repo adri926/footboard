@@ -4,9 +4,10 @@ import { auth } from "@clerk/nextjs/server"
 import { z } from "zod"
 import { supabase } from "@/lib/supabase"
 import { getClubScope } from "@/lib/scope"
-import { TACTICAL_TAGS, MAX_FRAMES, MAX_BRANCHES, type BuiltSituation } from "@/lib/builder"
+import { TACTICAL_TAGS, TRIGGERS, MAX_FRAMES, MAX_BRANCHES, type BuiltSituation } from "@/lib/builder"
 
 const TAG_IDS = TACTICAL_TAGS.map(t => t.id) as [string, ...string[]]
+const TRIGGER_IDS = TRIGGERS.map(t => t.id) as [string, ...string[]]
 
 const ZONE_IDS = [
   "def-left", "def-center", "def-right",
@@ -30,6 +31,7 @@ const FrameSchema = z.object({
   label:   z.string().max(40),
   players: z.record(z.string().regex(/^[ha]\d+$/).max(4), PositionSchema),
   ball:    PositionSchema,
+  trigger: z.enum(TRIGGER_IDS).optional(),
 })
 
 const SaveSchema = z.object({

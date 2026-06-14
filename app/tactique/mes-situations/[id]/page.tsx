@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { getBuiltSituation } from "@/app/tactique/creer/actions"
-import { PITCH_ZONES, PLAYER_CONFIGS, FINALITIES } from "@/lib/builder"
+import { PLAYER_CONFIGS, FINALITIES } from "@/lib/builder"
 import SituationPlayback from "@/components/pitch/SituationPlayback"
 
 export const metadata: Metadata = {
@@ -18,7 +18,6 @@ export default async function SituationPlaybackPage({ params }: Props) {
   const situation = await getBuiltSituation(id)
   if (!situation) notFound()
 
-  const zone     = PITCH_ZONES.find(z => z.id === situation.zone)
   const config   = PLAYER_CONFIGS.find(c => c.label === situation.config)
   const finality = FINALITIES.find(f => f.id === situation.finality)
 
@@ -35,15 +34,6 @@ export default async function SituationPlaybackPage({ params }: Props) {
             ← MES SITUATIONS
           </Link>
           <div className="flex items-center gap-2 flex-wrap mt-3 mb-1">
-            <span style={{
-              fontFamily: "var(--font-mono), monospace",
-              fontSize: 8, fontWeight: 700, letterSpacing: "0.1em",
-              backgroundColor: "rgba(122,154,130,0.1)",
-              border: "1px solid rgba(122,154,130,0.2)",
-              color: "#7A9A82", padding: "2px 7px", borderRadius: 4,
-            }}>
-              {zone?.label.toUpperCase() ?? situation.zone}
-            </span>
             <span style={{
               fontFamily: "var(--font-mono), monospace",
               fontSize: 8, letterSpacing: "0.08em",
