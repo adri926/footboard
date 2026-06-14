@@ -57,6 +57,59 @@ const FINALITY_INFO: Record<string, string> = {
   fix:          "Le bloc adverse est fixé puis pris de vitesse dans son dos.",
 }
 
+/* ── Playback authored (situations en plusieurs temps) ──── */
+function buildFramePlayers(
+  situation: BuiltSituation,
+  frame: { players: Record<string, { x: number; y: number }> }
+): Record<string, { x: number; y: number }> {
+  const out: Record<string, { x: number; y: number }> = {}
+  for (const p of situation.players) out[p.id] = frame.players[p.id] ?? { x: p.x, y: p.y }
+  return out
+}
+
+export function hasAuthoredFrames(situation: BuiltSituation): boolean {
+  return (situation.frames?.length ?? 0) > 0
+}
+
+export function buildAuthoredPlayback(situation: BuiltSituation): {
+  main: PlaybackFrame[]
+  branches: PlaybackFrame[]
+} {
+  const finality = FINALITIES.find(f => f.id === situation.finality)
+
+  const frame0Players: Record<string, { x: number; y: number }> = {}
+  for (const p of situation.players) frame0Players[p.id] = { x: p.x, y: p.y }
+
+  const main: PlaybackFrame[] = [{
+    label: "Position de départ",
+    info: situation.description || "Schéma de départ tel que configuré.",
+    duration: 1400,
+    players: frame0Players,
+    ball: situation.ball,
+  }]
+
+  situation.frames.forEach((f, i) => {
+    const isLast = i === situation.frames.length - 1
+    main.push({
+      label: isLast && finality ? `${finality.emoji} ${f.label || finality.label}` : (f.label || `Étape ${i + 2}`),
+      info: isLast ? (FINALITY_INFO[situation.finality] ?? "") : "",
+      duration: 1500,
+      players: buildFramePlayers(situation, f),
+      ball: f.ball,
+    })
+  })
+
+  const branches: PlaybackFrame[] = situation.branches.map(b => ({
+    label: b.label || "Branche alternative",
+    info: "",
+    duration: 1500,
+    players: buildFramePlayers(situation, b),
+    ball: b.ball,
+  }))
+
+  return { main, branches }
+}
+
 export function generatePlayback(situation: BuiltSituation): PlaybackFrame[] {
   const finality = FINALITIES.find(f => f.id === situation.finality)
   const progress = FINALITY_PROGRESS[situation.finality] ?? 0.4

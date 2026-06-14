@@ -111,6 +111,16 @@ export interface BuilderPlayer {
   y:    number
 }
 
+/* ── Frame additionnelle (situation en plusieurs temps) ─── */
+export interface SituationFrame {
+  label:   string   // ex. "Déclencheur", "Issue", "Branche A"
+  players: Record<string, { x: number; y: number }>   // playerId -> position
+  ball:    { x: number; y: number }
+}
+
+export const MAX_FRAMES   = 3   // dont la frame de départ (players/ball)
+export const MAX_BRANCHES = 3
+
 /* ── Situation créée ────────────────────────────────────── */
 export interface BuiltSituation {
   id?:         string   // uuid Supabase après save
@@ -120,7 +130,9 @@ export interface BuiltSituation {
   description: string
   players:     BuilderPlayer[]
   ball:        { x: number; y: number }
-  tags:        string[]   // TacticalTag.id[]
+  tags:        string[]      // TacticalTag.id[]
+  frames:      SituationFrame[]    // frames authored après la position de départ (max 2)
+  branches:    SituationFrame[]    // issues alternatives à la dernière frame (max 3)
   created_at?: string
 }
 

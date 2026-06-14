@@ -6,8 +6,9 @@ import ZonePitch from "@/components/pitch/ZonePitch"
 import BuilderPitch from "@/components/pitch/BuilderPitch"
 import {
   PITCH_ZONES, PLAYER_CONFIGS, FINALITIES, FINALITY_CATEGORIES, TACTICAL_TAGS,
+  MAX_FRAMES, MAX_BRANCHES,
   autoPlace, zoneBallPosition, getZone,
-  type ZoneId, type PitchZone, type BuilderPlayer, type FinalityCategory,
+  type ZoneId, type PitchZone, type BuilderPlayer, type FinalityCategory, type SituationFrame,
 } from "@/lib/builder"
 import { saveBuiltSituation } from "./actions"
 
@@ -93,6 +94,9 @@ export default function CreerPage() {
   const [finality,    setFinality]    = useState<string | null>(null)
   const [description, setDescription] = useState("")
   const [tags,        setTags]        = useState<string[]>([])
+  const [frames,      setFrames]      = useState<SituationFrame[]>([])
+  const [branches,    setBranches]    = useState<SituationFrame[]>([])
+  const [active,      setActive]      = useState<{ kind: "frame" | "branch"; index: number }>({ kind: "frame", index: 0 })
   const [catFilter,   setCatFilter]   = useState<FinalityCategory>("offensive")
   const [saveMsg,     setSaveMsg]     = useState<string | null>(null)
   const [isPending,   startTransition] = useTransition()
@@ -109,6 +113,9 @@ export default function CreerPage() {
     setPlayers([])
     setFinality(null)
     setBall(zoneBallPosition(z))
+    setFrames([])
+    setBranches([])
+    setActive({ kind: "frame", index: 0 })
   }
 
   function selectConfig(label: string) {
@@ -116,10 +123,82 @@ export default function CreerPage() {
     const cfg = PLAYER_CONFIGS.find(c => c.label === label)!
     setConfigLabel(label)
     setPlayers(autoPlace(zone, cfg))
+    setFrames([])
+    setBranches([])
+    setActive({ kind: "frame", index: 0 })
+  }
+
+  /* Positions de la frame/branche actuellement éditée */
+  function activePositions(): { players: Record<string, { x: number; y: number }>; ball: { x: number; y: number } } {
+    if (active.kind === "frame") {
+      if (active.index === 0) {
+        const map: Record<string, { x: number; y: number }> = {}
+        for (const p of players) map[p.id] = { x: p.x, y: p.y }
+        return { players: map, ball }
+      }
+      return frames[active.index - 1]
+    }
+    return branches[active.index]
   }
 
   function movePlayer(id: string, x: number, y: number) {
-    setPlayers(prev => prev.map(p => p.id === id ? { ...p, x, y } : p))
+    if (active.kind === "frame" && active.index === 0) {
+      setPlayers(prev => prev.map(p => p.id === id ? { ...p, x, y } : p))
+    } else if (active.kind === "frame") {
+      const idx = active.index - 1
+      setFrames(prev => prev.map((f, i) => i === idx ? { ...f, players: { ...f.players, [id]: { x, y } } } : f))
+    } else {
+      const idx = active.index
+      setBranches(prev => prev.map((b, i) => i === idx ? { ...b, players: { ...b.players, [id]: { x, y } } } : b))
+    }
+  }
+
+  function moveBall(x: number, y: number) {
+    if (active.kind === "frame" && active.index === 0) {
+      setBall({ x, y })
+    } else if (active.kind === "frame") {
+      const idx = active.index - 1
+      setFrames(prev => prev.map((f, i) => i === idx ? { ...f, ball: { x, y } } : f))
+    } else {
+      const idx = active.index
+      setBranches(prev => prev.map((b, i) => i === idx ? { ...b, ball: { x, y } } : b))
+    }
+  }
+
+  function addFrame() {
+    if (frames.length >= MAX_FRAMES - 1) return
+    const src = activePositions()
+    const labels = ["Déclencheur", "Issue"]
+    setFrames(prev => [...prev, { label: labels[prev.length], players: { ...src.players }, ball: { ...src.ball } }])
+    setActive({ kind: "frame", index: frames.length + 1 })
+  }
+
+  function removeLastFrame() {
+    if (frames.length === 0) return
+    setBranches([])
+    setFrames(prev => prev.slice(0, -1))
+    if (active.kind !== "frame" || active.index >= frames.length) {
+      setActive({ kind: "frame", index: frames.length - 1 })
+    }
+  }
+
+  function addBranch() {
+    if (branches.length >= MAX_BRANCHES) return
+    const src = frames.length > 0
+      ? frames[frames.length - 1]
+      : (() => {
+          const map: Record<string, { x: number; y: number }> = {}
+          for (const p of players) map[p.id] = { x: p.x, y: p.y }
+          return { players: map, ball }
+        })()
+    const labels = ["Branche A", "Branche B", "Branche C"]
+    setBranches(prev => [...prev, { label: labels[prev.length], players: { ...src.players }, ball: { ...src.ball } }])
+    setActive({ kind: "branch", index: branches.length })
+  }
+
+  function removeBranch(index: number) {
+    setBranches(prev => prev.filter((_, i) => i !== index))
+    if (active.kind === "branch") setActive({ kind: "frame", index: frames.length })
   }
 
   function toggleTag(id: string) {
@@ -139,6 +218,8 @@ export default function CreerPage() {
         players,
         ball,
         tags,
+        frames,
+        branches,
       })
       setSaveMsg(res.ok ? "✓ SITUATION SAUVEGARDÉE" : `✗ ${res.error}`)
       setTimeout(() => setSaveMsg(null), 3000)
@@ -148,6 +229,7 @@ export default function CreerPage() {
   function reset() {
     setZone(null); setConfigLabel(null); setPlayers([])
     setFinality(null); setDescription(""); setTags([]); setSaveMsg(null)
+    setFrames([]); setBranches([]); setActive({ kind: "frame", index: 0 })
   }
 
   const selectedFinality = FINALITIES.find(f => f.id === finality)
@@ -433,7 +515,7 @@ export default function CreerPage() {
             {!zone ? (
               /* Sélecteur de zone */
               <ZonePitch selected={null} onSelect={selectZone} />
-            ) : (
+            ) : !configLabel ? (
               /* Builder avec joueurs draggables */
               <BuilderPitch
                 zone={zone}
@@ -442,6 +524,91 @@ export default function CreerPage() {
                 onMove={movePlayer}
                 onMoveBall={(x, y) => setBall({ x, y })}
               />
+            ) : (
+              <>
+                {/* Timeline frames / branches */}
+                <div className="flex flex-wrap items-center gap-1.5 mb-2">
+                  {["Départ", ...frames.map(f => f.label)].map((label, i) => (
+                    <button key={i} onClick={() => setActive({ kind: "frame", index: i })} style={{
+                      fontFamily: "var(--font-mono), monospace",
+                      fontSize: 9, fontWeight: 700, letterSpacing: "0.06em",
+                      padding: "5px 10px", borderRadius: 6, cursor: "pointer",
+                      backgroundColor: active.kind === "frame" && active.index === i
+                        ? "rgba(122,154,130,0.2)" : "rgba(255,255,255,0.03)",
+                      border: `1px solid ${active.kind === "frame" && active.index === i
+                        ? "rgba(122,154,130,0.5)" : "rgba(255,255,255,0.08)"}`,
+                      color: active.kind === "frame" && active.index === i ? "#7A9A82" : "rgba(255,255,255,0.4)",
+                    }}>
+                      {label}
+                    </button>
+                  ))}
+                  {frames.length < MAX_FRAMES - 1 && (
+                    <button onClick={addFrame} style={{
+                      fontFamily: "var(--font-mono), monospace",
+                      fontSize: 9, fontWeight: 700, letterSpacing: "0.06em",
+                      padding: "5px 10px", borderRadius: 6, cursor: "pointer",
+                      backgroundColor: "transparent",
+                      border: "1px dashed rgba(122,154,130,0.3)",
+                      color: "rgba(122,154,130,0.6)",
+                    }}>
+                      + ÉTAPE
+                    </button>
+                  )}
+                  {frames.length > 0 && (
+                    <button onClick={removeLastFrame} style={{
+                      fontFamily: "var(--font-mono), monospace",
+                      fontSize: 9, letterSpacing: "0.06em",
+                      padding: "5px 8px", borderRadius: 6, cursor: "pointer",
+                      backgroundColor: "transparent", border: "none",
+                      color: "rgba(220,80,80,0.5)",
+                    }}>
+                      ✕
+                    </button>
+                  )}
+
+                  {branches.length > 0 && (
+                    <div style={{ width: 1, height: 16, backgroundColor: "rgba(122,154,130,0.12)" }} />
+                  )}
+                  {branches.map((b, i) => (
+                    <button key={i} onClick={() => setActive({ kind: "branch", index: i })} style={{
+                      fontFamily: "var(--font-mono), monospace",
+                      fontSize: 9, fontWeight: 700, letterSpacing: "0.06em",
+                      padding: "5px 10px", borderRadius: 6, cursor: "pointer",
+                      backgroundColor: active.kind === "branch" && active.index === i
+                        ? "rgba(245,216,78,0.15)" : "rgba(255,255,255,0.03)",
+                      border: `1px solid ${active.kind === "branch" && active.index === i
+                        ? "rgba(245,216,78,0.4)" : "rgba(255,255,255,0.08)"}`,
+                      color: active.kind === "branch" && active.index === i ? "#f5d84e" : "rgba(255,255,255,0.4)",
+                    }}>
+                      {b.label}
+                      <span onClick={e => { e.stopPropagation(); removeBranch(i) }} style={{ marginLeft: 6, opacity: 0.6 }}>
+                        ✕
+                      </span>
+                    </button>
+                  ))}
+                  {branches.length < MAX_BRANCHES && active.kind === "frame" && active.index === frames.length && (
+                    <button onClick={addBranch} style={{
+                      fontFamily: "var(--font-mono), monospace",
+                      fontSize: 9, fontWeight: 700, letterSpacing: "0.06em",
+                      padding: "5px 10px", borderRadius: 6, cursor: "pointer",
+                      backgroundColor: "transparent",
+                      border: "1px dashed rgba(245,216,78,0.3)",
+                      color: "rgba(245,216,78,0.6)",
+                    }}>
+                      + BRANCHE
+                    </button>
+                  )}
+                </div>
+
+                {/* Builder avec joueurs draggables */}
+                <BuilderPitch
+                  zone={zone}
+                  players={players.map(p => ({ ...p, ...(activePositions().players[p.id] ?? p) }))}
+                  ball={activePositions().ball}
+                  onMove={movePlayer}
+                  onMoveBall={moveBall}
+                />
+              </>
             )}
 
             {/* Hint changement de zone */}

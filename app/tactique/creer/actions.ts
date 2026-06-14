@@ -4,7 +4,7 @@ import { auth } from "@clerk/nextjs/server"
 import { z } from "zod"
 import { supabase } from "@/lib/supabase"
 import { getClubScope } from "@/lib/scope"
-import { TACTICAL_TAGS, type BuiltSituation } from "@/lib/builder"
+import { TACTICAL_TAGS, MAX_FRAMES, MAX_BRANCHES, type BuiltSituation } from "@/lib/builder"
 
 const TAG_IDS = TACTICAL_TAGS.map(t => t.id) as [string, ...string[]]
 
@@ -20,6 +20,17 @@ const FINALITIES = [
   "recover","press","clear","force-long",
   "counter","build-out","fix",
 ] as const
+
+const PositionSchema = z.object({
+  x: z.number().min(0).max(100),
+  y: z.number().min(0).max(100),
+})
+
+const FrameSchema = z.object({
+  label:   z.string().max(40),
+  players: z.record(z.string().regex(/^[ha]\d+$/).max(4), PositionSchema),
+  ball:    PositionSchema,
+})
 
 const SaveSchema = z.object({
   zone:        z.enum(ZONE_IDS),
@@ -37,6 +48,8 @@ const SaveSchema = z.object({
     y: z.number().min(0).max(100),
   }),
   tags: z.array(z.enum(TAG_IDS)).max(5).default([]),
+  frames: z.array(FrameSchema).max(MAX_FRAMES - 1).default([]),
+  branches: z.array(FrameSchema).max(MAX_BRANCHES).default([]),
 })
 
 export async function saveBuiltSituation(
@@ -62,6 +75,8 @@ export async function saveBuiltSituation(
       players:     data.players,
       ball:        data.ball,
       tags:        data.tags,
+      frames:      data.frames,
+      branches:    data.branches,
     })
 
   if (error) return { ok: false, error: error.message }
@@ -75,7 +90,7 @@ export async function getBuiltSituations(): Promise<BuiltSituation[]> {
 
   const { data, error } = await supabase
     .from("built_situations")
-    .select("id, zone, config, finality, description, players, ball, tags, created_at")
+    .select("id, zone, config, finality, description, players, ball, tags, frames, branches, created_at")
     .eq(scope.column, scope.value)
     .order("created_at", { ascending: false })
 
@@ -90,7 +105,7 @@ export async function getBuiltSituation(id: string): Promise<BuiltSituation | nu
 
   const { data, error } = await supabase
     .from("built_situations")
-    .select("id, zone, config, finality, description, players, ball, tags, created_at")
+    .select("id, zone, config, finality, description, players, ball, tags, frames, branches, created_at")
     .eq(scope.column, scope.value)
     .eq("id", id)
     .maybeSingle()
