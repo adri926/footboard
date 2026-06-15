@@ -16,7 +16,8 @@ En créant un compte et en accédant au service, l'utilisateur accepte sans rés
 • La gestion de l'effectif (joueurs, statuts, statistiques)
 • La planification et le suivi des matchs et entraînements
 • L'envoi de convocations par email aux joueurs
-• La préparation tactique (compositions d'équipe, situations de jeu)
+• La préparation tactique (compositions d'équipe, terrain interactif, concepts et exercices animés)
+• L'analyse vidéo de matchs assistée par IA (génération d'une timeline d'événements et réponses à des questions sur le match)
 • La consultation d'un calendrier d'équipe
 
 Certaines fonctionnalités peuvent évoluer ou être ajoutées sans préavis.`,
@@ -35,6 +36,7 @@ L'Éditeur se réserve le droit de suspendre ou supprimer un compte en cas de vi
 
 • Données du coach : adresse email, prénom (collectés via Clerk)
 • Données des joueurs : prénom, nom, numéro, poste, statut médical, email, statistiques
+• Vidéos de matchs uploadées pour l'analyse vidéo IA (transmises à l'API Gemini de Google pour traitement)
 
 L'utilisateur (coach) agit en qualité de responsable de traitement pour les données de ses joueurs. Il s'engage à :
 — Informer ses joueurs de l'utilisation de leurs données dans Footboard

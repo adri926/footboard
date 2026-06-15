@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Footboard",
     short_name: "Footboard",
-    description: "Gérez votre club, préparez vos matchs et créez des situations tactiques.",
+    description: "Gérez votre club, préparez vos matchs et analysez vos vidéos avec l'IA.",
     start_url: "/",
     display: "standalone",
     background_color: "#181812",

@@ -6,8 +6,8 @@ const COLS = [
     links: [
       { label: "Analyse vidéo",      href: "/tactique/analyse-video", available: true  },
       { label: "Gestion de club",   href: "/dashboard",        available: true  },
-      { label: "Santé joueurs",     href: "#",                 available: false },
-      { label: "Data & stats",      href: "#",                 available: false },
+      { label: "Santé joueurs",     href: "/dashboard/effectif", available: true  },
+      { label: "Data & stats",      href: "/dashboard/data",   available: true  },
       { label: "Tarifs",            href: "/#tarifs",          available: true  },
     ],
   },
@@ -15,7 +15,7 @@ const COLS = [
     title: "Ressources",
     links: [
       { label: "Blog",        href: "#", available: false },
-      { label: "Concepts",    href: "/tactique/concepts", available: false },
+      { label: "Concepts",    href: "/tactique/concepts", available: true },
       { label: "Tutoriels",   href: "#", available: false },
       { label: "FAQ",         href: "#", available: false },
     ],

@@ -5,51 +5,57 @@ import PricingCard from "@/components/home/PricingCard"
 
 export const metadata: Metadata = {
   title: "Footboard — Gérez votre club, dominez le terrain",
-  description: "La plateforme tout-en-un pour les coachs de football amateurs : effectif, matchs, entraînements, convocations et préparation tactique. Essayez gratuitement.",
+  description: "La plateforme tout-en-un pour les coachs de football amateurs : effectif, matchs, entraînements, convocations, préparation tactique et analyse vidéo par IA. Essayez gratuitement.",
   openGraph: {
     title: "Footboard — Gérez votre club, dominez le terrain",
-    description: "La plateforme tout-en-un pour les coachs de football amateurs. Effectif, matchs, convocations et tactique en un seul endroit.",
+    description: "La plateforme tout-en-un pour les coachs de football amateurs. Effectif, matchs, convocations, tactique et analyse vidéo IA en un seul endroit.",
     url: "https://footboard.fr",
   },
 }
 
-const STATS = [
-  { value: "50+", label: "Animations tactiques" },
-  { value: "16",  label: "Formations disponibles" },
-  { value: "∞",   label: "Possibilités tactiques" },
+const PILLARS = [
+  { icon: "⊞", title: "Gestion de club", desc: "Effectif, matchs, entraînements, convocations et cotisations." },
+  { icon: "⬡", title: "Terrain tactique", desc: "Digiboard interactif, 16 formations, concepts animés." },
+  { icon: "▶", title: "Analyse vidéo IA", desc: "Timeline d'événements et questions sur tes matchs filmés." },
 ]
 
 const FEATURES = [
   {
+    icon: "▶", tag: "ANALYSE VIDÉO IA", badge: "NOUVEAU",
+    title: "Filme un match. Laisse l'IA débriefer.",
+    desc: "Upload la vidéo d'un match : l'IA génère une timeline d'événements clés et répond à tes questions sur le match.",
+    href: "/tactique/analyse-video", cta: "OUVRIR →", available: true, highlight: true,
+  },
+  {
     icon: "⬡", tag: "TERRAIN TACTIQUE",
-    title: "Construis tes systèmes. Anime les situations.",
-    desc: "Terrain interactif, 16 formations, 50+ animations, situations DTN en 4 phases.",
+    title: "Construis tes systèmes. Anime tes concepts.",
+    desc: "Terrain interactif (Digiboard), 16 formations, concepts et exercices tactiques animés.",
     href: "/tactique", cta: "OUVRIR →", available: true,
   },
   {
     icon: "⊞", tag: "GESTION DE CLUB",
-    title: "Ton club. Ton effectif. Tes stats.",
-    desc: "Gérez l'effectif, planifiez les entraînements, préparez les matchs.",
+    title: "Ton club. Ton effectif. Tes cotisations.",
+    desc: "Gérez l'effectif, planifiez les entraînements, préparez les matchs et suivez les cotisations.",
     href: "/dashboard", cta: "OUVRIR →", available: true,
   },
   {
     icon: "♡", tag: "SANTÉ JOUEURS",
     title: "Suivi médical et charge d'entraînement.",
-    desc: "Historique blessures, charge hebdomadaire, statuts en temps réel.",
-    href: "#", cta: "BIENTÔT →", available: false,
+    desc: "Historique des blessures, charge d'entraînement, statuts en temps réel sur la fiche de chaque joueur.",
+    href: "/dashboard/effectif", cta: "OUVRIR →", available: true,
   },
   {
     icon: "▲", tag: "DATA & STATISTIQUES",
-    title: "Analyse, compare, progresse.",
-    desc: "Stats avancées, comparaisons de joueurs, data des 5 grandes ligues.",
-    href: "#", cta: "BIENTÔT →", available: false,
+    title: "Suis la forme de ton équipe.",
+    desc: "Résultats, victoires/nuls/défaites, différence de buts et performance par joueur sur la saison.",
+    href: "/dashboard/data", cta: "OUVRIR →", available: true,
   },
 ]
 
 const STEPS = [
   { n: "01", title: "Créez votre club",       desc: "Renseignez votre effectif, vos joueurs, votre staff. En moins de 5 minutes." },
   { n: "02", title: "Préparez vos matchs",    desc: "Composez votre équipe, définissez votre tactique, rédigez vos consignes." },
-  { n: "03", title: "Analysez & progressez",  desc: "Suivez les stats, la santé de vos joueurs, et ajustez votre jeu match après match." },
+  { n: "03", title: "Analysez & progressez",  desc: "Filmez vos matchs, laissez l'IA générer la timeline, suivez les stats et la santé de vos joueurs." },
 ]
 
 const PLANS = [
@@ -101,7 +107,7 @@ const STRUCTURED_DATA = {
   name: "Footboard",
   applicationCategory: "SportsApplication",
   operatingSystem: "Web",
-  description: "La plateforme tout-en-un pour les coachs de football amateurs : effectif, matchs, entraînements, convocations et préparation tactique.",
+  description: "La plateforme tout-en-un pour les coachs de football amateurs : effectif, matchs, entraînements, convocations, préparation tactique et analyse vidéo par IA.",
   url: "https://footboard.fr",
   offers: {
     "@type": "Offer",
@@ -153,8 +159,8 @@ export default function Home() {
               fontWeight: 400, fontSize: 17, lineHeight: 1.6,
               color: "rgba(255,255,255,0.45)", maxWidth: 400, marginBottom: 32,
             }}>
-              Gérez votre club, préparez vos matchs, animez vos entraînements
-              et suivez la santé de vos joueurs — tout en un seul endroit.
+              Gérez votre club, préparez vos matchs, construisez vos systèmes
+              tactiques et laissez l'IA analyser vos vidéos — tout en un seul endroit.
             </p>
             <div className="flex gap-3 flex-wrap">
               <Link href="/dashboard" className="transition hover:opacity-85" style={{
@@ -186,25 +192,30 @@ export default function Home() {
           </div>
         </div>
 
-        {/* ── 2. CHIFFRES CLÉS ── */}
-        <div className="mb-24 grid grid-cols-3 gap-px rounded-2xl overflow-hidden"
+        {/* ── 2. PILIERS ── */}
+        <div className="mb-24 grid grid-cols-1 sm:grid-cols-3 gap-px rounded-2xl overflow-hidden"
           style={{ border: "1px solid rgba(122,154,130,0.12)", backgroundColor: "rgba(122,154,130,0.08)" }}>
-          {STATS.map(({ value, label }) => (
-            <div key={label} className="flex flex-col items-center justify-center py-8 px-4 text-center"
+          {PILLARS.map(({ icon, title, desc }) => (
+            <div key={title} className="flex flex-col items-start justify-center py-8 px-7 text-left"
               style={{ backgroundColor: "var(--bg-card)" }}>
               <span style={{
-                fontFamily: "var(--font-display), system-ui, sans-serif",
-                fontWeight: 900, fontSize: "clamp(36px, 6vw, 52px)",
-                lineHeight: 1, color: "var(--sauge)", letterSpacing: "-0.02em",
+                fontSize: 22, color: "var(--sauge)", marginBottom: 10,
               }}>
-                {value}
+                {icon}
               </span>
               <span style={{
-                fontFamily: "var(--font-mono), monospace",
-                fontSize: 9, fontWeight: 700, letterSpacing: "0.1em",
-                color: "rgba(255,255,255,0.3)", marginTop: 8, textTransform: "uppercase",
+                fontFamily: "var(--font-display), system-ui, sans-serif",
+                fontWeight: 900, fontSize: 18,
+                color: "rgba(255,255,255,0.92)", marginBottom: 6,
               }}>
-                {label}
+                {title}
+              </span>
+              <span style={{
+                fontFamily: "var(--font-body), sans-serif",
+                fontWeight: 400, fontSize: 13, lineHeight: 1.5,
+                color: "rgba(255,255,255,0.4)",
+              }}>
+                {desc}
               </span>
             </div>
           ))}
@@ -233,7 +244,7 @@ export default function Home() {
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {FEATURES.map(f => (
-              <div key={f.tag} className="flex flex-col gap-4 p-5 rounded-2xl" style={{
+              <div key={f.tag} className={`flex flex-col gap-4 p-5 rounded-2xl${f.highlight ? " sm:col-span-2" : ""}`} style={{
                 backgroundColor: f.available ? "var(--bg-card)" : "rgba(122,154,130,0.02)",
                 border: `1px solid ${f.available ? "var(--sauge-border)" : "rgba(122,154,130,0.07)"}`,
               }}>
@@ -248,6 +259,14 @@ export default function Home() {
                   }}>
                     {f.tag}
                   </span>
+                  {f.badge && (
+                    <span style={{
+                      fontFamily: "var(--font-mono), monospace", fontSize: 8, fontWeight: 700,
+                      backgroundColor: "var(--sauge)",
+                      color: "var(--bg)",
+                      padding: "2px 8px", borderRadius: 100,
+                    }}>{f.badge}</span>
+                  )}
                   {!f.available && (
                     <span style={{
                       fontFamily: "var(--font-mono), monospace", fontSize: 8,

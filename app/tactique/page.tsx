@@ -2,8 +2,7 @@ import Link from "next/link"
 
 const STATS = [
   { value: "16", label: "FORMATIONS" },
-  { value: "50+", label: "ANIMATIONS" },
-  { value: "4", label: "PHASES DE JEU" },
+  { value: "12", label: "CONCEPTS ANIMÉS" },
   { value: "IA", label: "ANALYSE VIDÉO" },
 ]
 

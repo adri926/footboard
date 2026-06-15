@@ -22,7 +22,7 @@ export default function Confidentialite() {
         },
         {
           title: "Données collectées",
-          content: `• Données de compte : adresse email, prénom (via Clerk Auth)\n• Données de club : nom du club, niveau, ville\n• Données de joueurs : prénom, nom, numéro, poste, statut, email, notes médicales, statistiques\n• Données de matchs et d'entraînements : dates, adversaires, résultats, compositions`,
+          content: `• Données de compte : adresse email, prénom (via Clerk Auth)\n• Données de club : nom du club, niveau, ville\n• Données de joueurs : prénom, nom, numéro, poste, statut, email, notes médicales, statistiques\n• Données de matchs et d'entraînements : dates, adversaires, résultats, compositions\n• Vidéos de matchs : uploadées volontairement pour l'analyse vidéo IA`,
         },
         {
           title: "Finalité du traitement",
@@ -34,7 +34,7 @@ export default function Confidentialite() {
         },
         {
           title: "Sous-traitants",
-          content: `• Clerk (authentification) — clerkusercontent.com — GDPR compliant via SCCs\n• Supabase (base de données) — supabase.com — GDPR compliant\n• Resend (emails transactionnels) — resend.com — GDPR compliant\n• Vercel (hébergement) — vercel.com — GDPR compliant`,
+          content: `• Clerk (authentification) — clerkusercontent.com — GDPR compliant via SCCs\n• Supabase (base de données et stockage) — supabase.com — GDPR compliant\n• Resend (emails transactionnels) — resend.com — GDPR compliant\n• Vercel (hébergement) — vercel.com — GDPR compliant\n• Google Gemini API (analyse vidéo par IA) — google.com — vidéos transmises uniquement sur action volontaire du coach`,
         },
         {
           title: "Durée de conservation",
