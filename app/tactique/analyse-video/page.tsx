@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { listAnalyses } from "./actions"
 import UploadForm from "./UploadForm"
+import BackLink from "./BackLink"
 
 const STATUS_LABEL: Record<string, string> = {
   uploading: "UPLOAD...",
@@ -16,14 +17,7 @@ export default async function AnalyseVideoPage() {
     <main style={{ background: "var(--bg)", minHeight: "calc(100vh - 56px)" }}>
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "48px 24px 64px" }}>
 
-        <Link href="/tactique" style={{
-          fontFamily: "var(--font-mono), monospace",
-          fontSize: 10, letterSpacing: "0.08em",
-          color: "var(--text-faint)",
-          textDecoration: "none", display: "inline-block", marginBottom: 32,
-        }}>
-          ← TACTIQUE
-        </Link>
+        <BackLink fallback="/tactique">← RETOUR</BackLink>
 
         <div style={{ marginBottom: 32 }}>
           <p style={{

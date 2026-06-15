@@ -19,7 +19,7 @@ const NAV = [
     href: "/tactique",
     children: [
       { href: "/tactique/digiboard",       label: "Digiboard",           available: true  },
-      { href: "/tactique/analyse-video",  label: "Analyse vidéo",       available: true  },
+      { href: "/tactique/analyse-video",  label: "Analyse vidéo",       available: true, badge: "IA" },
       { href: "/tactique/concepts",       label: "Concepts",            available: true  },
     ],
   },
@@ -93,7 +93,7 @@ export default function Nav() {
                     boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
                   }}
                 >
-                  {children.map(({ href: ch, label: cl, available }) => (
+                  {children.map(({ href: ch, label: cl, available, badge }) => (
                     <Link key={ch} href={available ? ch : "#"}
                       className="flex items-center justify-between px-3 py-2 text-xs transition mx-1 rounded-lg"
                       style={{
@@ -103,7 +103,18 @@ export default function Nav() {
                         backgroundColor: pathname === ch ? "var(--sauge-dim)" : "transparent",
                         pointerEvents: available ? "auto" : "none",
                       }}>
-                      {cl.toUpperCase()}
+                      <span className="flex items-center gap-1.5">
+                        {cl.toUpperCase()}
+                        {badge && (
+                          <span style={{
+                            fontSize: 7, fontWeight: 700, letterSpacing: "0.08em",
+                            backgroundColor: "rgba(122,154,130,0.12)",
+                            border: "1px solid rgba(122,154,130,0.25)",
+                            color: "var(--sauge)",
+                            padding: "1px 5px", borderRadius: 100,
+                          }}>{badge}</span>
+                        )}
+                      </span>
                       {!available && (
                         <span style={{
                           fontSize: 7, backgroundColor: "rgba(122,154,130,0.08)",

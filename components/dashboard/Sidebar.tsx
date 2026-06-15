@@ -15,25 +15,25 @@ const NAV_GROUPS = [
   {
     label: "Club",
     items: [
-      { href: "/dashboard/club/equipe", label: "Équipe & accès", icon: "◎" },
-    ],
-  },
-  {
-    label: "Mon Équipe",
-    items: [
-      { href: "/dashboard/calendrier",     label: "Calendrier",      icon: "▦" },
-      { href: "/dashboard/effectif",       label: "Effectif",        icon: "◻" },
-      { href: "/dashboard/effectif/equipes", label: "Équipes",       icon: "◐" },
-      { href: "/dashboard/matchs",         label: "Matchs",          icon: "◷" },
-      { href: "/dashboard/entrainements",  label: "Entraînements",   icon: "◈" },
-      { href: "/dashboard/data",           label: "Data & stats",    icon: "▤" },
+      { href: "/dashboard/club/equipe",      label: "Équipe & accès", icon: "◎" },
       { href: "/dashboard/club/cotisations", label: "Cotisations",   icon: "€" },
     ],
   },
   {
-    label: "Tactique",
+    label: "Activité",
     items: [
-      { href: "/tactique/analyse-video",  label: "Analyse vidéo",       icon: "◬" },
+      { href: "/dashboard/calendrier",    label: "Calendrier",    icon: "▦" },
+      { href: "/dashboard/matchs",        label: "Matchs",        icon: "◷" },
+      { href: "/dashboard/entrainements", label: "Entraînements", icon: "◈" },
+    ],
+  },
+  {
+    label: "Effectif",
+    items: [
+      { href: "/dashboard/effectif",         label: "Effectif",       icon: "◻" },
+      { href: "/dashboard/effectif/equipes", label: "Équipes",        icon: "◐" },
+      { href: "/dashboard/data",             label: "Data & stats",   icon: "▤" },
+      { href: "/tactique/analyse-video",     label: "Analyse vidéo",  icon: "◬", badge: "IA" },
     ],
   },
 ]
@@ -169,7 +169,17 @@ export default function Sidebar({ clubName, clubLevel, userName, canManageFees, 
                       }}
                     >
                       <span style={{ fontSize: 11, opacity: 0.7, flexShrink: 0 }}>{item.icon}</span>
-                      <span className="sb-label">{item.label}</span>
+                      <span className="sb-label" style={{ flex: 1 }}>{item.label}</span>
+                      {item.badge && (
+                        <span className="sb-label" style={{
+                          fontFamily: "var(--font-mono), monospace",
+                          fontSize: 8, fontWeight: 700, letterSpacing: "0.08em",
+                          color: "#7A9A82",
+                          backgroundColor: "rgba(122,154,130,0.12)",
+                          border: "1px solid rgba(122,154,130,0.25)",
+                          borderRadius: 100, padding: "1px 5px", flexShrink: 0,
+                        }}>{item.badge}</span>
+                      )}
                     </Link>
                   )
                 })}
