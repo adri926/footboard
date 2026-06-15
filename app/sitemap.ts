@@ -6,7 +6,7 @@ const ROUTES: { path: string; priority: number; changeFrequency: MetadataRoute.S
   { path: "/",                      priority: 1.0, changeFrequency: "weekly" },
   { path: "/tactique",              priority: 0.8, changeFrequency: "weekly" },
   { path: "/tactique/animations",   priority: 0.7, changeFrequency: "monthly" },
-  { path: "/tactique/creer",        priority: 0.7, changeFrequency: "monthly" },
+  { path: "/tactique/analyse-video", priority: 0.7, changeFrequency: "monthly" },
   { path: "/tactique/concepts",     priority: 0.5, changeFrequency: "monthly" },
   { path: "/cgu",                   priority: 0.2, changeFrequency: "yearly" },
   { path: "/confidentialite",       priority: 0.2, changeFrequency: "yearly" },

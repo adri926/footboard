@@ -4,7 +4,7 @@ const COLS = [
   {
     title: "Produit",
     links: [
-      { label: "Terrain tactique",  href: "/tactique/creer",   available: true  },
+      { label: "Analyse vidéo",      href: "/tactique/analyse-video", available: true  },
       { label: "Gestion de club",   href: "/dashboard",        available: true  },
       { label: "Santé joueurs",     href: "#",                 available: false },
       { label: "Data & stats",      href: "#",                 available: false },

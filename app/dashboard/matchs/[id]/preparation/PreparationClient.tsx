@@ -288,12 +288,12 @@ export default function PreparationClient({ match, players, initialStarters, ini
           {/* CTA tactique */}
           <div style={{ backgroundColor: "rgba(122,154,130,0.06)", border: "1px solid rgba(122,154,130,0.18)", borderRadius: 12, padding: "18px 20px" }}>
             <p style={{ fontFamily: "var(--font-mono), monospace", fontSize: 9, fontWeight: 700, letterSpacing: "0.14em", color: "#7A9A82", textTransform: "uppercase", marginBottom: 6 }}>
-              Préparer une situation
+              Analyser un match
             </p>
             <p style={{ fontFamily: "var(--font-body), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: 1.5, color: "rgba(255,255,255,0.3)", marginBottom: 12 }}>
-              Créez une situation tactique pour votre causerie d'avant-match.
+              Uploadez la vidéo du dernier match pour préparer votre causerie d'avant-match.
             </p>
-            <Link href="/tactique/creer" style={{
+            <Link href="/tactique/analyse-video" style={{
               display: "inline-block",
               fontFamily: "var(--font-mono), monospace",
               fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
@@ -302,7 +302,7 @@ export default function PreparationClient({ match, players, initialStarters, ini
               border: "1px solid rgba(122,154,130,0.3)",
               padding: "9px 16px", borderRadius: 8,
             }}>
-              CRÉER UNE SITUATION →
+              ANALYSER UNE VIDÉO →
             </Link>
           </div>
         </div>

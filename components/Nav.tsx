@@ -19,8 +19,7 @@ const NAV = [
     href: "/tactique",
     children: [
       { href: "/tactique/digiboard",       label: "Digiboard",           available: true  },
-      { href: "/tactique/creer",          label: "Créer une situation", available: true  },
-      { href: "/tactique/mes-situations", label: "Mes situations",      available: true  },
+      { href: "/tactique/analyse-video",  label: "Analyse vidéo",       available: true  },
       { href: "/tactique/concepts",       label: "Concepts",            available: true  },
     ],
   },

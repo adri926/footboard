@@ -4,7 +4,7 @@ const STATS = [
   { value: "16", label: "FORMATIONS" },
   { value: "50+", label: "ANIMATIONS" },
   { value: "4", label: "PHASES DE JEU" },
-  { value: "∞", label: "SITUATIONS CRÉÉES" },
+  { value: "IA", label: "ANALYSE VIDÉO" },
 ]
 
 const PRIMARY = {
@@ -18,36 +18,21 @@ const PRIMARY = {
 const SECONDARY = [
   {
     num: "01",
-    tag: "CRÉATEUR",
-    title: "CRÉER UNE SITUATION",
-    desc: "Construis ta propre situation tactique : zone, joueurs, finalité.",
-    href: "/tactique/creer",
-    cta: "CRÉER →",
+    tag: "IA",
+    title: "ANALYSE VIDÉO",
+    desc: "Upload la vidéo d'un match : timeline d'événements et questions en langage naturel.",
+    href: "/tactique/analyse-video",
+    cta: "ANALYSER →",
     icon: (
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <path d="M12 5v14M5 12h14" strokeLinecap="round" />
-        <circle cx="12" cy="12" r="10" strokeWidth="1" opacity="0.3" />
+        <rect x="3" y="5" width="14" height="14" rx="2" strokeWidth="1" opacity="0.3" />
+        <path d="M17 9l4-2v10l-4-2z" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="10" cy="12" r="2.5" />
       </svg>
     ),
   },
   {
     num: "02",
-    tag: "BIBLIOTHÈQUE",
-    title: "MES SITUATIONS",
-    desc: "Retrouve et gère toutes les situations que tu as sauvegardées.",
-    href: "/tactique/mes-situations",
-    cta: "VOIR →",
-    icon: (
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <rect x="3" y="3" width="18" height="18" rx="2" strokeWidth="1" opacity="0.3" />
-        <path d="M3 9h18M9 21V9" strokeLinecap="round" opacity="0.7" />
-        <circle cx="15" cy="15" r="2" />
-        <path d="M15 13V7" strokeLinecap="round" strokeWidth="1" />
-      </svg>
-    ),
-  },
-  {
-    num: "03",
     tag: "APPRENTISSAGE",
     title: "CONCEPTS",
     desc: "Systèmes de jeu, pressing, transitions — les fondamentaux en schémas.",
@@ -245,7 +230,7 @@ export default function TactiquePage() {
         <div style={{ height: 1, background: "rgba(122,154,130,0.10)", margin: "28px 0" }} />
 
         {/* Grille secondaire */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
           {SECONDARY.map(({ num, tag, title, desc, href, cta, icon }) => (
             <Link key={href} href={href} style={{ textDecoration: "none", display: "block" }}>
               <div style={{

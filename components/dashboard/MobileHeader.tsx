@@ -24,8 +24,7 @@ const NAV_GROUPS = [
   {
     label: "Tactique",
     items: [
-      { href: "/tactique/creer",          label: "Créer une situation", icon: "◬" },
-      { href: "/tactique/mes-situations", label: "Mes situations",      icon: "◫" },
+      { href: "/tactique/analyse-video",  label: "Analyse vidéo",       icon: "◬" },
     ],
   },
 ]
