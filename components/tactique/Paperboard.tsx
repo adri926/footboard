@@ -9,7 +9,7 @@ import DrawingCanvas, { type Tool } from "./DrawingCanvas"
 import Toolbar from "./Toolbar"
 import { FORMATIONS, mirrorY } from "@/lib/formations"
 import { saveTacticalBoard, createShareLink } from "@/app/tactique/digiboard/actions"
-import type { Drawing, Pion, TacticalMode, TacticalTeam } from "@/types/tactical"
+import type { Drawing, Pion, TacticalBoard, TacticalMode, TacticalTeam } from "@/types/tactical"
 
 const DEFAULT_FORMATION_A = "4-3-3"
 const DEFAULT_FORMATION_B = "4-4-2"
@@ -97,7 +97,53 @@ const MODES: { id: TacticalMode; label: string }[] = [
   { id: "analyse",     label: "Analyse" },
 ]
 
-export default function Paperboard() {
+function BoardsList({ boards, onLoad }: { boards: TacticalBoard[]; onLoad: (b: TacticalBoard) => void }) {
+  if (boards.length === 0) {
+    return (
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, paddingTop: 24 }}>
+        <p style={{ fontFamily: "var(--font-mono), monospace", fontSize: 9, letterSpacing: "0.08em", color: "rgba(255,255,255,0.2)", textAlign: "center" }}>
+          Aucun board sauvegardé.
+        </p>
+        <p style={{ fontFamily: "var(--font-mono), monospace", fontSize: 8, color: "rgba(122,154,130,0.35)", textAlign: "center" }}>
+          Passe en mode ÉDITER pour en créer un.
+        </p>
+      </div>
+    )
+  }
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6, overflowY: "auto", flex: 1 }}>
+      {boards.map(b => (
+        <button key={b.id} onClick={() => onLoad(b)} style={{
+          display: "flex", flexDirection: "column", gap: 4,
+          padding: "10px 12px", borderRadius: 10, cursor: "pointer", textAlign: "left",
+          backgroundColor: "rgba(255,255,255,0.03)",
+          border: "1px solid rgba(122,154,130,0.12)",
+          transition: "border-color 0.15s",
+        }}>
+          <p style={{
+            fontFamily: "var(--font-body), sans-serif",
+            fontWeight: 500, fontSize: 13,
+            color: "rgba(255,255,255,0.85)", margin: 0,
+          }}>
+            {b.name}
+          </p>
+          <p style={{
+            fontFamily: "var(--font-mono), monospace",
+            fontSize: 8, color: "rgba(122,154,130,0.5)",
+          }}>
+            {b.formation} · {b.createdAt ? new Date(b.createdAt).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) : ""}
+          </p>
+        </button>
+      ))}
+    </div>
+  )
+}
+
+interface Props {
+  initialBoards?: TacticalBoard[]
+}
+
+export default function Paperboard({ initialBoards = [] }: Props) {
   const [formationA, setFormationA] = useState(DEFAULT_FORMATION_A)
   const [formationB, setFormationB] = useState(DEFAULT_FORMATION_B)
   const [editingTeam, setEditingTeam] = useState<TacticalTeam>("A")
@@ -124,6 +170,9 @@ export default function Paperboard() {
   const [shareUrl, setShareUrl] = useState<string | null>(null)
   const [shareStatus, setShareStatus] = useState<"idle" | "copied">("idle")
   const [isSharing, startShare] = useTransition()
+
+  // Vue sidebar
+  const [sidebarView, setSidebarView] = useState<"edit" | "boards">("edit")
 
   const containerRef = useRef<HTMLDivElement>(null)
   const drawings = drawState.present
@@ -200,6 +249,24 @@ export default function Paperboard() {
       setSaveError(result.error)
     }
   }, [boardName, formationA, formationB, pions, drawings, mode])
+
+  const loadBoard = useCallback((board: TacticalBoard) => {
+    const isDirty = drawings.length > 0 || boardName.trim() !== ""
+    if (isDirty && !confirm(`Charger "${board.name}" effacera le board actuel. Continuer ?`)) return
+
+    const [fa, fb] = board.formation.split(" / ")
+    if (fa) setFormationA(fa)
+    if (fb) setFormationB(fb)
+    setPions(board.pions ?? [])
+    setDrawState({ past: [], present: board.drawings ?? [], future: [] })
+    setMode(board.mode ?? "preparation")
+    setBoardName(board.name)
+    setSaveStatus("ok")
+    setSavedBoardId(board.id ?? null)
+    setShareUrl(null)
+    setShareStatus("idle")
+    setSidebarView("edit")
+  }, [drawings.length, boardName])
 
   const handleShare = useCallback(() => {
     if (!savedBoardId) return
@@ -300,6 +367,27 @@ export default function Paperboard() {
             PLACE · DESSINE · EXPLIQUE
           </p>
         </div>
+
+        {/* Toggle ÉDITER / MES BOARDS */}
+        <div style={{ display: "flex", borderRadius: 8, overflow: "hidden", border: "1px solid rgba(122,154,130,0.15)" }}>
+          {(["edit", "boards"] as const).map(v => (
+            <button key={v} onClick={() => setSidebarView(v)} style={{
+              flex: 1, padding: "7px 0", cursor: "pointer", border: "none",
+              fontFamily: "var(--font-mono), monospace",
+              fontSize: 8, fontWeight: 700, letterSpacing: "0.08em",
+              backgroundColor: sidebarView === v ? "rgba(122,154,130,0.18)" : "transparent",
+              color: sidebarView === v ? "#7A9A82" : "rgba(255,255,255,0.25)",
+              transition: "all 0.15s",
+            }}>
+              {v === "edit" ? "ÉDITER" : `MES BOARDS${initialBoards.length > 0 ? ` (${initialBoards.length})` : ""}`}
+            </button>
+          ))}
+        </div>
+
+        {sidebarView === "boards" ? (
+          <BoardsList boards={initialBoards} onLoad={loadBoard} />
+        ) : (
+          <>
 
         {/* Sélecteur de mode */}
         <div>
@@ -414,6 +502,9 @@ export default function Paperboard() {
             </button>
           )}
         </div>
+
+          </>
+        )}
       </aside>
     </div>
   )
