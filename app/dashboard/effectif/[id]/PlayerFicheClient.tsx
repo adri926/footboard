@@ -60,7 +60,7 @@ export default function PlayerFicheClient({ player, stats, medical, physical }: 
   const maxVmax = vmaxValues.length > 0 ? Math.max(...vmaxValues) : 0
 
   return (
-    <div style={{ padding: "32px 36px", maxWidth: 800 }}>
+    <div className="page-pad" style={{ maxWidth: 800 }}>
       <Link href="/dashboard/effectif" style={{
         fontFamily: "var(--font-mono), monospace",
         fontSize: 8, letterSpacing: "0.08em",

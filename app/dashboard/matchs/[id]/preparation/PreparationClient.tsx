@@ -84,7 +84,7 @@ export default function PreparationClient({ match, players, initialStarters, ini
   }
 
   return (
-    <div style={{ padding: "32px 36px", maxWidth: 1100 }}>
+    <div className="page-pad" style={{ maxWidth: 1100 }}>
 
       {/* Back */}
       <Link href="/dashboard/matchs" style={{

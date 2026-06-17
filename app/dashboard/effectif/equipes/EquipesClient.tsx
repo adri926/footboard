@@ -65,7 +65,7 @@ export default function EquipesClient({ data }: Props) {
   }
 
   return (
-    <div style={{ padding: "32px 36px", maxWidth: 760 }}>
+    <div className="page-pad" style={{ maxWidth: 760 }}>
       <PageHeader
         label="Mon Club"
         title="Équipes"

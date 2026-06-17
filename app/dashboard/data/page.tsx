@@ -33,7 +33,7 @@ export default async function DataPage() {
   const clubLogo = club?.logo ?? null
 
   return (
-    <div style={{ padding: "32px 36px", maxWidth: 960 }}>
+    <div className="page-pad" style={{ maxWidth: 960 }}>
       <PageHeader
         label="Mon Club"
         title="Data & statistiques"

@@ -150,7 +150,7 @@ export default async function DashboardPage() {
   const lastTrainings = trainings.slice(0, 4)
 
   return (
-    <div style={{ padding: "32px 36px", maxWidth: 1100 }}>
+    <div className="page-pad" style={{ maxWidth: 1100 }}>
 
       <PageHeader
         label="Tableau de bord"

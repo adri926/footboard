@@ -65,7 +65,7 @@ export default function EquipeClient({ data }: Props) {
   }
 
   return (
-    <div style={{ padding: "32px 36px", maxWidth: 680 }}>
+    <div className="page-pad" style={{ maxWidth: 680 }}>
       <PageHeader label="Mon club" title="Équipe" subtitle="Donne accès à la plateforme aux membres du club (coach adjoint, trésorier)." />
 
       {data.plan === "solo" && (

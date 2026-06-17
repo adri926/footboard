@@ -11,7 +11,7 @@ export default async function CalendrierPage() {
   ])
   const activeTeamName = teams.length > 1 ? activeTeam.name : null
   return (
-    <div style={{ padding: "32px 36px", maxWidth: 1100 }}>
+    <div className="page-pad" style={{ maxWidth: 1100 }}>
       <CalendrierClient matches={matches} trainings={trainings} activeTeamName={activeTeamName} />
     </div>
   )

@@ -13,7 +13,7 @@ export default async function MatchsPage() {
   const availability = await getAvailabilityByMatch(matches.map(m => m.id))
   const activeTeamName = teams.length > 1 ? activeTeam.name : null
   return (
-    <div style={{ padding: "32px 36px", maxWidth: 960 }}>
+    <div className="page-pad" style={{ maxWidth: 960 }}>
       <MatchsClient matches={matches} players={players} club={club} availability={availability} activeTeamName={activeTeamName} />
     </div>
   )

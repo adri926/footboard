@@ -165,7 +165,7 @@ export default function EntraineementsClient({ trainings, savedSessions, activeT
         title="Entraînements"
         subtitle={`${trainings.length} séance${trainings.length !== 1 ? "s" : ""}${activeTeamName ? ` · Équipe active : ${activeTeamName}` : ""}`}
         action={
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
             <div style={{
               display: "flex", borderRadius: 8,
               border: "1px solid rgba(122,154,130,0.15)", overflow: "hidden",

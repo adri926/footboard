@@ -87,7 +87,7 @@ export default function BilanClient({ match, players, lineup, initialStats }: Pr
   }
 
   return (
-    <div style={{ padding: "32px 36px", maxWidth: 880 }}>
+    <div className="page-pad" style={{ maxWidth: 880 }}>
       <Link href="/dashboard/matchs" style={{
         fontFamily: "var(--font-mono), monospace",
         fontSize: 8, letterSpacing: "0.08em",

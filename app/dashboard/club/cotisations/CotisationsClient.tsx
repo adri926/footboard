@@ -39,7 +39,7 @@ interface Props {
 
 export default function CotisationsClient({ data }: Props) {
   return (
-    <div style={{ padding: "32px 36px", maxWidth: 760 }}>
+    <div className="page-pad" style={{ maxWidth: 760 }}>
       <PageHeader label="Mon club" title="Cotisations" subtitle={`Suivi des cotisations — saison ${data.season}.`} />
 
       <DefaultFeeForm />

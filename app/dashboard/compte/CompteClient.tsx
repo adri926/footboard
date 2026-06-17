@@ -80,7 +80,7 @@ export default function CompteClient({ club }: Props) {
   }
 
   return (
-    <div style={{ padding: "32px 36px", maxWidth: 600 }}>
+    <div className="page-pad" style={{ maxWidth: 600 }}>
 
       <PageHeader label="Mon compte" title="Paramètres" />
 

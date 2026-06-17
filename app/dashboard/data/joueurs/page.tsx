@@ -19,7 +19,7 @@ export default async function StatsJoueursPage() {
   const EMPTY = { matchesPlayed: 0, starts: 0, goals: 0, assists: 0, minutesPlayed: 0 }
 
   return (
-    <div style={{ padding: "32px 36px", maxWidth: 1040 }}>
+    <div className="page-pad" style={{ maxWidth: 1040 }}>
       <PageHeader
         label="Mon Club"
         title="Stats individuelles"

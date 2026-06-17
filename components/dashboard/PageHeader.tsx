@@ -8,7 +8,7 @@ interface Props {
 export default function PageHeader({ label, title, subtitle, action }: Props) {
   return (
     <div style={{ marginBottom: 32 }}>
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
             <span style={{

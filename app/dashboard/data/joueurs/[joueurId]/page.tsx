@@ -67,7 +67,7 @@ export default async function ProfilStatsPage({ params }: Props) {
   ]
 
   return (
-    <div style={{ padding: "32px 36px", maxWidth: 800 }}>
+    <div className="page-pad" style={{ maxWidth: 800 }}>
       <Link href="/dashboard/data/joueurs" style={{
         fontFamily: "var(--font-mono), monospace", fontSize: 10,
         letterSpacing: "0.06em", color: "rgba(122,154,130,0.5)",
