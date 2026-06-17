@@ -132,13 +132,12 @@ export default function Nav() {
 
       {/* Hamburger — mobile only */}
       <button
-        className="md:hidden ml-auto"
+        className="md:hidden ml-auto flex flex-col justify-center"
         onClick={() => setMenuOpen(o => !o)}
         aria-label={menuOpen ? "Fermer le menu" : "Ouvrir le menu"}
         style={{
           background: "none", border: "none", cursor: "pointer",
-          padding: 6, color: "rgba(255,255,255,0.7)",
-          display: "flex", flexDirection: "column", gap: 5, justifyContent: "center",
+          padding: 6, color: "rgba(255,255,255,0.7)", gap: 5,
         }}
       >
         <span style={{ display: "block", width: 22, height: 2, backgroundColor: "currentColor", borderRadius: 2, transition: "transform 0.2s", transform: menuOpen ? "rotate(45deg) translate(5px, 5px)" : "none" }} />
