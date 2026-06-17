@@ -2,6 +2,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { getAnalysis } from "../actions"
 import AnalysisDetail from "./AnalysisDetail"
+import ProcessingPoller from "./ProcessingPoller"
 
 const STATUS_LABEL: Record<string, string> = {
   uploading: "UPLOAD EN COURS...",
@@ -51,13 +52,16 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
         )}
 
         {analysis.status === "processing" && (
-          <p style={{
-            fontFamily: "var(--font-body), sans-serif",
-            fontSize: 13, color: "var(--text-muted)", lineHeight: 1.6, marginBottom: 24,
-          }}>
-            L&apos;IA regarde la vidéo et génère la timeline d&apos;événements. Rafraîchis la page
-            dans quelques instants.
-          </p>
+          <>
+            <ProcessingPoller />
+            <p style={{
+              fontFamily: "var(--font-body), sans-serif",
+              fontSize: 13, color: "var(--text-muted)", lineHeight: 1.6, marginBottom: 24,
+            }}>
+              L&apos;IA regarde la vidéo et génère la timeline d&apos;événements.
+              La page se met à jour automatiquement.
+            </p>
+          </>
         )}
 
         {analysis.status === "ready" && (

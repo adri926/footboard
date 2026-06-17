@@ -94,6 +94,9 @@ export async function uploadVideo(
   if (!file.type.startsWith("video/")) {
     return { ok: false, error: "Le fichier doit être une vidéo." }
   }
+  if (file.size > 500 * 1024 * 1024) {
+    return { ok: false, error: "Vidéo trop lourde — max 500 Mo." }
+  }
 
   const title = (formData.get("title") as string | null)?.trim() || "Match"
   const ext = file.name.includes(".") ? file.name.split(".").pop() : "mp4"
@@ -104,7 +107,7 @@ export async function uploadVideo(
     .from(BUCKET)
     .upload(path, buffer, { contentType: file.type })
 
-  if (uploadError) return { ok: false, error: uploadError.message }
+  if (uploadError) return { ok: false, error: "Erreur lors de l'upload. Réessaie." }
 
   const { data: row, error: insertError } = await supabase
     .from("video_analyses")
@@ -118,7 +121,7 @@ export async function uploadVideo(
     .select("id")
     .single()
 
-  if (insertError || !row) return { ok: false, error: insertError?.message ?? "Erreur d'enregistrement." }
+  if (insertError || !row) return { ok: false, error: "Erreur d'enregistrement. Réessaie." }
 
   // Lance l'analyse — erreurs gérées et stockées sur la ligne (pas de retry auto en V1)
   analyzeVideo(row.id, buffer, file.type).catch(async (err) => {

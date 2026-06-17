@@ -10,8 +10,15 @@ export default function UploadForm() {
   const formRef = useRef<HTMLFormElement>(null)
   const router = useRouter()
 
+  const MAX_SIZE_MB = 500
+
   function handleSubmit(formData: FormData) {
     setError(null)
+    const file = formData.get("video")
+    if (file instanceof File && file.size > MAX_SIZE_MB * 1024 * 1024) {
+      setError(`Vidéo trop lourde — max ${MAX_SIZE_MB} Mo.`)
+      return
+    }
     startTransition(async () => {
       const res = await uploadVideo(formData)
       if (!res.ok) {
@@ -101,6 +108,19 @@ export default function UploadForm() {
       >
         {isPending ? "UPLOAD EN COURS..." : "UPLOADER ET ANALYSER →"}
       </button>
+
+      {isPending && (
+        <div style={{
+          marginTop: 4,
+          fontFamily: "var(--font-body), sans-serif",
+          fontSize: 12, color: "var(--text-faint)", lineHeight: 1.6,
+        }}>
+          <p>⏳ Upload de la vidéo vers le serveur…</p>
+          <p style={{ marginTop: 4, opacity: 0.6 }}>
+            Ne ferme pas cette page. L&apos;analyse IA démarrera automatiquement après l&apos;upload.
+          </p>
+        </div>
+      )}
     </form>
   )
 }

@@ -49,15 +49,31 @@ export default async function AnalyseVideoPage() {
           <UploadForm />
         </div>
 
-        {analyses.length > 0 && (
-          <div>
-            <p style={{
-              fontFamily: "var(--font-mono), monospace",
-              fontSize: 9, letterSpacing: "0.12em",
-              color: "var(--text-faint)", marginBottom: 12,
+        <div>
+          <p style={{
+            fontFamily: "var(--font-mono), monospace",
+            fontSize: 9, letterSpacing: "0.12em",
+            color: "var(--text-faint)", marginBottom: 12,
+          }}>
+            ANALYSES
+          </p>
+
+          {analyses.length === 0 ? (
+            <div style={{
+              backgroundColor: "var(--bg-card)",
+              border: "1px solid rgba(122,154,130,0.10)",
+              borderRadius: 10, padding: "28px 20px",
+              textAlign: "center",
             }}>
-              ANALYSES
-            </p>
+              <p style={{
+                fontFamily: "var(--font-body), sans-serif",
+                fontSize: 13, color: "var(--text-faint)", lineHeight: 1.6,
+              }}>
+                Aucune analyse pour l&apos;instant.<br />
+                Uploade ta première vidéo de match ci-dessus.
+              </p>
+            </div>
+          ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {analyses.map(a => (
                 <Link key={a.id} href={`/tactique/analyse-video/${a.id}`} style={{
@@ -83,8 +99,8 @@ export default async function AnalyseVideoPage() {
                 </Link>
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
       </div>
     </main>
