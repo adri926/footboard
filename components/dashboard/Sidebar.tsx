@@ -85,6 +85,8 @@ export default function Sidebar({ clubName, clubLevel, userName, canManageFees, 
         }
         @media (max-width: 767px) {
           .sb { display: none !important; }
+          .sb-bottom-nav { display: flex !important; }
+          .dashboard-main { padding-bottom: 72px !important; }
         }
       `}</style>
 
@@ -223,6 +225,48 @@ export default function Sidebar({ clubName, clubLevel, userName, canManageFees, 
           </div>
         </Link>
       </aside>
+
+      {/* Bottom nav mobile */}
+      <nav className="sb-bottom-nav" style={{
+        display: "none",
+        position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50,
+        height: 64, alignItems: "stretch",
+        backgroundColor: "#16160f",
+        borderTop: "1px solid rgba(122,154,130,0.15)",
+      }}>
+        {[
+          { href: "/dashboard",                label: "Accueil",    icon: "◈" },
+          { href: "/dashboard/matchs",         label: "Matchs",     icon: "◷" },
+          { href: "/dashboard/entrainements",  label: "Séances",    icon: "▣" },
+          { href: "/dashboard/effectif",       label: "Effectif",   icon: "◻" },
+          { href: "/tactique/analyse-video",   label: "IA",         icon: "◬" },
+        ].map(item => {
+          const active = item.href === "/dashboard"
+            ? pathname === "/dashboard"
+            : pathname.startsWith(item.href)
+          return (
+            <Link key={item.href} href={item.href} style={{
+              flex: 1, display: "flex", flexDirection: "column",
+              alignItems: "center", justifyContent: "center", gap: 3,
+              textDecoration: "none",
+              backgroundColor: active ? "rgba(122,154,130,0.06)" : "transparent",
+              borderTop: active ? "2px solid rgba(122,154,130,0.6)" : "2px solid transparent",
+            }}>
+              <span style={{ fontSize: 13, color: active ? "#7A9A82" : "rgba(255,255,255,0.3)" }}>
+                {item.icon}
+              </span>
+              <span style={{
+                fontFamily: "var(--font-mono), monospace",
+                fontSize: 7, fontWeight: 700, letterSpacing: "0.06em",
+                color: active ? "#7A9A82" : "rgba(255,255,255,0.3)",
+              }}>
+                {item.label.toUpperCase()}
+              </span>
+            </Link>
+          )
+        })}
+      </nav>
+
     </>
   )
 }

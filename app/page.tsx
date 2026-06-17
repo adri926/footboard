@@ -193,7 +193,7 @@ export default function Home() {
         </div>
 
         {/* ── 2. PILIERS ── */}
-        <div className="mb-24 grid grid-cols-3 gap-px rounded-2xl overflow-hidden"
+        <div className="mb-24 grid grid-cols-1 sm:grid-cols-3 gap-px rounded-2xl overflow-hidden"
           style={{ border: "1px solid rgba(122,154,130,0.12)", backgroundColor: "rgba(122,154,130,0.08)" }}>
           {PILLARS.map(({ icon, title, desc }) => (
             <div key={title} className="flex flex-col items-center justify-center py-8 px-4 text-center"

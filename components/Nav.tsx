@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useState } from "react"
 import InstallPrompt from "./InstallPrompt"
 
 const NAV = [
@@ -32,9 +33,12 @@ const HIDE_ON = ["/tactique/digiboard"]
 
 export default function Nav() {
   const pathname = usePathname()
+  const [menuOpen, setMenuOpen] = useState(false)
+
   if (HIDE_ON.includes(pathname)) return null
 
   return (
+    <>
     <header
       className="sticky top-0 z-50 flex items-center gap-6 px-6 h-14 border-b"
       style={{
@@ -126,6 +130,91 @@ export default function Nav() {
 
       <InstallPrompt />
 
+      {/* Hamburger — mobile only */}
+      <button
+        className="md:hidden ml-auto"
+        onClick={() => setMenuOpen(o => !o)}
+        aria-label={menuOpen ? "Fermer le menu" : "Ouvrir le menu"}
+        style={{
+          background: "none", border: "none", cursor: "pointer",
+          padding: 6, color: "rgba(255,255,255,0.7)",
+          display: "flex", flexDirection: "column", gap: 5, justifyContent: "center",
+        }}
+      >
+        <span style={{ display: "block", width: 22, height: 2, backgroundColor: "currentColor", borderRadius: 2, transition: "transform 0.2s", transform: menuOpen ? "rotate(45deg) translate(5px, 5px)" : "none" }} />
+        <span style={{ display: "block", width: 22, height: 2, backgroundColor: "currentColor", borderRadius: 2, opacity: menuOpen ? 0 : 1, transition: "opacity 0.15s" }} />
+        <span style={{ display: "block", width: 22, height: 2, backgroundColor: "currentColor", borderRadius: 2, transition: "transform 0.2s", transform: menuOpen ? "rotate(-45deg) translate(5px, -5px)" : "none" }} />
+      </button>
+
     </header>
+
+    {/* Menu mobile overlay */}
+    {menuOpen && (
+      <div
+        className="md:hidden"
+        style={{
+          position: "fixed", top: 56, left: 0, right: 0, bottom: 0, zIndex: 49,
+          backgroundColor: "var(--bg)", overflowY: "auto",
+          borderTop: "1px solid rgba(122,154,130,0.12)",
+        }}
+        onClick={e => { if (e.target === e.currentTarget) setMenuOpen(false) }}
+      >
+        <nav style={{ padding: "8px 16px 32px", display: "flex", flexDirection: "column", gap: 4 }}>
+          {NAV.map(({ label, href, children }) => (
+            <div key={label}>
+              {children.length === 0 ? (
+                <Link href={href} onClick={() => setMenuOpen(false)} style={{
+                  display: "block", padding: "13px 12px", borderRadius: 10,
+                  fontFamily: "var(--font-mono), monospace",
+                  fontSize: 11, fontWeight: 700, letterSpacing: "0.08em",
+                  color: pathname.startsWith(href) && href !== "#" ? "#7A9A82" : "rgba(255,255,255,0.6)",
+                  textDecoration: "none",
+                }}>
+                  {label.toUpperCase()}
+                </Link>
+              ) : (
+                <div style={{ marginTop: 8 }}>
+                  <p style={{
+                    fontFamily: "var(--font-mono), monospace",
+                    fontSize: 8, fontWeight: 700, letterSpacing: "0.14em",
+                    color: "rgba(122,154,130,0.4)", padding: "0 12px", marginBottom: 4,
+                  }}>
+                    {label.toUpperCase()}
+                  </p>
+                  {children.map(({ href: ch, label: cl, available, badge }) => (
+                    <Link key={ch} href={available ? ch : "#"} onClick={() => setMenuOpen(false)} style={{
+                      display: "flex", alignItems: "center", justifyContent: "space-between",
+                      padding: "12px 12px", borderRadius: 10,
+                      fontFamily: "var(--font-body), sans-serif",
+                      fontSize: 15, fontWeight: pathname === ch ? 500 : 400,
+                      color: pathname === ch ? "#7A9A82" : available ? "rgba(255,255,255,0.75)" : "rgba(255,255,255,0.25)",
+                      textDecoration: "none",
+                      backgroundColor: pathname === ch ? "rgba(122,154,130,0.08)" : "transparent",
+                      pointerEvents: available ? "auto" : "none",
+                    }}>
+                      <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        {cl}
+                        {badge && (
+                          <span style={{
+                            fontSize: 8, fontWeight: 700, letterSpacing: "0.08em",
+                            backgroundColor: "rgba(122,154,130,0.12)",
+                            border: "1px solid rgba(122,154,130,0.25)",
+                            color: "var(--sauge)", padding: "1px 5px", borderRadius: 100,
+                          }}>{badge}</span>
+                        )}
+                      </span>
+                      {!available && (
+                        <span style={{ fontSize: 8, color: "rgba(122,154,130,0.4)" }}>BIENTÔT</span>
+                      )}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </nav>
+      </div>
+    )}
+    </>
   )
 }

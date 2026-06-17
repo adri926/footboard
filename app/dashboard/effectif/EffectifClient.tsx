@@ -110,9 +110,7 @@ export default function EffectifClient({ players }: Props) {
       {/* Suivi médical — compteurs + filtre par statut */}
       {players.length > 0 && (
         <div style={{ marginBottom: 24 }}>
-          <div style={{
-            display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 14,
-          }}>
+          <div className="grid grid-cols-3" style={{ gap: 10, marginBottom: 14 }}>
             {counts.map(c => (
               <div key={c.status} style={{
                 padding: "16px 18px", borderRadius: 12,

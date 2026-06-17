@@ -60,7 +60,7 @@ function CalendarView({ trainings, year, onEdit }: { trainings: Training[]; year
   const trainingByDate = Object.fromEntries(trainings.map(t => [t.date.slice(0, 10), t]))
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3" style={{ gap: 16 }}>
       {MONTHS.map((monthName, monthIdx) => {
         const firstDay = new Date(year, monthIdx, 1)
         const daysInMonth = new Date(year, monthIdx + 1, 0).getDate()
