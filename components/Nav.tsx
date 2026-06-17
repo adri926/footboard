@@ -23,7 +23,7 @@ const NAV = [
       { href: "/tactique/concepts",       label: "Concepts",            available: true  },
     ],
   },
-  { label: "Blog",   href: "#", children: [], soon: true },
+  { label: "Blog",   href: "/blog", children: [] },
   { label: "Tarifs", href: "/#tarifs", children: [] },
 ]
 
@@ -56,7 +56,7 @@ export default function Nav() {
 
       {/* Nav principale */}
       <nav className="hidden md:flex items-center gap-1 flex-1">
-        {NAV.map(({ label, href, children, soon }) => {
+        {NAV.map(({ label, href, children }) => {
           const active = href !== "#" && href !== "/#tarifs" && pathname.startsWith(href)
           const hasDropdown = children.length > 0
 
@@ -72,15 +72,6 @@ export default function Nav() {
                   border: active ? "1px solid var(--sauge-border)" : "1px solid transparent",
                 }}>
                 {label.toUpperCase()}
-                {soon && (
-                  <span style={{
-                    fontSize: 7, letterSpacing: "0.08em",
-                    backgroundColor: "rgba(122,154,130,0.08)",
-                    border: "1px solid rgba(122,154,130,0.2)",
-                    color: "rgba(122,154,130,0.5)",
-                    padding: "1px 4px", borderRadius: 100,
-                  }}>BIENTÔT</span>
-                )}
                 {hasDropdown && <span className="text-[9px] opacity-40">▾</span>}
               </Link>
 
