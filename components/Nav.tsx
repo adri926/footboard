@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import InstallPrompt from "./InstallPrompt"
 
 const NAV = [
   {
@@ -122,6 +123,8 @@ export default function Nav() {
           )
         })}
       </nav>
+
+      <InstallPrompt />
 
     </header>
   )
