@@ -66,12 +66,16 @@ export default function PlanifierModal({ savedSessions, onClose }: Props) {
   }
 
   return (
-    <div style={{
-      position: "fixed", inset: 0, zIndex: 200,
-      backgroundColor: "rgba(0,0,0,0.65)",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      padding: 20,
-    }}
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Planifier une séance"
+      style={{
+        position: "fixed", inset: 0, zIndex: 200,
+        backgroundColor: "rgba(0,0,0,0.65)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        padding: 20,
+      }}
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
       <div style={{
@@ -98,7 +102,7 @@ export default function PlanifierModal({ savedSessions, onClose }: Props) {
               color: "rgba(255,255,255,0.92)",
             }}>PLANIFIER UNE SÉANCE</h2>
           </div>
-          <button onClick={onClose} style={{
+          <button onClick={onClose} aria-label="Fermer" style={{
             background: "none", border: "1px solid rgba(255,255,255,0.08)",
             borderRadius: 6, color: "rgba(255,255,255,0.3)",
             width: 28, height: 28, cursor: "pointer", fontSize: 13,

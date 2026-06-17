@@ -3,6 +3,7 @@
 import { auth } from "@clerk/nextjs/server"
 import { z } from "zod"
 import { supabase } from "@/lib/supabase"
+import { randomUUID } from "crypto"
 import type { TacticalBoard } from "@/types/tactical"
 
 const PionSchema = z.object({
@@ -57,6 +58,45 @@ export async function saveTacticalBoard(
 
   if (error || !row) return { ok: false, error: error?.message ?? "Erreur d'enregistrement." }
   return { ok: true, id: row.id as string }
+}
+
+export async function createShareLink(
+  boardId: string
+): Promise<{ ok: true; token: string } | { ok: false; error: string }> {
+  const { userId } = await auth()
+  if (!userId) return { ok: false, error: "Non connecté." }
+
+  const token = randomUUID()
+  const { error } = await supabase
+    .from("tactical_boards")
+    .update({ share_token: token })
+    .eq("id", boardId)
+    .eq("coach_id", userId)
+
+  if (error) return { ok: false, error: "Erreur lors de la création du lien." }
+  return { ok: true, token }
+}
+
+export async function getPublicBoard(token: string): Promise<TacticalBoard | null> {
+  if (!token || token.length > 40) return null
+
+  const { data, error } = await supabase
+    .from("tactical_boards")
+    .select("id, name, formation, pions, drawings, mode, created_at, coach_id")
+    .eq("share_token", token)
+    .single()
+
+  if (error || !data) return null
+  return {
+    id:        data.id,
+    coachId:   data.coach_id,
+    name:      data.name,
+    formation: data.formation ?? "",
+    pions:     data.pions,
+    drawings:  data.drawings,
+    mode:      data.mode,
+    createdAt: data.created_at,
+  }
 }
 
 export async function getTacticalBoards(): Promise<TacticalBoard[]> {

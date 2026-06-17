@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useMemo, useRef, useState } from "react"
+import { useCallback, useMemo, useRef, useState, useTransition } from "react"
 import Terrain from "./Terrain"
 import PionPlayer from "./PionPlayer"
 import BallToken from "@/components/pitch/BallToken"
@@ -8,7 +8,7 @@ import FormationPanel from "./FormationPanel"
 import DrawingCanvas, { type Tool } from "./DrawingCanvas"
 import Toolbar from "./Toolbar"
 import { FORMATIONS, mirrorY } from "@/lib/formations"
-import { saveTacticalBoard } from "@/app/tactique/digiboard/actions"
+import { saveTacticalBoard, createShareLink } from "@/app/tactique/digiboard/actions"
 import type { Drawing, Pion, TacticalMode, TacticalTeam } from "@/types/tactical"
 
 const DEFAULT_FORMATION_A = "4-3-3"
@@ -118,6 +118,12 @@ export default function Paperboard() {
   const [boardName, setBoardName] = useState("")
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "ok" | "error">("idle")
   const [saveError, setSaveError] = useState("")
+  const [savedBoardId, setSavedBoardId] = useState<string | null>(null)
+
+  // Partage
+  const [shareUrl, setShareUrl] = useState<string | null>(null)
+  const [shareStatus, setShareStatus] = useState<"idle" | "copied">("idle")
+  const [isSharing, startShare] = useTransition()
 
   const containerRef = useRef<HTMLDivElement>(null)
   const drawings = drawState.present
@@ -188,11 +194,34 @@ export default function Paperboard() {
     })
     if (result.ok) {
       setSaveStatus("ok")
+      setSavedBoardId(result.id)
     } else {
       setSaveStatus("error")
       setSaveError(result.error)
     }
   }, [boardName, formationA, formationB, pions, drawings, mode])
+
+  const handleShare = useCallback(() => {
+    if (!savedBoardId) return
+    if (shareUrl) {
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        setShareStatus("copied")
+        setTimeout(() => setShareStatus("idle"), 2000)
+      })
+      return
+    }
+    startShare(async () => {
+      const result = await createShareLink(savedBoardId)
+      if (result.ok) {
+        const url = `${window.location.origin}/tactique/digiboard/share/${result.token}`
+        setShareUrl(url)
+        navigator.clipboard.writeText(url).then(() => {
+          setShareStatus("copied")
+          setTimeout(() => setShareStatus("idle"), 2000)
+        })
+      }
+    })
+  }, [savedBoardId, shareUrl])
 
   const summary = useMemo(() => `${formationA} contre ${formationB}`, [formationA, formationB])
 
@@ -366,6 +395,23 @@ export default function Paperboard() {
             <p className="text-[11px]" style={{ color: "#e07050", fontFamily: "var(--font-mono), monospace" }}>
               {saveError}
             </p>
+          )}
+
+          {savedBoardId && (
+            <button
+              onClick={handleShare}
+              disabled={isSharing}
+              className="text-xs font-bold py-2 rounded-lg transition"
+              style={{
+                marginTop: 4,
+                backgroundColor: "transparent",
+                border: "1px solid rgba(122,154,130,0.25)",
+                color: shareStatus === "copied" ? "#7A9A82" : "rgba(122,154,130,0.6)",
+                cursor: isSharing ? "default" : "pointer",
+                opacity: isSharing ? 0.6 : 1,
+              }}>
+              {isSharing ? "…" : shareStatus === "copied" ? "Lien copié ✓" : shareUrl ? "Copier le lien" : "Créer un lien de partage"}
+            </button>
           )}
         </div>
       </aside>

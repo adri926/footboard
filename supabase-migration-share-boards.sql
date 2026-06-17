@@ -1,0 +1,2 @@
+ALTER TABLE tactical_boards
+  ADD COLUMN IF NOT EXISTS share_token uuid UNIQUE DEFAULT NULL;

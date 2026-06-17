@@ -22,6 +22,18 @@ const STATUSES = [
   { value: "uncertain", label: "Incertain",  color: "#d4a847" },
 ] as const
 
+function FieldErr({ msg }: { msg: string }) {
+  return (
+    <p style={{
+      fontFamily: "var(--font-mono), monospace",
+      fontSize: 9, letterSpacing: "0.06em",
+      color: "rgba(224,112,112,0.85)", marginTop: 4,
+    }}>
+      {msg}
+    </p>
+  )
+}
+
 const INPUT = {
   fontFamily: "var(--font-body), sans-serif",
   fontWeight: 400, fontSize: 13,
@@ -42,6 +54,7 @@ const LABEL = {
 export default function PlayerForm({ player, onClose }: Props) {
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const [touched, setTouched] = useState<Record<string, boolean>>({})
 
   const [form, setForm] = useState({
     first_name:  player?.first_name  ?? "",
@@ -58,9 +71,36 @@ export default function PlayerForm({ player, onClose }: Props) {
     setForm(prev => ({ ...prev, [field]: value }))
   }
 
+  function touch(field: string) {
+    setTouched(prev => ({ ...prev, [field]: true }))
+  }
+
+  function fieldError(field: string): string | null {
+    if (!touched[field]) return null
+    if (field === "first_name" && !form.first_name.trim()) return "Prénom requis"
+    if (field === "last_name"  && !form.last_name.trim())  return "Nom requis"
+    if (field === "number" && form.number !== "") {
+      const n = Number(form.number)
+      if (isNaN(n) || n < 1 || n > 99) return "Numéro entre 1 et 99"
+    }
+    if (field === "email" && form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      return "Email invalide"
+    }
+    return null
+  }
+
+  function inputStyle(field: string): React.CSSProperties {
+    const err = fieldError(field)
+    return {
+      ...INPUT,
+      border: err ? "1px solid rgba(224,112,112,0.5)" : INPUT.border,
+    }
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+    setTouched({ first_name: true, last_name: true, number: true, email: true })
 
     const data = {
       ...form,
@@ -88,6 +128,9 @@ export default function PlayerForm({ player, onClose }: Props) {
   return (
     /* Overlay */
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={player ? "Modifier le joueur" : "Ajouter un joueur"}
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
       style={{
         position: "fixed", inset: 0, zIndex: 100,
@@ -113,7 +156,7 @@ export default function PlayerForm({ player, onClose }: Props) {
           }}>
             {player ? "Modifier le joueur" : "Ajouter un joueur"}
           </p>
-          <button onClick={onClose} style={{
+          <button onClick={onClose} aria-label="Fermer" style={{
             background: "none", border: "none", cursor: "pointer",
             color: "rgba(255,255,255,0.3)", fontSize: 18, lineHeight: 1,
             padding: 4,
@@ -124,22 +167,28 @@ export default function PlayerForm({ player, onClose }: Props) {
           {/* Prénom + Nom */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div>
-              <label style={LABEL}>Prénom</label>
+              <label style={LABEL}>Prénom *</label>
               <input
                 value={form.first_name}
                 onChange={e => set("first_name", e.target.value)}
-                required placeholder="Lucas"
-                style={INPUT}
+                onBlur={() => touch("first_name")}
+                placeholder="Lucas"
+                style={inputStyle("first_name")}
+                aria-invalid={!!fieldError("first_name")}
               />
+              {fieldError("first_name") && <FieldErr msg={fieldError("first_name")!} />}
             </div>
             <div>
-              <label style={LABEL}>Nom</label>
+              <label style={LABEL}>Nom *</label>
               <input
                 value={form.last_name}
                 onChange={e => set("last_name", e.target.value)}
-                required placeholder="Moreau"
-                style={INPUT}
+                onBlur={() => touch("last_name")}
+                placeholder="Moreau"
+                style={inputStyle("last_name")}
+                aria-invalid={!!fieldError("last_name")}
               />
+              {fieldError("last_name") && <FieldErr msg={fieldError("last_name")!} />}
             </div>
           </div>
 
@@ -151,9 +200,12 @@ export default function PlayerForm({ player, onClose }: Props) {
                 type="number" min={1} max={99}
                 value={form.number}
                 onChange={e => set("number", e.target.value)}
+                onBlur={() => touch("number")}
                 placeholder="1"
-                style={INPUT}
+                style={inputStyle("number")}
+                aria-invalid={!!fieldError("number")}
               />
+              {fieldError("number") && <FieldErr msg={fieldError("number")!} />}
             </div>
             <div>
               <label style={LABEL}>Poste</label>
@@ -202,10 +254,13 @@ export default function PlayerForm({ player, onClose }: Props) {
                 type="email"
                 value={form.email}
                 onChange={e => set("email", e.target.value)}
+                onBlur={() => touch("email")}
                 placeholder="lucas.moreau@email.com"
-                style={INPUT}
+                style={inputStyle("email")}
+                aria-invalid={!!fieldError("email")}
                 maxLength={200}
               />
+              {fieldError("email") && <FieldErr msg={fieldError("email")!} />}
             </div>
             <div>
               <label style={LABEL}>Téléphone (pour SMS)</label>
