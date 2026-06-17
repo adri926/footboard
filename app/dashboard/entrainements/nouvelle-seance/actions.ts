@@ -67,3 +67,20 @@ export async function saveSession(
   revalidatePath("/dashboard/entrainements")
   return { ok: true, sessionId: session.id }
 }
+
+export async function deleteSession(
+  sessionId: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const scope = await getClubScope()
+
+  const { error } = await supabase
+    .from("training_sessions")
+    .delete()
+    .eq("id", sessionId)
+    .eq(scope.column, scope.value)
+
+  if (error) return { ok: false, error: "Erreur lors de la suppression." }
+
+  revalidatePath("/dashboard/entrainements")
+  return { ok: true }
+}

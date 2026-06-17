@@ -143,12 +143,14 @@ function CalendarView({ trainings, year, onEdit }: { trainings: Training[]; year
 interface Props { trainings: Training[]; savedSessions: SavedSession[]; activeTeamName?: string | null }
 
 export default function EntraineementsClient({ trainings, savedSessions, activeTeamName }: Props) {
+  const PAGE_SIZE = 10
   const [showForm, setShowForm] = useState(false)
   const [showPlanifier, setShowPlanifier] = useState(false)
   const [editing, setEditing]   = useState<Training | undefined>(undefined)
   const [deleting, startDelete] = useTransition()
   const [view, setView]         = useState<"list" | "calendar">("list")
   const [calYear, setCalYear]   = useState(new Date().getFullYear())
+  const [shownCount, setShownCount] = useState(PAGE_SIZE)
 
   function openEdit(t: Training) { setEditing(t); setShowForm(true) }
   function handleDelete(id: string) {
@@ -247,7 +249,7 @@ export default function EntraineementsClient({ trainings, savedSessions, activeT
       {/* Vue liste */}
       {view === "list" && trainings.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {trainings.map(t => (
+          {[...trainings.slice(0, shownCount)].map(t => (
             <div key={t.id} style={{
               padding: "18px 20px", borderRadius: 12,
               backgroundColor: "var(--bg-card)",
@@ -312,6 +314,22 @@ export default function EntraineementsClient({ trainings, savedSessions, activeT
               </div>
             </div>
           ))}
+          {trainings.length > shownCount && (
+            <button
+              onClick={() => setShownCount(n => n + PAGE_SIZE)}
+              style={{
+                marginTop: 4, width: "100%",
+                fontFamily: "var(--font-mono), monospace",
+                fontSize: 9, fontWeight: 700, letterSpacing: "0.1em",
+                padding: "10px 0", borderRadius: 8, cursor: "pointer",
+                backgroundColor: "transparent",
+                border: "1px solid rgba(122,154,130,0.15)",
+                color: "rgba(122,154,130,0.5)",
+              }}
+            >
+              VOIR {Math.min(PAGE_SIZE, trainings.length - shownCount)} SÉANCE{trainings.length - shownCount > 1 ? "S" : ""} DE PLUS
+            </button>
+          )}
         </div>
       )}
 

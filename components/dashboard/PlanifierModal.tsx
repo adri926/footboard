@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { createTraining } from "@/app/dashboard/entrainements/actions"
+import { deleteSession } from "@/app/dashboard/entrainements/nouvelle-seance/actions"
 import { TRAINING_TYPES } from "@/lib/training-types"
 
 interface SavedSession {
@@ -34,7 +35,17 @@ export default function PlanifierModal({ savedSessions, onClose }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [errMsg, setErrMsg]       = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const [isDeleting, startDelete] = useTransition()
   const router = useRouter()
+
+  function handleDeleteSession(id: string) {
+    if (!confirm("Supprimer ce modèle de séance ?")) return
+    startDelete(async () => {
+      await deleteSession(id)
+      if (selectedId === id) setSelectedId(null)
+      router.refresh()
+    })
+  }
 
   function handleSimple() {
     setErrMsg(null)
@@ -186,7 +197,7 @@ export default function PlanifierModal({ savedSessions, onClose }: Props) {
                         transition: "all 0.15s",
                       }}
                     >
-                      <div>
+                      <div style={{ flex: 1 }}>
                         <p style={{
                           fontFamily: "var(--font-body), sans-serif",
                           fontWeight: 500, fontSize: 13,
@@ -201,9 +212,20 @@ export default function PlanifierModal({ savedSessions, onClose }: Props) {
                           {SESSION_TYPE_LABELS[s.session_type] ?? s.session_type} · {s.total_duration} min
                         </p>
                       </div>
-                      {selectedId === s.id && (
-                        <span style={{ color: "#7A9A82", fontSize: 14 }}>✓</span>
-                      )}
+                      <div style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
+                        {selectedId === s.id && (
+                          <span style={{ color: "#7A9A82", fontSize: 14 }}>✓</span>
+                        )}
+                        <button
+                          onClick={e => { e.stopPropagation(); handleDeleteSession(s.id) }}
+                          disabled={isDeleting}
+                          style={{
+                            background: "none", border: "none", cursor: "pointer",
+                            color: "rgba(224,112,112,0.4)", fontSize: 12, padding: "2px 4px",
+                            lineHeight: 1,
+                          }}
+                        >✕</button>
+                      </div>
                     </button>
                   ))}
                 </div>

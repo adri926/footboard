@@ -244,6 +244,9 @@ export default function MatchsClient({ matches, players, club, availability, act
   const [deleting, startDelete]         = useTransition()
   const [tab, setTab]                   = useState<"a-venir" | "passes">("a-venir")
 
+  const PAGE_SIZE = 10
+  const [shownPlayed, setShownPlayed] = useState(PAGE_SIZE)
+
   const _d       = new Date()
   const today    = `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,"0")}-${String(_d.getDate()).padStart(2,"0")}`
   const upcoming = matches.filter(m => dateKey(m.date) >= today && m.goals_for === null)
@@ -444,8 +447,9 @@ export default function MatchsClient({ matches, players, club, availability, act
               </p>
             </div>
           ) : (
+          <>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {played.map(m => {
+            {played.slice(0, shownPlayed).map(m => {
               const hasScore = m.goals_for !== null && m.goals_against !== null
               const win  = hasScore && m.goals_for! > m.goals_against!
               const draw = hasScore && m.goals_for === m.goals_against
@@ -545,6 +549,23 @@ export default function MatchsClient({ matches, players, club, availability, act
               )
             })}
           </div>
+          {played.length > shownPlayed && (
+            <button
+              onClick={() => setShownPlayed(n => n + PAGE_SIZE)}
+              style={{
+                marginTop: 8, width: "100%",
+                fontFamily: "var(--font-mono), monospace",
+                fontSize: 9, fontWeight: 700, letterSpacing: "0.1em",
+                padding: "10px 0", borderRadius: 8, cursor: "pointer",
+                backgroundColor: "transparent",
+                border: "1px solid rgba(122,154,130,0.15)",
+                color: "rgba(122,154,130,0.5)",
+              }}
+            >
+              VOIR {Math.min(PAGE_SIZE, played.length - shownPlayed)} MATCH{played.length - shownPlayed > 1 ? "S" : ""} DE PLUS
+            </button>
+          )}
+          </>
           )}
         </div>
       )}
