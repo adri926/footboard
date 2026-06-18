@@ -17,6 +17,7 @@ const NAV_GROUPS = [
     items: [
       { href: "/dashboard/club/equipe",      label: "Équipe & accès", icon: "◎" },
       { href: "/dashboard/club/cotisations", label: "Cotisations",   icon: "€" },
+      { href: "/dashboard/abonnement",       label: "Abonnement",    icon: "★" },
     ],
   },
   {

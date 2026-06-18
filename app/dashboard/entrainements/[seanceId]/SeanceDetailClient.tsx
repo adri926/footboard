@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useTransition } from "react"
 import Link from "next/link"
+import { sendTrainingConvocations } from "./convocations"
 import MiniTerrain from "@/components/training/MiniTerrain"
 import type { SessionBlock } from "@/types/training"
 import { FAMILY_BORDER, FAMILY_TEXT, FAMILY_LABELS, INTENSITY_COLORS, INTENSITY_LABELS, POSITION_LABELS } from "@/types/training"
@@ -35,6 +36,23 @@ function formatDate(dateStr: string) {
 
 export default function SeanceDetailClient({ session, blocks }: Props) {
   const [present, setPresent] = useState(false)
+  const [convocStatus, setConvocStatus] = useState<"idle" | "sending" | "ok" | "error">("idle")
+  const [convocMsg, setConvocMsg] = useState("")
+  const [sendingConvoc, startConvoc] = useTransition()
+
+  function handleConvoc() {
+    startConvoc(async () => {
+      setConvocStatus("sending")
+      const res = await sendTrainingConvocations(session.id)
+      if (res.ok) {
+        setConvocStatus("ok")
+        setConvocMsg(`${res.sent} convocation${res.sent > 1 ? "s" : ""} envoyée${res.sent > 1 ? "s" : ""}`)
+      } else {
+        setConvocStatus("error")
+        setConvocMsg(res.error)
+      }
+    })
+  }
 
   if (present) {
     return <PresentationMode session={session} blocks={blocks} onExit={() => setPresent(false)} />
@@ -81,19 +99,49 @@ export default function SeanceDetailClient({ session, blocks }: Props) {
           </p>
         </div>
 
-        <button
-          onClick={() => setPresent(true)}
-          style={{
-            fontFamily: "var(--font-mono), monospace",
-            fontSize: 9, fontWeight: 700, letterSpacing: "0.08em",
-            padding: "10px 18px", borderRadius: 8, cursor: "pointer",
-            backgroundColor: "rgba(122,154,130,0.10)",
-            border: "1px solid rgba(122,154,130,0.25)",
-            color: "#7A9A82",
-          }}
-        >
-          ▶ MODE PRÉSENTATION
-        </button>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              onClick={handleConvoc}
+              disabled={sendingConvoc || convocStatus === "ok"}
+              style={{
+                fontFamily: "var(--font-mono), monospace",
+                fontSize: 9, fontWeight: 700, letterSpacing: "0.08em",
+                padding: "10px 18px", borderRadius: 8,
+                cursor: sendingConvoc || convocStatus === "ok" ? "default" : "pointer",
+                backgroundColor: "transparent",
+                border: "1px solid rgba(122,154,130,0.2)",
+                color: convocStatus === "ok" ? "#7A9A82" : "rgba(122,154,130,0.55)",
+                opacity: sendingConvoc ? 0.6 : 1,
+              }}
+            >
+              {convocStatus === "sending" ? "..." : convocStatus === "ok" ? "📧 ENVOYÉ ✓" : "📧 CONVOQUER"}
+            </button>
+            <button
+              onClick={() => setPresent(true)}
+              style={{
+                fontFamily: "var(--font-mono), monospace",
+                fontSize: 9, fontWeight: 700, letterSpacing: "0.08em",
+                padding: "10px 18px", borderRadius: 8, cursor: "pointer",
+                backgroundColor: "rgba(122,154,130,0.10)",
+                border: "1px solid rgba(122,154,130,0.25)",
+                color: "#7A9A82",
+              }}
+            >
+              ▶ MODE PRÉSENTATION
+            </button>
+          </div>
+          {convocStatus === "error" && (
+            <p style={{ fontFamily: "var(--font-mono), monospace", fontSize: 9, color: "#e07070" }}>
+              {convocMsg}
+            </p>
+          )}
+          {convocStatus === "ok" && (
+            <p style={{ fontFamily: "var(--font-mono), monospace", fontSize: 9, color: "rgba(122,154,130,0.6)" }}>
+              {convocMsg}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Blocs */}
