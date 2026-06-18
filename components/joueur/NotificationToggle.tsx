@@ -44,7 +44,30 @@ export default function NotificationToggle() {
       }
       const reg = await navigator.serviceWorker.ready
       const sub = await reg.pushManager.getSubscription()
-      setStatus(sub ? "subscribed" : "unsubscribed")
+      if (sub) { setStatus("subscribed"); return }
+
+      // Pas encore abonné — activation automatique
+      // Fonctionne sur Android/Chrome/Firefox ; iOS nécessite un geste → fallback bouton
+      try {
+        const permission = await Notification.requestPermission()
+        if (permission !== "granted") {
+          setStatus(permission === "denied" ? "denied" : "unsubscribed")
+          return
+        }
+        const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+        if (!publicKey) { setStatus("unsubscribed"); return }
+        const newSub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(publicKey),
+        })
+        const json = newSub.toJSON()
+        if (json.endpoint && json.keys) {
+          await subscribePush({ endpoint: json.endpoint, keys: { p256dh: json.keys.p256dh!, auth: json.keys.auth! } })
+        }
+        setStatus("subscribed")
+      } catch {
+        setStatus("unsubscribed")
+      }
     }).catch(() => setStatus("unsupported"))
   }, [])
 
