@@ -40,6 +40,8 @@ export default function PreparationClient({ match, players, initialStarters, ini
   const [copied, setCopied]   = useState(false)
   const [pending, startTransition] = useTransition()
 
+  function handlePrint() { window.print() }
+
   function copyVenue() {
     if (!match.venue) return
     navigator.clipboard.writeText(match.venue).then(() => {
@@ -98,13 +100,29 @@ export default function PreparationClient({ match, players, initialStarters, ini
 
       {/* Header */}
       <div style={{ marginBottom: 28 }}>
-        <p style={{
-          fontFamily: "var(--font-mono), monospace",
-          fontSize: 9, fontWeight: 700, letterSpacing: "0.14em",
-          color: "rgba(122,154,130,0.5)", textTransform: "uppercase", marginBottom: 6,
-        }}>
-          Préparation match
-        </p>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
+          <p style={{
+            fontFamily: "var(--font-mono), monospace",
+            fontSize: 9, fontWeight: 700, letterSpacing: "0.14em",
+            color: "rgba(122,154,130,0.5)", textTransform: "uppercase", marginBottom: 6,
+          }}>
+            Préparation match
+          </p>
+          <button
+            onClick={handlePrint}
+            className="no-print"
+            style={{
+              fontFamily: "var(--font-mono), monospace",
+              fontSize: 9, fontWeight: 700, letterSpacing: "0.08em",
+              padding: "7px 14px", borderRadius: 8, cursor: "pointer",
+              backgroundColor: "transparent",
+              border: "1px solid rgba(122,154,130,0.2)",
+              color: "rgba(122,154,130,0.55)", flexShrink: 0,
+            }}
+          >
+            ⎙ IMPRIMER / PDF
+          </button>
+        </div>
         <h1 style={{
           fontFamily: "var(--font-display), system-ui, sans-serif",
           fontWeight: 900, fontSize: 24, letterSpacing: "0.02em",
@@ -304,6 +322,63 @@ export default function PreparationClient({ match, players, initialStarters, ini
             }}>
               ANALYSER UNE VIDÉO →
             </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Fiche imprimable — visible uniquement à l'impression */}
+      <div className="print-sheet" style={{ fontFamily: "Georgia, serif", color: "#000", padding: "24px 32px" }}>
+        <div style={{ borderBottom: "2px solid #000", paddingBottom: 12, marginBottom: 20 }}>
+          <p style={{ fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "#555", marginBottom: 4 }}>
+            Footboard — Fiche de match
+          </p>
+          <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>vs {match.opponent}</h1>
+          <p style={{ fontSize: 11, color: "#444", marginTop: 4 }}>
+            {formatDate(match.date)} · {match.home_away === "home" ? "Domicile" : "Extérieur"}
+            {match.competition ? ` · ${match.competition}` : ""}
+            {match.venue ? ` · ${match.venue}` : ""}
+          </p>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
+          <div>
+            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>
+              Titulaires ({starters.length}/11)
+            </p>
+            {starters.map((p, i) => (
+              <p key={p.id} style={{ fontSize: 12, marginBottom: 4, borderBottom: "1px solid #eee", paddingBottom: 3 }}>
+                <span style={{ fontWeight: 700, marginRight: 8 }}>{i + 1}.</span>
+                <span style={{ marginRight: 6, color: "#888" }}>#{p.number ?? "—"}</span>
+                {p.first_name} {p.last_name.toUpperCase()}
+                <span style={{ float: "right", color: "#888", fontSize: 10 }}>{p.position}</span>
+              </p>
+            ))}
+          </div>
+
+          <div>
+            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>
+              Remplaçants ({substitutes.length})
+            </p>
+            {substitutes.map((p, i) => (
+              <p key={p.id} style={{ fontSize: 12, marginBottom: 4, borderBottom: "1px solid #eee", paddingBottom: 3 }}>
+                <span style={{ fontWeight: 700, marginRight: 8 }}>{i + 1}.</span>
+                <span style={{ marginRight: 6, color: "#888" }}>#{p.number ?? "—"}</span>
+                {p.first_name} {p.last_name.toUpperCase()}
+                <span style={{ float: "right", color: "#888", fontSize: 10 }}>{p.position}</span>
+              </p>
+            ))}
+            {unavailable.length > 0 && (
+              <>
+                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 20, marginBottom: 10, color: "#c00" }}>
+                  Indisponibles
+                </p>
+                {unavailable.map(p => (
+                  <p key={p.id} style={{ fontSize: 11, color: "#888", marginBottom: 3 }}>
+                    {p.first_name} {p.last_name.toUpperCase()} — {p.status === "injured" ? "Blessé" : "Incertain"}
+                  </p>
+                ))}
+              </>
+            )}
           </div>
         </div>
       </div>

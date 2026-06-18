@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { useClerk } from "@clerk/nextjs"
+import Link from "next/link"
 import { createClub } from "@/app/dashboard/club/actions"
 
 const LEVELS = [
@@ -28,12 +29,38 @@ const LABEL: React.CSSProperties = {
   marginBottom: 8, display: "block",
 }
 
+const NEXT_STEPS = [
+  {
+    href: "/dashboard/effectif",
+    icon: "👥",
+    label: "Ajouter des joueurs",
+    desc: "Crée ton effectif pour gérer les matchs et entraînements.",
+    cta: "GÉRER L'EFFECTIF →",
+  },
+  {
+    href: "/dashboard/matchs",
+    icon: "📅",
+    label: "Planifier un match",
+    desc: "Programme ta prochaine rencontre et compose ton équipe.",
+    cta: "AJOUTER UN MATCH →",
+  },
+  {
+    href: "/tactique/digiboard",
+    icon: "🎯",
+    label: "Tester le Digiboard",
+    desc: "Place tes joueurs, dessine tes schémas, explique tes idées.",
+    cta: "OUVRIR LE DIGIBOARD →",
+  },
+]
+
 export default function OnboardingPage() {
-  const [form, setForm]   = useState({ name: "", city: "", level: "" })
-  const [error, setError] = useState<string | null>(null)
-  const [pending, start]  = useTransition()
-  const router            = useRouter()
-  const clerk             = useClerk()
+  const [step, setStep]     = useState<"club" | "welcome">("club")
+  const [clubName, setClubName] = useState("")
+  const [form, setForm]     = useState({ name: "", city: "", level: "" })
+  const [error, setError]   = useState<string | null>(null)
+  const [pending, start]    = useTransition()
+  const clerk               = useClerk()
+  const router              = useRouter()
 
   function set(field: string, value: string) {
     setForm(prev => ({ ...prev, [field]: value }))
@@ -50,9 +77,106 @@ export default function OnboardingPage() {
       })
       if (res.ok) {
         if (res.orgId) await clerk.setActive({ organization: res.orgId })
-        router.push("/dashboard")
+        setClubName(form.name)
+        setStep("welcome")
       } else setError(res.error)
     })
+  }
+
+  if (step === "welcome") {
+    return (
+      <div style={{
+        minHeight: "100vh", backgroundColor: "#181812",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        padding: 24,
+      }}>
+        <div style={{ width: "100%", maxWidth: 480 }}>
+          <p style={{
+            fontFamily: "var(--font-display), system-ui, sans-serif",
+            fontWeight: 900, fontSize: 18, letterSpacing: "0.06em",
+            color: "rgba(255,255,255,0.95)", marginBottom: 40,
+          }}>
+            FOOTBOARD
+          </p>
+
+          <div style={{ marginBottom: 36 }}>
+            <p style={{
+              fontFamily: "var(--font-mono), monospace",
+              fontSize: 9, fontWeight: 700, letterSpacing: "0.14em",
+              color: "rgba(122,154,130,0.5)", textTransform: "uppercase", marginBottom: 8,
+            }}>
+              Club créé ✓
+            </p>
+            <h1 style={{
+              fontFamily: "var(--font-display), system-ui, sans-serif",
+              fontWeight: 900, fontSize: 26, letterSpacing: "0.02em",
+              color: "rgba(255,255,255,0.95)", marginBottom: 8,
+            }}>
+              Bienvenue, {clubName} !
+            </h1>
+            <p style={{
+              fontFamily: "var(--font-body), sans-serif",
+              fontWeight: 400, fontSize: 13, lineHeight: 1.6,
+              color: "rgba(255,255,255,0.35)",
+            }}>
+              Ton espace est prêt. Par où veux-tu commencer ?
+            </p>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 28 }}>
+            {NEXT_STEPS.map(s => (
+              <Link key={s.href} href={s.href} style={{
+                textDecoration: "none",
+                display: "flex", alignItems: "flex-start", gap: 16,
+                padding: "16px 18px", borderRadius: 12,
+                backgroundColor: "rgba(255,255,255,0.03)",
+                border: "1px solid rgba(122,154,130,0.15)",
+              }}>
+                <span style={{ fontSize: 22, lineHeight: 1, marginTop: 2 }}>{s.icon}</span>
+                <div style={{ flex: 1 }}>
+                  <p style={{
+                    fontFamily: "var(--font-body), sans-serif",
+                    fontWeight: 600, fontSize: 14,
+                    color: "rgba(255,255,255,0.85)", marginBottom: 3,
+                  }}>
+                    {s.label}
+                  </p>
+                  <p style={{
+                    fontFamily: "var(--font-body), sans-serif",
+                    fontWeight: 400, fontSize: 12, lineHeight: 1.5,
+                    color: "rgba(255,255,255,0.3)",
+                  }}>
+                    {s.desc}
+                  </p>
+                </div>
+                <span style={{
+                  fontFamily: "var(--font-mono), monospace",
+                  fontSize: 8, fontWeight: 700, letterSpacing: "0.08em",
+                  color: "rgba(122,154,130,0.5)",
+                  alignSelf: "center", flexShrink: 0,
+                }}>
+                  {s.cta}
+                </span>
+              </Link>
+            ))}
+          </div>
+
+          <button
+            onClick={() => router.push("/dashboard")}
+            style={{
+              width: "100%", padding: "12px 0", borderRadius: 10,
+              border: "1px solid rgba(255,255,255,0.08)",
+              cursor: "pointer", backgroundColor: "transparent",
+              fontFamily: "var(--font-mono), monospace",
+              fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
+              color: "rgba(255,255,255,0.25)",
+            }}
+          >
+            PASSER — ACCÉDER AU DASHBOARD
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -63,7 +187,6 @@ export default function OnboardingPage() {
     }}>
       <div style={{ width: "100%", maxWidth: 440 }}>
 
-        {/* Logo */}
         <p style={{
           fontFamily: "var(--font-display), system-ui, sans-serif",
           fontWeight: 900, fontSize: 18, letterSpacing: "0.06em",
@@ -72,7 +195,6 @@ export default function OnboardingPage() {
           FOOTBOARD
         </p>
 
-        {/* Titre */}
         <div style={{ marginBottom: 32 }}>
           <p style={{
             fontFamily: "var(--font-mono), monospace",
@@ -150,7 +272,7 @@ export default function OnboardingPage() {
             backgroundColor: pending ? "rgba(122,154,130,0.5)" : "#7A9A82",
             color: "#181812", marginTop: 4,
           }}>
-            {pending ? "..." : "ACCÉDER AU DASHBOARD →"}
+            {pending ? "..." : "CRÉER MON CLUB →"}
           </button>
         </form>
       </div>

@@ -332,10 +332,8 @@ export default function Paperboard({ initialBoards = [] }: Props) {
 
           <div
             ref={containerRef}
-            className="relative rounded-2xl overflow-hidden"
+            className="digiboard-terrain relative rounded-2xl overflow-hidden"
             style={{
-              height: "min(calc(100vh - 8.5rem), calc((100vw - 18rem) * 1.544))",
-              aspectRatio: "680 / 1050",
               boxShadow: "0 0 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.08)",
               touchAction: "none",
             }}
@@ -371,7 +369,7 @@ export default function Paperboard({ initialBoards = [] }: Props) {
 
       {/* ── Panneau latéral ── */}
       <aside
-        className="md:w-72 md:h-full shrink-0 flex flex-col gap-4 px-5 py-5 border-t md:border-t-0 md:border-l overflow-y-auto"
+        className="digiboard-sidebar md:w-72 md:h-full shrink-0 flex flex-col gap-4 px-5 py-5 border-t md:border-t-0 md:border-l overflow-y-auto"
         style={{ backgroundColor: "#1a1a18", borderColor: "rgba(122,154,130,0.15)" }}
       >
         <div>
