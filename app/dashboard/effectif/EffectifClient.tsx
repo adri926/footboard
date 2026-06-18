@@ -46,6 +46,7 @@ export default function EffectifClient({ players }: Props) {
   const [editing, setEditing]       = useState<Player | undefined>(undefined)
   const [deleting, startDelete]     = useTransition()
   const [statusFilter, setStatusFilter] = useState<MedicalStatus | "tous">("tous")
+  const [search, setSearch] = useState("")
 
   function openAdd() {
     setEditing(undefined)
@@ -67,9 +68,15 @@ export default function EffectifClient({ players }: Props) {
     count: players.filter(p => STATUS_MAP[p.status] === def.status).length,
   }))
 
-  const filteredPlayers = statusFilter === "tous"
-    ? players
-    : players.filter(p => STATUS_MAP[p.status] === statusFilter)
+  const filteredPlayers = players.filter(p => {
+    if (statusFilter !== "tous" && STATUS_MAP[p.status] !== statusFilter) return false
+    if (search.trim()) {
+      const q = search.trim().toLowerCase()
+      const fullName = `${p.first_name} ${p.last_name}`.toLowerCase()
+      if (!fullName.includes(q)) return false
+    }
+    return true
+  })
 
   const grouped = POSITION_ORDER.map(pos => ({
     pos,
@@ -132,6 +139,23 @@ export default function EffectifClient({ players }: Props) {
               </div>
             ))}
           </div>
+
+          <input
+            type="text"
+            placeholder="Rechercher un joueur..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{
+              width: "100%", marginBottom: 10,
+              fontFamily: "var(--font-body), sans-serif",
+              fontSize: 13, fontWeight: 400,
+              padding: "9px 14px", borderRadius: 10,
+              backgroundColor: "var(--bg-card)",
+              border: "1px solid rgba(122,154,130,0.15)",
+              color: "rgba(255,255,255,0.8)",
+              outline: "none",
+            }}
+          />
 
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {STATUS_FILTERS.map(f => (

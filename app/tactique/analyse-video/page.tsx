@@ -2,6 +2,7 @@ import Link from "next/link"
 import { listAnalyses } from "./actions"
 import UploadForm from "./UploadForm"
 import BackLink from "./BackLink"
+import DeleteAnalysisButton from "./DeleteAnalysisButton"
 
 const STATUS_LABEL: Record<string, string> = {
   uploading: "UPLOAD...",
@@ -76,27 +77,32 @@ export default async function AnalyseVideoPage() {
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {analyses.map(a => (
-                <Link key={a.id} href={`/tactique/analyse-video/${a.id}`} style={{
-                  textDecoration: "none",
-                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                  backgroundColor: "var(--bg-card)",
-                  border: "1px solid rgba(122,154,130,0.13)",
-                  borderRadius: 10, padding: "12px 16px",
+                <div key={a.id} style={{
+                  display: "flex", alignItems: "center", gap: 8,
                 }}>
-                  <span style={{
-                    fontFamily: "var(--font-body), sans-serif",
-                    fontSize: 14, color: "var(--text-primary)",
+                  <Link href={`/tactique/analyse-video/${a.id}`} style={{
+                    textDecoration: "none", flex: 1,
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    backgroundColor: "var(--bg-card)",
+                    border: "1px solid rgba(122,154,130,0.13)",
+                    borderRadius: 10, padding: "12px 16px",
                   }}>
-                    {a.title}
-                  </span>
-                  <span style={{
-                    fontFamily: "var(--font-mono), monospace",
-                    fontSize: 9, letterSpacing: "0.08em",
-                    color: a.status === "error" ? "rgba(220,80,80,0.8)" : "var(--sauge)",
-                  }}>
-                    {STATUS_LABEL[a.status] ?? a.status}
-                  </span>
-                </Link>
+                    <span style={{
+                      fontFamily: "var(--font-body), sans-serif",
+                      fontSize: 14, color: "var(--text-primary)",
+                    }}>
+                      {a.title}
+                    </span>
+                    <span style={{
+                      fontFamily: "var(--font-mono), monospace",
+                      fontSize: 9, letterSpacing: "0.08em",
+                      color: a.status === "error" ? "rgba(220,80,80,0.8)" : "var(--sauge)",
+                    }}>
+                      {STATUS_LABEL[a.status] ?? a.status}
+                    </span>
+                  </Link>
+                  <DeleteAnalysisButton id={a.id} />
+                </div>
               ))}
             </div>
           )}

@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useMemo, useRef, useState, useTransition } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react"
 import Terrain from "./Terrain"
 import PionPlayer from "./PionPlayer"
 import BallToken from "@/components/pitch/BallToken"
@@ -8,7 +8,7 @@ import FormationPanel from "./FormationPanel"
 import DrawingCanvas, { type Tool } from "./DrawingCanvas"
 import Toolbar from "./Toolbar"
 import { FORMATIONS, mirrorY } from "@/lib/formations"
-import { saveTacticalBoard, createShareLink } from "@/app/tactique/digiboard/actions"
+import { saveTacticalBoard, updateTacticalBoard, createShareLink } from "@/app/tactique/digiboard/actions"
 import type { Drawing, Pion, TacticalBoard, TacticalMode, TacticalTeam } from "@/types/tactical"
 
 const DEFAULT_FORMATION_A = "4-3-3"
@@ -166,6 +166,10 @@ export default function Paperboard({ initialBoards = [] }: Props) {
   const [saveError, setSaveError] = useState("")
   const [savedBoardId, setSavedBoardId] = useState<string | null>(null)
 
+  // Auto-save
+  const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "ok">("idle")
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   // Partage
   const [shareUrl, setShareUrl] = useState<string | null>(null)
   const [shareStatus, setShareStatus] = useState<"idle" | "copied">("idle")
@@ -176,6 +180,24 @@ export default function Paperboard({ initialBoards = [] }: Props) {
 
   const containerRef = useRef<HTMLDivElement>(null)
   const drawings = drawState.present
+
+  useEffect(() => {
+    if (!savedBoardId || !boardName.trim()) return
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current)
+    autoSaveTimer.current = setTimeout(async () => {
+      setAutoSaveStatus("saving")
+      const result = await updateTacticalBoard(savedBoardId, {
+        name: boardName.trim(),
+        formation: `${formationA} / ${formationB}`,
+        pions,
+        drawings,
+        mode,
+      })
+      setAutoSaveStatus(result.ok ? "ok" : "idle")
+      if (result.ok) setTimeout(() => setAutoSaveStatus("idle"), 2000)
+    }, 2000)
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current) }
+  }, [savedBoardId, boardName, formationA, formationB, pions, drawings, mode])
 
   const changeFormation = useCallback((team: TacticalTeam, formationId: string) => {
     if (team === "A") setFormationA(formationId)
@@ -477,6 +499,16 @@ export default function Paperboard({ initialBoards = [] }: Props) {
           {saveStatus === "ok" && (
             <p className="text-[11px]" style={{ color: "#7A9A82", fontFamily: "var(--font-mono), monospace" }}>
               Paperboard enregistré.
+            </p>
+          )}
+          {autoSaveStatus === "saving" && (
+            <p className="text-[10px]" style={{ color: "rgba(122,154,130,0.45)", fontFamily: "var(--font-mono), monospace" }}>
+              Auto-sauvegarde…
+            </p>
+          )}
+          {autoSaveStatus === "ok" && (
+            <p className="text-[10px]" style={{ color: "rgba(122,154,130,0.45)", fontFamily: "var(--font-mono), monospace" }}>
+              ✓ Auto-sauvegardé
             </p>
           )}
           {saveStatus === "error" && (

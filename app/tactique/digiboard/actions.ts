@@ -60,6 +60,35 @@ export async function saveTacticalBoard(
   return { ok: true, id: row.id as string }
 }
 
+export async function updateTacticalBoard(
+  id: string,
+  raw: unknown
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { userId } = await auth()
+  if (!userId) return { ok: false, error: "Non connecté." }
+
+  const parsed = SaveSchema.safeParse(raw)
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Données invalides." }
+  }
+
+  const data = parsed.data
+  const { error } = await supabase
+    .from("tactical_boards")
+    .update({
+      name:      data.name,
+      formation: data.formation,
+      pions:     data.pions,
+      drawings:  data.drawings,
+      mode:      data.mode,
+    })
+    .eq("id", id)
+    .eq("coach_id", userId)
+
+  if (error) return { ok: false, error: error.message }
+  return { ok: true }
+}
+
 export async function createShareLink(
   boardId: string
 ): Promise<{ ok: true; token: string } | { ok: false; error: string }> {

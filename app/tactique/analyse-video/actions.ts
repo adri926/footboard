@@ -248,6 +248,33 @@ async function analyzeVideo(analysisId: string, buffer: Buffer, mimeType: string
     .eq("id", analysisId)
 }
 
+export async function deleteAnalysis(
+  id: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { userId } = await auth()
+  if (!userId) return { ok: false, error: "Non autorisé." }
+  const scope = await getClubScope()
+
+  const { data, error } = await supabase
+    .from("video_analyses")
+    .select("video_path")
+    .eq(scope.column, scope.value)
+    .eq("id", id)
+    .maybeSingle()
+
+  if (error || !data) return { ok: false, error: "Analyse introuvable." }
+
+  await supabase.storage.from(BUCKET).remove([data.video_path])
+
+  await supabase
+    .from("video_analyses")
+    .delete()
+    .eq(scope.column, scope.value)
+    .eq("id", id)
+
+  return { ok: true }
+}
+
 export async function askAboutMatch(
   analysisId: string,
   question: string
