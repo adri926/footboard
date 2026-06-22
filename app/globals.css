@@ -239,12 +239,49 @@ p, span, li, td, th, label, input, textarea, select {
   height: min(calc(100vh - 8.5rem), calc((100vw - 18rem) * 1.544));
   aspect-ratio: 680 / 1050;
 }
-@media (max-width: 767px) {
+@media (max-width: 767px) and (orientation: portrait) {
   .digiboard-terrain {
     height: min(calc(55svh), calc((100vw - 1.5rem) * 1.544));
   }
   .digiboard-sidebar {
     max-height: 45svh;
     overflow-y: auto;
+  }
+  .digiboard-sidebar-hidden {
+    display: none;
+  }
+  .digiboard-terrain-expanded {
+    height: min(calc(85svh), calc((100vw - 1.5rem) * 1.544));
+  }
+  .digiboard-sidebar-toggle {
+    display: flex !important;
+  }
+}
+
+.digiboard-sidebar-toggle {
+  display: none;
+}
+
+/* Paysage (téléphone ou tablette) : disposition côte-à-côte comme en desktop,
+   peu importe la largeur — sinon un téléphone <768px en paysage reste empilé.
+   Le panneau (.digiboard-sidebar) reçoit une largeur fixe via `landscape:w-72`
+   sur l'élément <aside>, pour rester cohérent avec le calcul "(100vw - 18rem)"
+   ci-dessous (sinon le terrain réserve une place pour un panneau resté masqué). */
+@media (orientation: landscape) {
+  .digiboard-terrain,
+  .digiboard-terrain-expanded {
+    height: min(calc(100vh - 2rem), calc((100vw - 18rem) * 1.544));
+  }
+  .digiboard-sidebar {
+    max-height: 100%;
+  }
+}
+
+.digiboard-orientation-hint {
+  display: none;
+}
+@media (max-width: 767px) and (orientation: portrait) {
+  .digiboard-orientation-hint {
+    display: flex;
   }
 }

@@ -178,6 +178,10 @@ export default function Paperboard({ initialBoards = [] }: Props) {
   // Vue sidebar
   const [sidebarView, setSidebarView] = useState<"edit" | "boards">("edit")
 
+  // Panneau latéral repliable + bandeau orientation (mobile uniquement)
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+  const [orientationHintDismissed, setOrientationHintDismissed] = useState(false)
+
   const containerRef = useRef<HTMLDivElement>(null)
   const drawings = drawState.present
 
@@ -315,7 +319,49 @@ export default function Paperboard({ initialBoards = [] }: Props) {
   const summary = useMemo(() => `${formationA} contre ${formationB}`, [formationA, formationB])
 
   return (
-    <div className="flex flex-col md:flex-row h-screen overflow-hidden" style={{ background: "#181612" }}>
+    <div className="flex flex-col landscape:flex-row md:flex-row h-screen overflow-hidden" style={{ background: "#181612" }}>
+      {/* ── Bandeau orientation (mobile portrait uniquement) ── */}
+      {!orientationHintDismissed && (
+        <div className="digiboard-orientation-hint" style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          gap: 8, padding: "8px 14px",
+          backgroundColor: "rgba(122,154,130,0.1)",
+          borderBottom: "1px solid rgba(122,154,130,0.18)",
+        }}>
+          <p style={{
+            fontFamily: "var(--font-mono), monospace",
+            fontSize: 10, color: "rgba(122,154,130,0.85)",
+          }}>
+            ↻ Tourne ton téléphone en paysage pour plus de précision.
+          </p>
+          <button
+            onClick={() => setOrientationHintDismissed(true)}
+            aria-label="Fermer"
+            style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.5)", fontSize: 14, padding: 4 }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* ── Bouton repli/déploi panneau latéral (mobile uniquement) ── */}
+      <button
+        className="digiboard-sidebar-toggle"
+        onClick={() => setMobileSidebarOpen(o => !o)}
+        style={{
+          position: "fixed", bottom: 16, right: 16, zIndex: 40,
+          alignItems: "center", gap: 6,
+          fontFamily: "var(--font-mono), monospace",
+          fontSize: 10, fontWeight: 700, letterSpacing: "0.06em",
+          color: "var(--sauge)", backgroundColor: "#1a1a18",
+          border: "1px solid rgba(122,154,130,0.3)",
+          borderRadius: 100, padding: "10px 16px",
+          boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
+        }}
+      >
+        {mobileSidebarOpen ? "✕ FERMER" : "☰ OUTILS"}
+      </button>
+
       {/* ── Terrain ── */}
       <main className="flex-1 flex items-center justify-center p-3 md:p-6 overflow-hidden">
         <div className="flex flex-col items-center gap-3">
@@ -332,7 +378,7 @@ export default function Paperboard({ initialBoards = [] }: Props) {
 
           <div
             ref={containerRef}
-            className="digiboard-terrain relative rounded-2xl overflow-hidden"
+            className={`digiboard-terrain relative rounded-2xl overflow-hidden${mobileSidebarOpen ? "" : " digiboard-terrain-expanded"}`}
             style={{
               boxShadow: "0 0 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.08)",
               touchAction: "none",
@@ -369,7 +415,7 @@ export default function Paperboard({ initialBoards = [] }: Props) {
 
       {/* ── Panneau latéral ── */}
       <aside
-        className="digiboard-sidebar md:w-72 md:h-full shrink-0 flex flex-col gap-4 px-5 py-5 border-t md:border-t-0 md:border-l overflow-y-auto"
+        className={`digiboard-sidebar landscape:w-72 md:w-72 landscape:h-full md:h-full shrink-0 flex flex-col gap-4 px-5 py-5 border-t landscape:border-t-0 md:border-t-0 landscape:border-l md:border-l overflow-y-auto${mobileSidebarOpen ? "" : " digiboard-sidebar-hidden"}`}
         style={{ backgroundColor: "#1a1a18", borderColor: "rgba(122,154,130,0.15)" }}
       >
         <div>
