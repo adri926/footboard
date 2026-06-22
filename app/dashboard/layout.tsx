@@ -1,29 +1,23 @@
 import type { Metadata } from "next"
 import { redirect } from "next/navigation"
-import { auth, currentUser } from "@clerk/nextjs/server"
 import Sidebar from "@/components/dashboard/Sidebar"
 import MobileHeader from "@/components/dashboard/MobileHeader"
 import { getMyClub } from "@/app/dashboard/club/actions"
 import { getLinkedPlayer } from "@/app/joueur/actions"
-import { getClubScope } from "@/lib/scope"
-import { getClubTeams, getActiveTeam } from "@/lib/teams"
+import { getCoachShellData } from "@/lib/dashboardShellData"
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const [club, user, { has }] = await Promise.all([getMyClub(), currentUser(), auth()])
+  const club = await getMyClub()
   if (!club) {
     const linked = await getLinkedPlayer()
     redirect(linked ? "/joueur" : "/onboarding")
   }
 
-  const userName = user?.firstName ?? user?.emailAddresses?.[0]?.emailAddress ?? "Coach"
-  const canManageFees = has({ permission: "org:fees:manage" })
-
-  const scope = await getClubScope()
-  const [teams, activeTeam] = await Promise.all([getClubTeams(scope), getActiveTeam(scope)])
+  const { userName, canManageFees, teams, activeTeam } = await getCoachShellData()
 
   return (
     <>

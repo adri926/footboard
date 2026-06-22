@@ -27,7 +27,7 @@ export default async function JoueurLayout({ children }: { children: React.React
       <PlayerMobileHeader clubName={club.name} playerName={player.first_name} />
       <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "var(--bg)" }}>
         <PlayerSidebar clubName={club.name} clubLevel={club.level} playerName={player.first_name} />
-        <main style={{ flex: 1, overflowY: "auto", minWidth: 0 }}>
+        <main className="joueur-main" style={{ flex: 1, overflowY: "auto", minWidth: 0 }}>
           {children}
         </main>
       </div>

@@ -5,7 +5,22 @@ import { usePathname } from "next/navigation"
 import { useState } from "react"
 import InstallPrompt from "./InstallPrompt"
 
-const NAV = [
+interface NavChild {
+  href: string
+  label: string
+  available: boolean
+  badge?: string
+}
+
+interface NavItem {
+  label: string
+  href: string
+  children: NavChild[]
+  badge?: string
+}
+
+const NAV: NavItem[] = [
+  { label: "Analyse vidéo IA", href: "/tactique/analyse-video", children: [], badge: "IA" },
   {
     label: "Mon Club",
     href: "/dashboard",
@@ -20,9 +35,8 @@ const NAV = [
     label: "Tactique",
     href: "/tactique",
     children: [
-      { href: "/tactique/digiboard",       label: "Digiboard",           available: true  },
-      { href: "/tactique/analyse-video",  label: "Analyse vidéo",       available: true, badge: "IA" },
-      { href: "/tactique/concepts",       label: "Concepts",            available: true  },
+      { href: "/tactique/digiboard", label: "Digiboard", available: true },
+      { href: "/tactique/concepts",  label: "Concepts",  available: true },
     ],
   },
   { label: "Blog",   href: "/blog", children: [] },
@@ -30,16 +44,19 @@ const NAV = [
 ]
 
 const HIDE_ON = ["/tactique/digiboard"]
+const HIDE_ON_PREFIXES = ["/dashboard", "/joueur"]
 
 export default function Nav() {
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
 
   if (HIDE_ON.includes(pathname)) return null
+  if (HIDE_ON_PREFIXES.some(prefix => pathname.startsWith(prefix))) return null
 
   return (
     <>
     <header
+      data-marketing-nav
       className="sticky top-0 z-50 flex items-center gap-6 px-6 h-14 border-b"
       style={{
         backgroundColor: "rgba(24,24,18,0.94)",
@@ -61,7 +78,7 @@ export default function Nav() {
 
       {/* Nav principale */}
       <nav className="hidden md:flex items-center gap-1 flex-1">
-        {NAV.map(({ label, href, children }) => {
+        {NAV.map(({ label, href, children, badge }) => {
           const active = href !== "#" && href !== "/#tarifs" && pathname.startsWith(href)
           const hasDropdown = children.length > 0
 
@@ -77,6 +94,15 @@ export default function Nav() {
                   border: active ? "1px solid var(--sauge-border)" : "1px solid transparent",
                 }}>
                 {label.toUpperCase()}
+                {badge && (
+                  <span style={{
+                    fontSize: 7, fontWeight: 700, letterSpacing: "0.08em",
+                    backgroundColor: "rgba(122,154,130,0.12)",
+                    border: "1px solid rgba(122,154,130,0.25)",
+                    color: "var(--sauge)",
+                    padding: "1px 5px", borderRadius: 100,
+                  }}>{badge}</span>
+                )}
                 {hasDropdown && <span className="text-[9px] opacity-40">▾</span>}
               </Link>
 
@@ -136,7 +162,7 @@ export default function Nav() {
         onClick={() => setMenuOpen(o => !o)}
         aria-label={menuOpen ? "Fermer le menu" : "Ouvrir le menu"}
         style={{
-          background: "none", border: "none", cursor: "pointer",
+          backgroundColor: "transparent", border: "none", cursor: "pointer",
           padding: 6, color: "rgba(255,255,255,0.7)", gap: 5,
         }}
       >
@@ -159,17 +185,26 @@ export default function Nav() {
         onClick={e => { if (e.target === e.currentTarget) setMenuOpen(false) }}
       >
         <nav style={{ padding: "8px 16px 32px", display: "flex", flexDirection: "column", gap: 4 }}>
-          {NAV.map(({ label, href, children }) => (
+          {NAV.map(({ label, href, children, badge }) => (
             <div key={label}>
               {children.length === 0 ? (
                 <Link href={href} onClick={() => setMenuOpen(false)} style={{
-                  display: "block", padding: "13px 12px", borderRadius: 10,
+                  display: "flex", alignItems: "center", gap: 8,
+                  padding: "13px 12px", borderRadius: 10,
                   fontFamily: "var(--font-mono), monospace",
                   fontSize: 11, fontWeight: 700, letterSpacing: "0.08em",
                   color: pathname.startsWith(href) && href !== "#" ? "#7A9A82" : "rgba(255,255,255,0.6)",
                   textDecoration: "none",
                 }}>
                   {label.toUpperCase()}
+                  {badge && (
+                    <span style={{
+                      fontSize: 8, fontWeight: 700, letterSpacing: "0.08em",
+                      backgroundColor: "rgba(122,154,130,0.12)",
+                      border: "1px solid rgba(122,154,130,0.25)",
+                      color: "var(--sauge)", padding: "1px 5px", borderRadius: 100,
+                    }}>{badge}</span>
+                  )}
                 </Link>
               ) : (
                 <div style={{ marginTop: 8 }}>

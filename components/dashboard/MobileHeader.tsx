@@ -3,31 +3,7 @@
 import Link from "next/link"
 import { useState } from "react"
 import { usePathname } from "next/navigation"
-
-const NAV_GROUPS = [
-  {
-    label: "Vue d'ensemble",
-    items: [
-      { href: "/dashboard", label: "Tableau de bord", icon: "◈" },
-    ],
-  },
-  {
-    label: "Mon Équipe",
-    items: [
-      { href: "/dashboard/calendrier",     label: "Calendrier",      icon: "▦" },
-      { href: "/dashboard/effectif",       label: "Effectif",        icon: "◻" },
-      { href: "/dashboard/matchs",         label: "Matchs",          icon: "◷" },
-      { href: "/dashboard/entrainements",  label: "Entraînements",   icon: "◈" },
-      { href: "/dashboard/club/cotisations", label: "Cotisations",   icon: "€" },
-    ],
-  },
-  {
-    label: "Tactique",
-    items: [
-      { href: "/tactique/analyse-video",  label: "Analyse vidéo",       icon: "◬" },
-    ],
-  },
-]
+import { getDashboardNavGroups } from "@/lib/dashboardNav"
 
 interface Props {
   clubName:      string
@@ -46,19 +22,20 @@ export default function MobileHeader({ clubName, clubLevel, userName, canManageF
     setOpen(false)
   }
 
-  const navGroups = NAV_GROUPS.map(group => ({
-    ...group,
-    items: group.items.filter(item => item.href !== "/dashboard/club/cotisations" || canManageFees),
-  }))
+  const navGroups = getDashboardNavGroups(canManageFees)
 
   return (
     <>
       <style>{`
         .mh-bar { display: none !important; }
         .mh-pad { display: none; }
-        @media (max-width: 767px) {
+        @media (display-mode: standalone) {
           .mh-bar { display: flex !important; }
-          .mh-pad { display: block; height: 56px; }
+          .mh-pad { display: block; height: calc(56px + env(safe-area-inset-top)); }
+        }
+        @media (max-width: 767px) and (display-mode: browser) {
+          .mh-bar { display: flex !important; }
+          .mh-pad { display: block; height: calc(56px + env(safe-area-inset-top)); }
         }
       `}</style>
 
@@ -69,6 +46,7 @@ export default function MobileHeader({ clubName, clubLevel, userName, canManageF
         borderBottom: "1px solid rgba(122,154,130,0.1)",
         alignItems: "center", justifyContent: "space-between",
         padding: "0 16px",
+        paddingTop: "env(safe-area-inset-top)",
       }}>
         <Link href="/" style={{
           fontFamily: "var(--font-display), system-ui, sans-serif",
@@ -81,7 +59,7 @@ export default function MobileHeader({ clubName, clubLevel, userName, canManageF
           onClick={() => setOpen(o => !o)}
           aria-label={open ? "Fermer le menu" : "Ouvrir le menu"}
           style={{
-            background: "none", border: "none", cursor: "pointer",
+            backgroundColor: "transparent", borderStyle: "none", cursor: "pointer",
             color: "rgba(255,255,255,0.7)", fontSize: 20, padding: "4px 8px",
             lineHeight: 1,
           }}
@@ -116,7 +94,7 @@ export default function MobileHeader({ clubName, clubLevel, userName, canManageF
         transition: "transform 0.25s ease",
       }}>
         {/* Logo */}
-        <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid rgba(122,154,130,0.08)" }}>
+        <div style={{ padding: "20px 20px 16px", paddingTop: "calc(20px + env(safe-area-inset-top))", borderBottom: "1px solid rgba(122,154,130,0.08)" }}>
           <p style={{
             fontFamily: "var(--font-display), system-ui, sans-serif",
             fontWeight: 900, fontSize: 16, letterSpacing: "0.06em",
@@ -161,7 +139,17 @@ export default function MobileHeader({ clubName, clubLevel, userName, canManageF
                       border: active ? "1px solid rgba(122,154,130,0.15)" : "1px solid transparent",
                     }}>
                       <span style={{ fontSize: 11, opacity: 0.7 }}>{item.icon}</span>
-                      {item.label}
+                      <span style={{ flex: 1 }}>{item.label}</span>
+                      {item.badge && (
+                        <span style={{
+                          fontFamily: "var(--font-mono), monospace",
+                          fontSize: 8, fontWeight: 700, letterSpacing: "0.08em",
+                          color: "#7A9A82",
+                          backgroundColor: "rgba(122,154,130,0.12)",
+                          border: "1px solid rgba(122,154,130,0.25)",
+                          borderRadius: 100, padding: "1px 5px", flexShrink: 0,
+                        }}>{item.badge}</span>
+                      )}
                     </Link>
                   )
                 })}

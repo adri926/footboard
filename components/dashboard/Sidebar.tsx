@@ -1,43 +1,12 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import TeamSelector from "./TeamSelector"
+import BottomNavSubmenu from "./BottomNavSubmenu"
 import type { Team } from "@/lib/teams"
-
-const NAV_GROUPS = [
-  {
-    label: "Vue d'ensemble",
-    items: [
-      { href: "/dashboard", label: "Tableau de bord", icon: "◈" },
-    ],
-  },
-  {
-    label: "Club",
-    items: [
-      { href: "/dashboard/club/equipe",      label: "Équipe & accès", icon: "◎" },
-      { href: "/dashboard/club/cotisations", label: "Cotisations",   icon: "€" },
-      { href: "/dashboard/abonnement",       label: "Abonnement",    icon: "★" },
-    ],
-  },
-  {
-    label: "Activité",
-    items: [
-      { href: "/dashboard/calendrier",    label: "Calendrier",    icon: "▦" },
-      { href: "/dashboard/matchs",        label: "Matchs",        icon: "◷" },
-      { href: "/dashboard/entrainements", label: "Entraînements", icon: "◈" },
-    ],
-  },
-  {
-    label: "Effectif",
-    items: [
-      { href: "/dashboard/effectif",         label: "Effectif",       icon: "◻" },
-      { href: "/dashboard/effectif/equipes", label: "Équipes",        icon: "◐" },
-      { href: "/dashboard/data",             label: "Data & stats",   icon: "▤" },
-      { href: "/tactique/analyse-video",     label: "Analyse vidéo",  icon: "◬", badge: "IA" },
-    ],
-  },
-]
+import { getDashboardNavGroups } from "@/lib/dashboardNav"
 
 interface Props {
   clubName:      string
@@ -50,44 +19,52 @@ interface Props {
 
 export default function Sidebar({ clubName, clubLevel, userName, canManageFees, teams, activeTeamId }: Props) {
   const pathname = usePathname()
+  const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null)
 
-  const navGroups = NAV_GROUPS.map(group => ({
-    ...group,
-    items: group.items.filter(item => item.href !== "/dashboard/club/cotisations" || canManageFees),
-  }))
+  const navGroups = getDashboardNavGroups(canManageFees)
 
   return (
     <>
       {/* Spacer CSS pour la sidebar — injecté inline pour garantir le chargement */}
       <style>{`
-        @media (max-width: 1024px) and (min-width: 768px) {
-          .sb { width: 64px !important; }
-          .sb-label, .sb-group, .sb-sub, .sb-avtext { display: none !important; }
-          .sb-logoicon { display: flex !important; }
-          .sb-item { justify-content: center !important; padding: 10px !important; gap: 0 !important; position: relative; }
-          .sb-item:hover::after {
-            content: attr(data-label);
-            position: absolute;
-            left: calc(100% + 8px); top: 50%;
-            transform: translateY(-50%);
-            background: #24221a;
-            color: rgba(255,255,255,0.85);
-            border: 1px solid rgba(122,154,130,0.2);
-            border-radius: 6px;
-            padding: 5px 10px;
-            font-size: 11px;
-            font-family: inherit;
-            white-space: nowrap;
-            z-index: 100;
-            pointer-events: none;
-          }
-          .sb-av { justify-content: center !important; padding: 14px 0 !important; }
-          .sb-logo { padding: 20px 0 16px !important; justify-content: center !important; }
-        }
-        @media (max-width: 767px) {
+        /* Mode app (PWA standalone) : toujours l'interface mobile (bandeau bas), quelle
+           que soit la largeur de la fenêtre — une app installée ne doit pas basculer en
+           sidebar desktop si la fenêtre est agrandie, l'utilisateur s'attend à une UI
+           d'app cohérente. */
+        @media (display-mode: standalone) {
           .sb { display: none !important; }
           .sb-bottom-nav { display: flex !important; }
-          .dashboard-main { padding-bottom: 72px !important; }
+          .dashboard-main { padding-bottom: calc(72px + env(safe-area-inset-bottom)) !important; }
+        }
+        /* Mode navigateur classique : comportement responsive existant, inchangé */
+        @media (display-mode: browser) {
+          @media (max-width: 1024px) and (min-width: 768px) {
+            .sb { width: 64px !important; }
+            .sb-label, .sb-group, .sb-sub, .sb-avtext { display: none !important; }
+            .sb-logoicon { display: flex !important; }
+            .sb-item { justify-content: center !important; padding: 10px !important; gap: 0 !important; position: relative; }
+            .sb-item:hover::after {
+              content: attr(data-label);
+              position: absolute;
+              left: calc(100% + 8px); top: 50%;
+              transform: translateY(-50%);
+              background: #24221a;
+              color: rgba(255,255,255,0.85);
+              border: 1px solid rgba(122,154,130,0.2);
+              border-radius: 6px;
+              padding: 5px 10px;
+              font-size: 11px;
+              font-family: inherit;
+              white-space: nowrap;
+              z-index: 100;
+              pointer-events: none;
+            }
+            .sb-av { justify-content: center !important; padding: 14px 0 !important; }
+            .sb-logo { padding: 20px 0 16px !important; justify-content: center !important; }
+          }
+          @media (max-width: 767px) {
+            .sb { display: none !important; }
+          }
         }
       `}</style>
 
@@ -227,43 +204,71 @@ export default function Sidebar({ clubName, clubLevel, userName, canManageFees, 
         </Link>
       </aside>
 
-      {/* Bottom nav mobile */}
+      {/* Bottom nav mobile — un tab par groupe de getDashboardNavGroups(), source unique
+          de vérité partagée avec la sidebar/le hamburger (plus de liste codée en dur
+          déconnectée du menu complet). 1er tap = navigation directe vers primaryHref
+          (ou items[0] si non précisé) ; re-tap sur un tab déjà actif à plusieurs items
+          ouvre un sous-menu vers les autres pages du groupe. */}
       <nav className="sb-bottom-nav" style={{
         display: "none",
         position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50,
         height: 64, alignItems: "stretch",
         backgroundColor: "#16160f",
         borderTop: "1px solid rgba(122,154,130,0.15)",
+        paddingBottom: "env(safe-area-inset-bottom)",
       }}>
-        {[
-          { href: "/dashboard",                label: "Accueil",    icon: "◈" },
-          { href: "/dashboard/matchs",         label: "Matchs",     icon: "◷" },
-          { href: "/dashboard/entrainements",  label: "Séances",    icon: "▣" },
-          { href: "/dashboard/effectif",       label: "Effectif",   icon: "◻" },
-          { href: "/tactique/analyse-video",   label: "IA",         icon: "◬" },
-        ].map(item => {
-          const active = item.href === "/dashboard"
-            ? pathname === "/dashboard"
-            : pathname.startsWith(item.href)
+        {navGroups.map(group => {
+          const primaryHref = group.primaryHref ?? group.items[0]?.href ?? "/dashboard"
+          const icon = group.icon ?? group.items[0]?.icon ?? "•"
+          const label = group.shortLabel ?? group.label
+          const active = group.items.some(item =>
+            item.href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(item.href)
+          )
+          const hasSubmenu = group.items.length > 1
+          const submenuOpen = activeSubmenu === group.label
+
           return (
-            <Link key={item.href} href={item.href} style={{
-              flex: 1, display: "flex", flexDirection: "column",
-              alignItems: "center", justifyContent: "center", gap: 3,
-              textDecoration: "none",
-              backgroundColor: active ? "rgba(122,154,130,0.06)" : "transparent",
-              borderTop: active ? "2px solid rgba(122,154,130,0.6)" : "2px solid transparent",
-            }}>
+            <Link
+              key={group.label}
+              href={primaryHref}
+              onClick={e => {
+                if (hasSubmenu && active) {
+                  e.preventDefault()
+                  setActiveSubmenu(submenuOpen ? null : group.label)
+                } else {
+                  setActiveSubmenu(null)
+                }
+              }}
+              style={{
+                flex: 1, display: "flex", flexDirection: "column",
+                alignItems: "center", justifyContent: "center", gap: 3,
+                textDecoration: "none",
+                backgroundColor: active ? "rgba(122,154,130,0.06)" : "transparent",
+                borderTop: active ? "2px solid rgba(122,154,130,0.6)" : "2px solid transparent",
+              }}>
               <span style={{ fontSize: 13, color: active ? "#7A9A82" : "rgba(255,255,255,0.3)" }}>
-                {item.icon}
+                {icon}
               </span>
               <span style={{
                 fontFamily: "var(--font-mono), monospace",
                 fontSize: 7, fontWeight: 700, letterSpacing: "0.06em",
                 color: active ? "#7A9A82" : "rgba(255,255,255,0.3)",
               }}>
-                {item.label.toUpperCase()}
+                {label.toUpperCase()}
               </span>
             </Link>
+          )
+        })}
+        {navGroups.map(group => {
+          if (activeSubmenu !== group.label) return null
+          return (
+            <BottomNavSubmenu
+              key={group.label}
+              items={group.items}
+              activeHref={pathname}
+              onSelect={() => setActiveSubmenu(null)}
+              onClose={() => setActiveSubmenu(null)}
+            />
           )
         })}
       </nav>

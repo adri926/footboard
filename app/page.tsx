@@ -4,19 +4,19 @@ import HeroPitch from "@/components/HeroPitch"
 import PricingCard from "@/components/home/PricingCard"
 
 export const metadata: Metadata = {
-  title: "Footboard — Gérez votre club, dominez le terrain",
-  description: "La plateforme tout-en-un pour les coachs de football amateurs : effectif, matchs, entraînements, convocations, préparation tactique et analyse vidéo par IA. Essayez gratuitement.",
+  title: "Footboard — Analyse vidéo IA, dominez le terrain",
+  description: "La plateforme tout-en-un pour les coachs de football amateurs : analyse vidéo par IA, préparation tactique, et gestion complète du club (effectif, matchs, entraînements, convocations). Essayez gratuitement.",
   openGraph: {
-    title: "Footboard — Gérez votre club, dominez le terrain",
-    description: "La plateforme tout-en-un pour les coachs de football amateurs. Effectif, matchs, convocations, tactique et analyse vidéo IA en un seul endroit.",
+    title: "Footboard — Analyse vidéo IA, dominez le terrain",
+    description: "La plateforme tout-en-un pour les coachs de football amateurs. Analyse vidéo IA, tactique et gestion de club en un seul endroit.",
     url: "https://footboard.fr",
   },
 }
 
 const PILLARS = [
-  { icon: "⊞", title: "Gestion de club", desc: "Effectif, matchs, entraînements, convocations et cotisations." },
-  { icon: "⬡", title: "Terrain tactique", desc: "Digiboard interactif, 16 formations, concepts animés." },
   { icon: "▶", title: "Analyse vidéo IA", desc: "Timeline d'événements et questions sur tes matchs filmés." },
+  { icon: "⬡", title: "Terrain tactique", desc: "Digiboard interactif, 16 formations, concepts animés." },
+  { icon: "⊞", title: "Gestion de club", desc: "Effectif, matchs, entraînements, convocations et cotisations." },
 ]
 
 const FEATURES = [
@@ -64,8 +64,8 @@ const PLANS = [
     desc: "Pour découvrir et commencer.",
     cta: "COMMENCER GRATUITEMENT",
     features: [
+      { label: "Analyse vidéo IA",             included: false },
       { label: "Terrain tactique interactif",  included: true  },
-      { label: "Jusqu'à 15 joueurs",           included: true  },
       { label: "5 animations tactiques",       included: true  },
       { label: "Gestion matchs & entraîne.",   included: false },
       { label: "Suivi santé joueurs",          included: false },
@@ -78,8 +78,8 @@ const PLANS = [
     cta: "COMMENCER L'ESSAI GRATUIT",
     featured: true,
     features: [
+      { label: "Analyse vidéo IA",             included: true },
       { label: "Terrain tactique interactif",  included: true },
-      { label: "Effectif illimité",            included: true },
       { label: "Animations illimitées",        included: true },
       { label: "Gestion matchs & entraîne.",   included: true },
       { label: "Suivi santé joueurs",          included: true },
@@ -91,8 +91,8 @@ const PLANS = [
     desc: "Pour les clubs multi-équipes.",
     cta: "CONTACTER L'ÉQUIPE",
     features: [
+      { label: "Analyse vidéo IA",             included: true },
       { label: "Terrain tactique interactif",  included: true },
-      { label: "Effectif illimité",            included: true },
       { label: "Animations illimitées",        included: true },
       { label: "Gestion matchs & entraîne.",   included: true },
       { label: "Suivi santé joueurs",          included: true },
@@ -107,7 +107,7 @@ const STRUCTURED_DATA = {
   name: "Footboard",
   applicationCategory: "SportsApplication",
   operatingSystem: "Web",
-  description: "La plateforme tout-en-un pour les coachs de football amateurs : effectif, matchs, entraînements, convocations, préparation tactique et analyse vidéo par IA.",
+  description: "La plateforme tout-en-un pour les coachs de football amateurs : analyse vidéo par IA, préparation tactique, effectif, matchs, entraînements et convocations.",
   url: "https://footboard.fr",
   offers: {
     "@type": "Offer",
@@ -141,7 +141,7 @@ export default function Home() {
                 border: "1px solid var(--sauge-border)",
                 padding: "2px 8px", borderRadius: 100,
               }}>
-                FOOTBOARD · PLATEFORME TACTIQUE
+                FOOTBOARD · ANALYSE VIDÉO IA
               </span>
             </div>
             <h1 style={{
@@ -150,17 +150,18 @@ export default function Home() {
               lineHeight: 0.92, letterSpacing: "-0.01em",
               color: "rgba(255,255,255,0.95)", marginBottom: 20,
             }}>
-              LA PLATEFORME<br />
-              <span style={{ color: "var(--sauge)" }}>DES COACHS</span><br />
-              AMBITIEUX
+              L'ANALYSTE VIDÉO<br />
+              <span style={{ color: "var(--sauge)" }}>QUE TON CLUB</span><br />
+              N'A JAMAIS EU.
             </h1>
             <p style={{
               fontFamily: "var(--font-body), sans-serif",
               fontWeight: 400, fontSize: 17, lineHeight: 1.6,
               color: "rgba(255,255,255,0.45)", maxWidth: 400, marginBottom: 32,
             }}>
-              Gérez votre club, préparez vos matchs, construisez vos systèmes
-              tactiques et laissez l'IA analyser vos vidéos — tout en un seul endroit.
+              Pas de caméra robot, pas de budget pro. Juste ton téléphone et une IA
+              qui regarde le match avec toi — plus toute la gestion de ton club,
+              dans la même appli.
             </p>
             <div className="flex gap-3 flex-wrap">
               <Link href="/dashboard" className="transition hover:opacity-85" style={{

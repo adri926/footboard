@@ -1,5 +1,5 @@
 import Paperboard from "@/components/tactique/Paperboard"
-import { getTacticalBoards } from "./actions"
+import { getTacticalBoards } from "../actions"
 
 export default async function AnimationsPage() {
   const boards = await getTacticalBoards()

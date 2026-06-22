@@ -27,9 +27,13 @@ export default function PlayerMobileHeader({ clubName, playerName }: Props) {
       <style>{`
         .pmh-bar { display: none !important; }
         .pmh-pad { display: none; }
-        @media (max-width: 767px) {
+        @media (display-mode: standalone) {
           .pmh-bar { display: flex !important; }
-          .pmh-pad { display: block; height: 56px; }
+          .pmh-pad { display: block; height: calc(56px + env(safe-area-inset-top)); }
+        }
+        @media (max-width: 767px) and (display-mode: browser) {
+          .pmh-bar { display: flex !important; }
+          .pmh-pad { display: block; height: calc(56px + env(safe-area-inset-top)); }
         }
       `}</style>
 
@@ -39,6 +43,7 @@ export default function PlayerMobileHeader({ clubName, playerName }: Props) {
         borderBottom: "1px solid rgba(122,154,130,0.1)",
         alignItems: "center", justifyContent: "space-between",
         padding: "0 16px",
+        paddingTop: "env(safe-area-inset-top)",
       }}>
         <span style={{
           fontFamily: "var(--font-display), system-ui, sans-serif",
@@ -51,7 +56,7 @@ export default function PlayerMobileHeader({ clubName, playerName }: Props) {
           onClick={() => setOpen(o => !o)}
           aria-label={open ? "Fermer le menu" : "Ouvrir le menu"}
           style={{
-            background: "none", border: "none", cursor: "pointer",
+            backgroundColor: "transparent", borderStyle: "none", cursor: "pointer",
             color: "rgba(255,255,255,0.7)", fontSize: 20, padding: "4px 8px",
             lineHeight: 1,
           }}
@@ -82,7 +87,7 @@ export default function PlayerMobileHeader({ clubName, playerName }: Props) {
         transform: open ? "translateX(0)" : "translateX(-100%)",
         transition: "transform 0.25s ease",
       }}>
-        <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid rgba(122,154,130,0.08)" }}>
+        <div style={{ padding: "20px 20px 16px", paddingTop: "calc(20px + env(safe-area-inset-top))", borderBottom: "1px solid rgba(122,154,130,0.08)" }}>
           <p style={{
             fontFamily: "var(--font-display), system-ui, sans-serif",
             fontWeight: 900, fontSize: 16, letterSpacing: "0.06em",
