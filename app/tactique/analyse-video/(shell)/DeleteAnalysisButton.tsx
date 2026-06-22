@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import { useTransition } from "react"
-import { deleteAnalysis } from "./actions"
+import { deleteAnalysis } from "../actions"
 
 export default function DeleteAnalysisButton({ id }: { id: string }) {
   const router = useRouter()

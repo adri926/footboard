@@ -1,12 +1,19 @@
 "use client"
 
-import { useRef, useState, useTransition } from "react"
+import { useRef, useState } from "react"
 import { useRouter } from "next/navigation"
-import { uploadVideo } from "./actions"
+import type { Match } from "@/app/dashboard/matchs/actions"
 
-export default function UploadForm() {
-  const [isPending, startTransition] = useTransition()
+function formatMatchLabel(m: Match) {
+  const date = new Date(m.date).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })
+  return `${date} — ${m.home_away === "home" ? "vs" : "@"} ${m.opponent}`
+}
+
+export default function UploadForm({ matches }: { matches: Match[] }) {
+  const [isPending, setIsPending] = useState(false)
+  const [progress, setProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
+  const [aiRequested, setAiRequested] = useState(true)
   const formRef = useRef<HTMLFormElement>(null)
   const router = useRouter()
 
@@ -19,15 +26,40 @@ export default function UploadForm() {
       setError(`Vidéo trop lourde — max ${MAX_SIZE_MB} Mo.`)
       return
     }
-    startTransition(async () => {
-      const res = await uploadVideo(formData)
+
+    setIsPending(true)
+    setProgress(0)
+
+    const xhr = new XMLHttpRequest()
+    xhr.open("POST", "/api/analyse-video/upload")
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) setProgress(Math.round((e.loaded / e.total) * 100))
+    }
+
+    xhr.onload = () => {
+      setIsPending(false)
+      let res: { ok: true; id: string } | { ok: false; error: string }
+      try {
+        res = JSON.parse(xhr.responseText)
+      } catch {
+        setError("Réponse invalide du serveur. Réessaie.")
+        return
+      }
       if (!res.ok) {
         setError(res.error)
         return
       }
       formRef.current?.reset()
       router.push(`/tactique/analyse-video/${res.id}`)
-    })
+    }
+
+    xhr.onerror = () => {
+      setIsPending(false)
+      setError("Erreur réseau pendant l'upload. Réessaie.")
+    }
+
+    xhr.send(formData)
   }
 
   return (
@@ -74,13 +106,50 @@ export default function UploadForm() {
         }}
       />
 
+      {matches.length > 0 && (
+        <select
+          name="matchId"
+          defaultValue=""
+          style={{
+            backgroundColor: "var(--bg-input)",
+            border: "1px solid rgba(122,154,130,0.18)",
+            borderRadius: 8, padding: "10px 12px",
+            color: "var(--text-primary)",
+            fontFamily: "var(--font-body), sans-serif", fontSize: 13,
+          }}
+        >
+          <option value="">Lier à un match (optionnel)</option>
+          {matches.map(m => (
+            <option key={m.id} value={m.id}>{formatMatchLabel(m)}</option>
+          ))}
+        </select>
+      )}
+
       <p style={{
         fontFamily: "var(--font-body), sans-serif",
         fontSize: 11, color: "var(--text-faint)", lineHeight: 1.5,
       }}>
         L&apos;analyse génère une timeline d&apos;événements et permet de poser des questions sur
-        le match pendant 1h après l&apos;upload.
+        le match à tout moment.
       </p>
+
+      <label style={{
+        display: "flex", alignItems: "flex-start", gap: 8,
+        fontFamily: "var(--font-body), sans-serif", fontSize: 12, color: "var(--text-muted)",
+        cursor: "pointer",
+      }}>
+        <input
+          type="checkbox"
+          name="aiRequested"
+          checked={aiRequested}
+          onChange={e => setAiRequested(e.target.checked)}
+          style={{ marginTop: 2 }}
+        />
+        <span>
+          Analyse IA automatique (résumé + timeline d&apos;événements).
+          Décoche pour annoter manuellement sans IA — gratuit, vidéo disponible immédiatement.
+        </span>
+      </label>
 
       {error && (
         <p style={{
@@ -106,18 +175,29 @@ export default function UploadForm() {
           opacity: isPending ? 0.6 : 1,
         }}
       >
-        {isPending ? "UPLOAD EN COURS..." : "UPLOADER ET ANALYSER →"}
+        {isPending ? `UPLOAD EN COURS... ${progress}%` : aiRequested ? "UPLOADER ET ANALYSER →" : "UPLOADER →"}
       </button>
 
       {isPending && (
-        <div style={{
-          marginTop: 4,
-          fontFamily: "var(--font-body), sans-serif",
-          fontSize: 12, color: "var(--text-faint)", lineHeight: 1.6,
-        }}>
-          <p>⏳ Upload de la vidéo vers le serveur…</p>
-          <p style={{ marginTop: 4, opacity: 0.6 }}>
-            Ne ferme pas cette page. L&apos;analyse IA démarrera automatiquement après l&apos;upload.
+        <div style={{ marginTop: 4 }}>
+          <div style={{
+            height: 4, borderRadius: 100, overflow: "hidden",
+            backgroundColor: "rgba(122,154,130,0.15)",
+          }}>
+            <div style={{
+              height: "100%", width: `${progress}%`,
+              backgroundColor: "var(--sauge)",
+              transition: "width 0.15s ease",
+            }} />
+          </div>
+          <p style={{
+            marginTop: 8,
+            fontFamily: "var(--font-body), sans-serif",
+            fontSize: 12, color: "var(--text-faint)", lineHeight: 1.6, opacity: 0.6,
+          }}>
+            {aiRequested
+              ? "Ne ferme pas cette page. L'analyse IA démarrera automatiquement après l'upload."
+              : "Ne ferme pas cette page. La vidéo sera prête à annoter dès la fin de l'upload."}
           </p>
         </div>
       )}

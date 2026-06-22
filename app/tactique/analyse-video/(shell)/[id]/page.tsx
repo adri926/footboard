@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { getAnalysis } from "../actions"
+import { getAnalysis } from "../../actions"
+import { getMatchById } from "@/app/dashboard/matchs/actions"
 import AnalysisDetail from "./AnalysisDetail"
 import ProcessingPoller from "./ProcessingPoller"
 
@@ -16,7 +17,8 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
   const data = await getAnalysis(id)
   if (!data) notFound()
 
-  const { analysis, events, videoUrl } = data
+  const { analysis, events, annotations, videoUrl } = data
+  const linkedMatch = analysis.match_id ? await getMatchById(analysis.match_id) : null
 
   return (
     <main style={{ background: "var(--bg)", minHeight: "calc(100vh - 56px)" }}>
@@ -39,7 +41,30 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
           {analysis.title}
         </h1>
 
-        {analysis.status !== "ready" && (
+        {linkedMatch && (
+          <Link href={`/dashboard/matchs/${linkedMatch.id}`} style={{
+            fontFamily: "var(--font-mono), monospace",
+            fontSize: 10, letterSpacing: "0.06em",
+            color: "var(--sauge)",
+            textDecoration: "none", display: "inline-block", marginBottom: 16,
+          }}>
+            Match lié : {linkedMatch.home_away === "home" ? "vs" : "@"} {linkedMatch.opponent} —{" "}
+            {new Date(linkedMatch.date).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
+          </Link>
+        )}
+
+        {!analysis.ai_requested && (
+          <p style={{
+            fontFamily: "var(--font-mono), monospace",
+            fontSize: 11, letterSpacing: "0.08em",
+            color: "rgba(220,180,80,0.8)",
+            marginBottom: 24,
+          }}>
+            Vidéo en mode manuel — pas d&apos;analyse IA pour cette vidéo.
+          </p>
+        )}
+
+        {analysis.ai_requested && analysis.status !== "ready" && (
           <p style={{
             fontFamily: "var(--font-mono), monospace",
             fontSize: 11, letterSpacing: "0.08em",
@@ -64,9 +89,17 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
           </>
         )}
 
-        {analysis.status === "ready" && (
+        {videoUrl && (
           <div style={{ marginTop: 16 }}>
-            <AnalysisDetail analysisId={analysis.id} videoUrl={videoUrl} events={events} />
+            <AnalysisDetail
+              analysisId={analysis.id}
+              videoUrl={videoUrl}
+              events={events}
+              annotations={annotations}
+              summary={analysis.summary}
+              status={analysis.status}
+              aiRequested={analysis.ai_requested}
+            />
           </div>
         )}
 

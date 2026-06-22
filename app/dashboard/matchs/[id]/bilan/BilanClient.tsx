@@ -3,6 +3,8 @@
 import { useState, useTransition } from "react"
 import Link from "next/link"
 import { saveMatchStats } from "@/app/dashboard/matchs/actions"
+import { getSuggestedMatchStats } from "@/app/tactique/analyse-video/actions"
+import type { SuggestedStatRow } from "@/app/tactique/analyse-video/actions"
 import type { Match, Lineup, MatchPlayerStat } from "@/app/dashboard/matchs/actions"
 import type { Player } from "@/app/dashboard/effectif/actions"
 
@@ -11,6 +13,7 @@ interface Props {
   players:      Player[]
   lineup:       Lineup
   initialStats: MatchPlayerStat[]
+  linkedAnalysisId: string | null
 }
 
 interface Row {
@@ -43,7 +46,7 @@ function formatDate(s: string) {
   return d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })
 }
 
-export default function BilanClient({ match, players, lineup, initialStats }: Props) {
+export default function BilanClient({ match, players, lineup, initialStats, linkedAnalysisId }: Props) {
   const participantIds = [...lineup.starters, ...lineup.substitutes]
   const participants = participantIds
     .map(id => players.find(p => p.id === id))
@@ -63,10 +66,20 @@ export default function BilanClient({ match, players, lineup, initialStats }: Pr
   const [error, setError]   = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
+  const [highlighted, setHighlighted] = useState<Set<string>>(new Set())
+  const [unassigned, setUnassigned] = useState<SuggestedStatRow[]>([])
+  const [suggestPending, setSuggestPending] = useState(false)
+
   function update(playerId: string, key: keyof Row, value: number) {
     setRows(prev => ({ ...prev, [playerId]: { ...prev[playerId], [key]: value } }))
     setSaved(false)
     setError(null)
+    setHighlighted(prev => {
+      if (!prev.has(playerId)) return prev
+      const next = new Set(prev)
+      next.delete(playerId)
+      return next
+    })
   }
 
   function handleSave() {
@@ -76,6 +89,48 @@ export default function BilanClient({ match, players, lineup, initialStats }: Pr
       if (res.ok) setSaved(true)
       else setError(res.error)
     })
+  }
+
+  function applyPrefill() {
+    if (!linkedAnalysisId) return
+    const hasExistingValues = participants.some(p => {
+      const r = rows[p.id]
+      return r.goals > 0 || r.yellowCards > 0 || r.redCards > 0
+    })
+    if (hasExistingValues && !confirm("Ceci va remplacer les buts/cartons déjà saisis par les valeurs détectées dans la vidéo. Continuer ?")) {
+      return
+    }
+
+    setSuggestPending(true)
+    setError(null)
+    getSuggestedMatchStats(linkedAnalysisId).then(suggestions => {
+      setSuggestPending(false)
+      const resolved = suggestions.filter(s => s.playerId)
+      const notResolved = suggestions.filter(s => !s.playerId)
+
+      setRows(prev => {
+        const next = { ...prev }
+        for (const s of resolved) {
+          if (!s.playerId || !next[s.playerId]) continue
+          next[s.playerId] = { ...next[s.playerId], goals: s.goals, yellowCards: s.yellowCards, redCards: s.redCards }
+        }
+        return next
+      })
+      setHighlighted(new Set(resolved.map(s => s.playerId!)))
+      setUnassigned(notResolved)
+      setSaved(false)
+    })
+  }
+
+  function assignUnassigned(row: SuggestedStatRow, playerId: string) {
+    if (!playerId) return
+    setRows(prev => ({
+      ...prev,
+      [playerId]: { ...prev[playerId], goals: prev[playerId].goals + row.goals, yellowCards: prev[playerId].yellowCards + row.yellowCards, redCards: prev[playerId].redCards + row.redCards },
+    }))
+    setHighlighted(prev => new Set(prev).add(playerId))
+    setUnassigned(prev => prev.filter(r => r !== row))
+    setSaved(false)
   }
 
   const inputStyle: React.CSSProperties = {
@@ -121,6 +176,22 @@ export default function BilanClient({ match, players, lineup, initialStats }: Pr
           {formatDate(match.date)} · {match.home_away === "home" ? "DOMICILE" : "EXTÉRIEUR"}
           {match.competition && ` · ${match.competition}`}
         </p>
+        {linkedAnalysisId && participants.length > 0 && (
+          <button
+            onClick={applyPrefill}
+            disabled={suggestPending}
+            style={{
+              marginTop: 14,
+              fontFamily: "var(--font-mono), monospace",
+              fontSize: 10, fontWeight: 700, letterSpacing: "0.06em",
+              color: "#7A9A82", backgroundColor: "rgba(122,154,130,0.1)",
+              border: "1px solid rgba(122,154,130,0.3)", borderRadius: 8,
+              padding: "9px 16px", cursor: suggestPending ? "default" : "pointer",
+            }}
+          >
+            {suggestPending ? "Analyse en cours..." : "⚡ Pré-remplir depuis l'analyse vidéo"}
+          </button>
+        )}
       </div>
 
       {participants.length === 0 ? (
@@ -184,27 +255,58 @@ export default function BilanClient({ match, players, lineup, initialStats }: Pr
                           {role}
                         </span>
                       </td>
-                      {FIELDS.map(f => (
-                        <td key={f.key} style={{ padding: "10px 8px", textAlign: "center" }}>
-                          <input
-                            type="number"
-                            min={0}
-                            max={f.max}
-                            value={rows[p.id][f.key]}
-                            onChange={e => {
-                              const v = Math.max(0, Math.min(f.max, parseInt(e.target.value) || 0))
-                              update(p.id, f.key, v)
-                            }}
-                            style={inputStyle}
-                          />
-                        </td>
-                      ))}
+                      {FIELDS.map(f => {
+                        const isPrefilled = highlighted.has(p.id) && (f.key === "goals" || f.key === "yellowCards" || f.key === "redCards")
+                        return (
+                          <td key={f.key} style={{ padding: "10px 8px", textAlign: "center" }}>
+                            <input
+                              type="number"
+                              min={0}
+                              max={f.max}
+                              value={rows[p.id][f.key]}
+                              onChange={e => {
+                                const v = Math.max(0, Math.min(f.max, parseInt(e.target.value) || 0))
+                                update(p.id, f.key, v)
+                              }}
+                              style={isPrefilled ? { ...inputStyle, backgroundColor: "var(--sauge-dim)", borderColor: "var(--sauge-border)" } : inputStyle}
+                              title={isPrefilled ? "Pré-rempli depuis l'analyse vidéo — vérifie avant d'enregistrer" : undefined}
+                            />
+                          </td>
+                        )
+                      })}
                     </tr>
                   )
                 })}
               </tbody>
             </table>
           </div>
+
+          {unassigned.length > 0 && (
+            <div style={{ marginTop: 20, padding: "14px 16px", borderRadius: 10, backgroundColor: "rgba(220,180,80,0.06)", border: "1px dashed rgba(220,180,80,0.25)" }}>
+              <p style={{ fontFamily: "var(--font-mono), monospace", fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", color: "rgba(220,180,80,0.8)", marginBottom: 10 }}>
+                ÉVÉNEMENTS DÉTECTÉS NON ASSIGNÉS — numéro lu mais joueur non identifié
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {unassigned.map((row, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12 }}>
+                    <span style={{ fontFamily: "var(--font-mono), monospace", color: "rgba(255,255,255,0.6)", minWidth: 120 }}>
+                      #{row.jerseyNumber ?? "?"} — {row.goals > 0 ? `${row.goals} but(s)` : ""}{row.yellowCards > 0 ? ` ${row.yellowCards} jaune(s)` : ""}{row.redCards > 0 ? ` ${row.redCards} rouge(s)` : ""}
+                    </span>
+                    <select
+                      defaultValue=""
+                      onChange={e => assignUnassigned(row, e.target.value)}
+                      style={{ ...inputStyle, width: "auto" }}
+                    >
+                      <option value="">Assigner à...</option>
+                      {participants.map(p => (
+                        <option key={p.id} value={p.id}>#{p.number ?? "—"} {p.first_name} {p.last_name}</option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div style={{ marginTop: 20, display: "flex", alignItems: "center", gap: 12 }}>
             {error && (

@@ -5,6 +5,7 @@ import { updateClub } from "@/app/dashboard/club/actions"
 import { deleteAccount } from "./actions"
 import PageHeader from "@/components/dashboard/PageHeader"
 import ClubLogo from "@/components/dashboard/ClubLogo"
+import NotificationToggle from "@/components/dashboard/NotificationToggle"
 import type { Club } from "@/app/dashboard/club/actions"
 
 const LEVELS = [
@@ -83,6 +84,8 @@ export default function CompteClient({ club }: Props) {
     <div className="page-pad" style={{ maxWidth: 600 }}>
 
       <PageHeader label="Mon compte" title="Paramètres" />
+
+      <NotificationToggle />
 
       {/* Section club */}
       <div style={{ ...SECTION, marginBottom: 16 }}>

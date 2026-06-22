@@ -1,5 +1,7 @@
 import Link from "next/link"
-import { listAnalyses } from "./actions"
+import { auth } from "@clerk/nextjs/server"
+import { listAnalyses } from "../actions"
+import { getMatches } from "@/app/dashboard/matchs/actions"
 import UploadForm from "./UploadForm"
 import BackLink from "./BackLink"
 import DeleteAnalysisButton from "./DeleteAnalysisButton"
@@ -12,7 +14,14 @@ const STATUS_LABEL: Record<string, string> = {
 }
 
 export default async function AnalyseVideoPage() {
-  const analyses = await listAnalyses()
+  // Page à double usage (visiteur marketing non connecté + outil interne coach) —
+  // getMatches() exige une session (getClubScope() lève sinon), donc on ne l'appelle
+  // que si un utilisateur est authentifié. listAnalyses() gère déjà ce cas (retourne []).
+  const { userId } = await auth()
+  const [analyses, matches] = await Promise.all([
+    listAnalyses(),
+    userId ? getMatches() : Promise.resolve([]),
+  ])
 
   return (
     <main style={{ background: "var(--bg)", minHeight: "calc(100vh - 56px)" }}>
@@ -47,7 +56,7 @@ export default async function AnalyseVideoPage() {
         </div>
 
         <div style={{ marginBottom: 32 }}>
-          <UploadForm />
+          <UploadForm matches={matches} />
         </div>
 
         <div>

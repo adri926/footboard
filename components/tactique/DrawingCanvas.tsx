@@ -14,13 +14,14 @@ interface Props {
   thickness: number
   onAdd: (drawing: Drawing) => void
   onErase: (drawing: Drawing) => void
+  // Repère du calque SVG — par défaut les proportions du terrain (105 x 68 m → 680 x 1050).
+  // Le digiboard s'appuie sur ce défaut implicitement via le CSS qui force le même ratio sur
+  // son conteneur ; tout autre usage (ex: superposer le calque à une vidéo) doit passer un
+  // ratio qui matche le ratio réel rendu du containerRef, sinon le SVG letterboxe et les
+  // tracés se décalent par rapport à là où le pointeur a cliqué.
+  vbWidth?: number
+  vbHeight?: number
 }
-
-// Repère du calque de dessin : mêmes proportions que le terrain (105 x 68 m → 680 x 1050)
-const VB_W = 680
-const VB_H = 1050
-const vx = (pct: number) => (pct / 100) * VB_W
-const vy = (pct: number) => (pct / 100) * VB_H
 
 type Pt = { x: number; y: number }
 
@@ -33,7 +34,9 @@ function pointFromEvent(e: PointerEvent<SVGSVGElement>, container: HTMLDivElemen
 }
 
 // Tracé SVG d'un dessin — converti depuis ses points en pourcentage vers le repère du calque
-function pathFor(d: Drawing): string {
+function pathFor(d: Drawing, vbWidth: number, vbHeight: number): string {
+  const vx = (pct: number) => (pct / 100) * vbWidth
+  const vy = (pct: number) => (pct / 100) * vbHeight
   const pts = d.points.map(p => ({ x: vx(p.x), y: vy(p.y) }))
   if (pts.length === 0) return ""
   if (d.type === "crayon") {
@@ -98,7 +101,9 @@ function distanceToDrawing(p: Pt, d: Drawing): number {
 const ERASE_RADIUS = 2.6 // en pourcentage du terrain — rayon de détection de la gomme
 
 // Représentation visuelle d'un dessin déjà posé sur le terrain
-function DrawingShape({ d }: { d: Drawing }) {
+function DrawingShape({ d, vbWidth, vbHeight }: { d: Drawing; vbWidth: number; vbHeight: number }) {
+  const vx = (pct: number) => (pct / 100) * vbWidth
+  const vy = (pct: number) => (pct / 100) * vbHeight
   const colorId = d.color.replace("#", "")
   if (d.type === "zone") {
     const [a, b] = d.points
@@ -122,7 +127,7 @@ function DrawingShape({ d }: { d: Drawing }) {
   }
   return (
     <path
-      d={pathFor(d)}
+      d={pathFor(d, vbWidth, vbHeight)}
       fill="none"
       stroke={d.color}
       strokeWidth={d.thickness}
@@ -137,7 +142,7 @@ function DrawingShape({ d }: { d: Drawing }) {
 // Calque de dessin superposé au terrain — capture le pointeur seulement quand un outil de dessin
 // est actif (le mode "curseur" laisse passer les interactions vers les pions et le ballon).
 // La gomme efface par proximité géométrique : on passe le curseur sur un tracé pour le supprimer.
-export default function DrawingCanvas({ containerRef, drawings, tool, color, thickness, onAdd, onErase }: Props) {
+export default function DrawingCanvas({ containerRef, drawings, tool, color, thickness, onAdd, onErase, vbWidth = 680, vbHeight = 1050 }: Props) {
   const [draft, setDraft] = useState<Drawing | null>(null)
   const [erasing, setErasing] = useState(false)
 
@@ -206,7 +211,7 @@ export default function DrawingCanvas({ containerRef, drawings, tool, color, thi
 
   return (
     <svg
-      viewBox={`0 0 ${VB_W} ${VB_H}`}
+      viewBox={`0 0 ${vbWidth} ${vbHeight}`}
       className="absolute inset-0 w-full h-full"
       style={{
         zIndex: 35,
@@ -227,8 +232,8 @@ export default function DrawingCanvas({ containerRef, drawings, tool, color, thi
         ))}
       </defs>
 
-      {drawings.map((d, i) => <DrawingShape key={i} d={d} />)}
-      {draft && <DrawingShape d={draft} />}
+      {drawings.map((d, i) => <DrawingShape key={i} d={d} vbWidth={vbWidth} vbHeight={vbHeight} />)}
+      {draft && <DrawingShape d={draft} vbWidth={vbWidth} vbHeight={vbHeight} />}
     </svg>
   )
 }
