@@ -4,15 +4,15 @@ import Link from "next/link"
 import { useState } from "react"
 import { usePathname } from "next/navigation"
 import { getDashboardNavGroups } from "@/lib/dashboardNav"
+import FootboardMark from "@/components/FootboardMark"
 
 interface Props {
-  clubName:      string
-  clubLevel:     string | null
-  userName:      string
-  canManageFees: boolean
+  clubName:  string
+  clubLevel: string | null
+  userName:  string
 }
 
-export default function MobileHeader({ clubName, clubLevel, userName, canManageFees }: Props) {
+export default function MobileHeader({ clubName, clubLevel, userName }: Props) {
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
 
@@ -22,7 +22,7 @@ export default function MobileHeader({ clubName, clubLevel, userName, canManageF
     setOpen(false)
   }
 
-  const navGroups = getDashboardNavGroups(canManageFees)
+  const navGroups = getDashboardNavGroups()
 
   return (
     <>
@@ -48,7 +48,7 @@ export default function MobileHeader({ clubName, clubLevel, userName, canManageF
         padding: "0 16px",
         paddingTop: "env(safe-area-inset-top)",
       }}>
-        <Link href="/" style={{
+        <Link href="/dashboard" style={{
           fontFamily: "var(--font-display), system-ui, sans-serif",
           fontWeight: 900, fontSize: 15, letterSpacing: "0.06em",
           color: "rgba(255,255,255,0.95)",
@@ -95,13 +95,16 @@ export default function MobileHeader({ clubName, clubLevel, userName, canManageF
       }}>
         {/* Logo */}
         <div style={{ padding: "20px 20px 16px", paddingTop: "calc(20px + env(safe-area-inset-top))", borderBottom: "1px solid rgba(122,154,130,0.08)" }}>
-          <p style={{
-            fontFamily: "var(--font-display), system-ui, sans-serif",
-            fontWeight: 900, fontSize: 16, letterSpacing: "0.06em",
-            color: "rgba(255,255,255,0.95)",
-          }}>
-            FOOTBOARD
-          </p>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <FootboardMark size={22} />
+            <p style={{
+              fontFamily: "var(--font-display), system-ui, sans-serif",
+              fontWeight: 900, fontSize: 16, letterSpacing: "0.06em",
+              color: "rgba(255,255,255,0.95)",
+            }}>
+              FOOTBOARD
+            </p>
+          </div>
           <p style={{
             fontFamily: "var(--font-mono), monospace",
             fontSize: 8, letterSpacing: "0.1em",

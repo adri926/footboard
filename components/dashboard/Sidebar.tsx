@@ -1,27 +1,40 @@
 "use client"
 
-import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import TeamSelector from "./TeamSelector"
-import BottomNavSubmenu from "./BottomNavSubmenu"
 import type { Team } from "@/lib/teams"
 import { getDashboardNavGroups } from "@/lib/dashboardNav"
 
 interface Props {
-  clubName:      string
-  clubLevel:     string | null
-  userName:      string
-  canManageFees: boolean
-  teams:         Team[]
-  activeTeamId:  string
+  clubName:     string
+  clubLevel:    string | null
+  userName:     string
+  teams:        Team[]
+  activeTeamId: string
 }
 
-export default function Sidebar({ clubName, clubLevel, userName, canManageFees, teams, activeTeamId }: Props) {
-  const pathname = usePathname()
-  const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null)
+// Bandeau bas = 5 destinations fixes et directes, choisies pour leur fréquence
+// d'usage réelle — pas dérivées des groupes du menu complet (cf. retour terrain :
+// une logique par groupes avec sous-menu caché au 2e tap rendait Matchs/Digiboard
+// "perdus", peu découvrable). Le hamburger (menu complet, getDashboardNavGroups)
+// reste le filet de sécurité pour tout le reste (Calendrier, Entraînements, Concepts).
+const BOTTOM_TABS = [
+  // "Terrain" couvre Matchs + Entraînements (segment toujours visible en haut des
+  // deux pages, voir TerrainSegment.tsx) — le tab doit s'allumer sur les deux routes.
+  { href: "/dashboard/matchs",        label: "Terrain",    icon: "◷", activeOn: ["/dashboard/matchs", "/dashboard/entrainements"] },
+  { href: "/tactique/analyse-video",  label: "IA",         icon: "◬" },
+  // "Actu" (ex-Accueil) — au milieu du bandeau, fait référence à l'écran
+  // "Aujourd'hui" (TodayPanel) : ce qui se passe maintenant, pas un accueil générique.
+  { href: "/dashboard",               label: "Actu",       icon: "◉" },
+  { href: "/dashboard/effectif",      label: "Effectif",   icon: "◻" },
+  { href: "/tactique/digiboard",      label: "Digiboard",  icon: "⬡" },
+]
 
-  const navGroups = getDashboardNavGroups(canManageFees)
+export default function Sidebar({ clubName, clubLevel, userName, teams, activeTeamId }: Props) {
+  const pathname = usePathname()
+
+  const navGroups = getDashboardNavGroups()
 
   return (
     <>
@@ -204,11 +217,7 @@ export default function Sidebar({ clubName, clubLevel, userName, canManageFees, 
         </Link>
       </aside>
 
-      {/* Bottom nav mobile — un tab par groupe de getDashboardNavGroups(), source unique
-          de vérité partagée avec la sidebar/le hamburger (plus de liste codée en dur
-          déconnectée du menu complet). 1er tap = navigation directe vers primaryHref
-          (ou items[0] si non précisé) ; re-tap sur un tab déjà actif à plusieurs items
-          ouvre un sous-menu vers les autres pages du groupe. */}
+      {/* Bottom nav mobile — 5 destinations fixes, voir BOTTOM_TABS ci-dessus */}
       <nav className="sb-bottom-nav" style={{
         display: "none",
         position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50,
@@ -217,28 +226,18 @@ export default function Sidebar({ clubName, clubLevel, userName, canManageFees, 
         borderTop: "1px solid rgba(122,154,130,0.15)",
         paddingBottom: "env(safe-area-inset-bottom)",
       }}>
-        {navGroups.map(group => {
-          const primaryHref = group.primaryHref ?? group.items[0]?.href ?? "/dashboard"
-          const icon = group.icon ?? group.items[0]?.icon ?? "•"
-          const label = group.shortLabel ?? group.label
-          const active = group.items.some(item =>
-            item.href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(item.href)
-          )
-          const hasSubmenu = group.items.length > 1
-          const submenuOpen = activeSubmenu === group.label
+        {BOTTOM_TABS.map(tab => {
+          const activeOn = "activeOn" in tab ? tab.activeOn : undefined
+          const active = activeOn
+            ? activeOn.some(p => pathname.startsWith(p))
+            : tab.href === "/dashboard"
+              ? pathname === "/dashboard"
+              : pathname.startsWith(tab.href)
 
           return (
             <Link
-              key={group.label}
-              href={primaryHref}
-              onClick={e => {
-                if (hasSubmenu && active) {
-                  e.preventDefault()
-                  setActiveSubmenu(submenuOpen ? null : group.label)
-                } else {
-                  setActiveSubmenu(null)
-                }
-              }}
+              key={tab.href}
+              href={tab.href}
               style={{
                 flex: 1, display: "flex", flexDirection: "column",
                 alignItems: "center", justifyContent: "center", gap: 3,
@@ -247,28 +246,16 @@ export default function Sidebar({ clubName, clubLevel, userName, canManageFees, 
                 borderTop: active ? "2px solid rgba(122,154,130,0.6)" : "2px solid transparent",
               }}>
               <span style={{ fontSize: 13, color: active ? "#7A9A82" : "rgba(255,255,255,0.3)" }}>
-                {icon}
+                {tab.icon}
               </span>
               <span style={{
                 fontFamily: "var(--font-mono), monospace",
                 fontSize: 7, fontWeight: 700, letterSpacing: "0.06em",
                 color: active ? "#7A9A82" : "rgba(255,255,255,0.3)",
               }}>
-                {label.toUpperCase()}
+                {tab.label.toUpperCase()}
               </span>
             </Link>
-          )
-        })}
-        {navGroups.map(group => {
-          if (activeSubmenu !== group.label) return null
-          return (
-            <BottomNavSubmenu
-              key={group.label}
-              items={group.items}
-              activeHref={pathname}
-              onSelect={() => setActiveSubmenu(null)}
-              onClose={() => setActiveSubmenu(null)}
-            />
           )
         })}
       </nav>

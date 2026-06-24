@@ -5,6 +5,7 @@ import Link from "next/link"
 import MatchForm from "@/components/dashboard/MatchForm"
 import PageHeader from "@/components/dashboard/PageHeader"
 import ClubLogo from "@/components/dashboard/ClubLogo"
+import TerrainSegment from "@/components/dashboard/TerrainSegment"
 import { deleteMatch } from "./actions"
 import { sendConvocations } from "./convocations"
 import type { Match } from "./actions"
@@ -263,6 +264,7 @@ export default function MatchsClient({ matches, players, club, availability, act
 
   return (
     <>
+      <TerrainSegment active="matchs" />
       <PageHeader
         label="Mon Club"
         title="Matchs"

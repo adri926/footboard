@@ -1,4 +1,4 @@
-import { auth, currentUser } from "@clerk/nextjs/server"
+import { currentUser } from "@clerk/nextjs/server"
 import { getClubScope } from "@/lib/scope"
 import { getClubTeams, getActiveTeam } from "@/lib/teams"
 
@@ -6,10 +6,9 @@ import { getClubTeams, getActiveTeam } from "@/lib/teams"
 // app/dashboard/layout.tsx et components/tactique/TactiqueShellLayout.tsx, qui
 // doivent rendre le même shell mais depuis deux arborescences de layout différentes.
 export async function getCoachShellData() {
-  const [user, { has }] = await Promise.all([currentUser(), auth()])
+  const user = await currentUser()
   const userName = user?.firstName ?? user?.emailAddresses?.[0]?.emailAddress ?? "Coach"
-  const canManageFees = has({ permission: "org:fees:manage" })
   const scope = await getClubScope()
   const [teams, activeTeam] = await Promise.all([getClubTeams(scope), getActiveTeam(scope)])
-  return { userName, canManageFees, teams, activeTeam }
+  return { userName, teams, activeTeam }
 }

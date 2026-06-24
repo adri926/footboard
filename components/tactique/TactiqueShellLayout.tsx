@@ -20,13 +20,13 @@ export default async function TactiqueShellLayout({ children }: { children: Reac
 
   const club = await getMyClub()
   if (club) {
-    const { userName, canManageFees, teams, activeTeam } = await getCoachShellData()
+    const { userName, teams, activeTeam } = await getCoachShellData()
     return (
       <>
         <style>{`[data-marketing-nav] { display: none !important; }`}</style>
-        <MobileHeader clubName={club.name} clubLevel={club.level} userName={userName} canManageFees={canManageFees} />
+        <MobileHeader clubName={club.name} clubLevel={club.level} userName={userName} />
         <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "var(--bg)" }}>
-          <Sidebar clubName={club.name} clubLevel={club.level} userName={userName} canManageFees={canManageFees} teams={teams} activeTeamId={activeTeam.id} />
+          <Sidebar clubName={club.name} clubLevel={club.level} userName={userName} teams={teams} activeTeamId={activeTeam.id} />
           <main className="dashboard-main" style={{ flex: 1, overflowY: "auto", minWidth: 0 }}>
             {children}
           </main>

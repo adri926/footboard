@@ -17,13 +17,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect(linked ? "/joueur" : "/onboarding")
   }
 
-  const { userName, canManageFees, teams, activeTeam } = await getCoachShellData()
+  const { userName, teams, activeTeam } = await getCoachShellData()
 
   return (
     <>
-      <MobileHeader clubName={club.name} clubLevel={club.level} userName={userName} canManageFees={canManageFees} />
+      <MobileHeader clubName={club.name} clubLevel={club.level} userName={userName} />
       <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "var(--bg)" }}>
-        <Sidebar clubName={club.name} clubLevel={club.level} userName={userName} canManageFees={canManageFees} teams={teams} activeTeamId={activeTeam.id} />
+        <Sidebar clubName={club.name} clubLevel={club.level} userName={userName} teams={teams} activeTeamId={activeTeam.id} />
         <main className="dashboard-main" style={{ flex: 1, overflowY: "auto", minWidth: 0 }}>
           {children}
         </main>

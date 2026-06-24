@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
+import Link from "next/link"
 import { updateClub } from "@/app/dashboard/club/actions"
 import { deleteAccount } from "./actions"
 import PageHeader from "@/components/dashboard/PageHeader"
@@ -39,9 +40,16 @@ const SECTION: React.CSSProperties = {
 
 interface Props {
   club: Club | null
+  canManageFees: boolean
 }
 
-export default function CompteClient({ club }: Props) {
+const CLUB_LINKS: { href: string; label: string; icon: string }[] = [
+  { href: "/dashboard/club/equipe", label: "Équipe & accès", icon: "◎" },
+  { href: "/dashboard/club/cotisations", label: "Cotisations", icon: "€" },
+  { href: "/dashboard/abonnement", label: "Abonnement", icon: "★" },
+]
+
+export default function CompteClient({ club, canManageFees }: Props) {
   const [form, setForm] = useState({
     name:  club?.name  ?? "",
     city:  club?.city  ?? "",
@@ -172,6 +180,47 @@ export default function CompteClient({ club }: Props) {
             {clubPending ? "..." : clubSaved ? "MODIFICATIONS SAUVEGARDÉES ✓" : "ENREGISTRER"}
           </button>
         </form>
+      </div>
+
+      {/* Gestion du club — Équipe & accès, Cotisations, Abonnement (regroupé ici
+          plutôt qu'au bandeau bas/hamburger, ce sont des pages d'admin ponctuelles,
+          pas des outils du quotidien) */}
+      <div style={{ ...SECTION, marginBottom: 16 }}>
+        <p style={{
+          fontFamily: "var(--font-mono), monospace",
+          fontSize: 9, fontWeight: 700, letterSpacing: "0.14em",
+          color: "rgba(122,154,130,0.6)", textTransform: "uppercase", marginBottom: 16,
+        }}>
+          Gestion du club
+        </p>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {CLUB_LINKS
+            .filter(link => link.href !== "/dashboard/club/cotisations" || canManageFees)
+            .map(link => (
+              <Link key={link.href} href={link.href} style={{
+                display: "flex", alignItems: "center", gap: 10,
+                padding: "10px 12px", borderRadius: 8,
+                backgroundColor: "rgba(255,255,255,0.02)",
+                border: "1px solid rgba(122,154,130,0.07)",
+                textDecoration: "none",
+              }}>
+                <span style={{ fontSize: 14, color: "#7A9A82", flexShrink: 0 }}>{link.icon}</span>
+                <span style={{
+                  flex: 1, fontFamily: "var(--font-body), sans-serif",
+                  fontWeight: 500, fontSize: 13, color: "rgba(255,255,255,0.75)",
+                }}>
+                  {link.label}
+                </span>
+                <span style={{
+                  fontFamily: "var(--font-mono), monospace", fontSize: 9,
+                  letterSpacing: "0.08em", color: "rgba(122,154,130,0.4)",
+                }}>
+                  →
+                </span>
+              </Link>
+            ))}
+        </div>
       </div>
 
       {/* Zone de danger */}

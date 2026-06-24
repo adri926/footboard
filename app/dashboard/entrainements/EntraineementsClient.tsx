@@ -5,6 +5,7 @@ import Link from "next/link"
 import TrainingForm from "@/components/dashboard/TrainingForm"
 import PlanifierModal from "@/components/dashboard/PlanifierModal"
 import PageHeader from "@/components/dashboard/PageHeader"
+import TerrainSegment from "@/components/dashboard/TerrainSegment"
 import { deleteTraining } from "./actions"
 import { TRAINING_TYPES } from "@/lib/training-types"
 import type { Training } from "./actions"
@@ -160,6 +161,7 @@ export default function EntraineementsClient({ trainings, savedSessions, activeT
 
   return (
     <>
+      <TerrainSegment active="entrainements" />
       <PageHeader
         label="Mon Club"
         title="Entraînements"
