@@ -1,14 +1,13 @@
 import Link from "next/link"
-import MetricCard from "@/components/dashboard/MetricCard"
+import { currentUser } from "@clerk/nextjs/server"
 import PlayerStatusBadge from "@/components/dashboard/PlayerStatusBadge"
 import PageHeader from "@/components/dashboard/PageHeader"
+import TodayPanel from "@/components/dashboard/TodayPanel"
 import { getPlayers } from "@/app/dashboard/effectif/actions"
-import { getMatches } from "@/app/dashboard/matchs/actions"
+import { getMatches, getMatchStats } from "@/app/dashboard/matchs/actions"
 import { getTrainings } from "@/app/dashboard/entrainements/actions"
 import { getMyClub } from "@/app/dashboard/club/actions"
 import { TRAINING_TYPES } from "@/lib/training-types"
-import type { Match } from "@/app/dashboard/matchs/actions"
-import type { Training } from "@/app/dashboard/entrainements/actions"
 
 function formatDate(dateStr: string) {
   const m = dateStr.match(/(\d{4})-(\d{2})-(\d{2})/)
@@ -22,132 +21,40 @@ const TYPE_COLORS: Record<string, string> = {
   cpa: "#a87ab8", recuperation: "#7ab8a8", amical: "#e07070",
 }
 
-const DAYS   = ["L","M","M","J","V","S","D"]
-const MONTHS = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"]
-
-function MiniCalendar({ trainings, matches }: { trainings: Training[]; matches: Match[] }) {
-  const now  = new Date()
-  const year = now.getFullYear()
-  const month = now.getMonth()
-
-  const trainingSet = new Set(trainings.map(t => t.date.slice(0, 10)))
-  const matchSet    = new Set(matches.map(m => m.date.slice(0, 10)))
-
-  const firstDay    = new Date(year, month, 1)
-  const daysInMonth = new Date(year, month + 1, 0).getDate()
-  const startOffset = (firstDay.getDay() + 6) % 7
-
-  const todayStr = `${year}-${String(month+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`
-
-  const cells: (number | null)[] = [
-    ...Array(startOffset).fill(null),
-    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
-  ]
-
-  return (
-    <div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-        <p style={{
-          fontFamily: "var(--font-mono), monospace",
-          fontSize: 9, fontWeight: 700, letterSpacing: "0.14em",
-          color: "rgba(122,154,130,0.7)", textTransform: "uppercase",
-        }}>
-          Agenda — {MONTHS[month]} {year}
-        </p>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ width: 7, height: 7, borderRadius: "50%", backgroundColor: "#7A9A82", display: "inline-block" }} />
-            <span style={{ fontFamily: "var(--font-mono), monospace", fontSize: 8, color: "rgba(255,255,255,0.45)" }}>Entraînement</span>
-          </span>
-          <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ width: 7, height: 7, borderRadius: "50%", backgroundColor: "#d4a847", display: "inline-block" }} />
-            <span style={{ fontFamily: "var(--font-mono), monospace", fontSize: 8, color: "rgba(255,255,255,0.45)" }}>Match</span>
-          </span>
-        </div>
-      </div>
-
-      {/* En-têtes jours */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2, marginBottom: 4 }}>
-        {DAYS.map((d, i) => (
-          <div key={i} style={{
-            textAlign: "center",
-            fontFamily: "var(--font-mono), monospace",
-            fontSize: 8, color: "rgba(255,255,255,0.2)", letterSpacing: "0.04em",
-          }}>
-            {d}
-          </div>
-        ))}
-      </div>
-
-      {/* Grille */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 3 }}>
-        {cells.map((day, i) => {
-          if (!day) return <div key={i} />
-          const dateStr   = `${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`
-          const hasT      = trainingSet.has(dateStr)
-          const hasM      = matchSet.has(dateStr)
-          const isToday   = dateStr === todayStr
-          const hasEvent  = hasT || hasM
-
-          return (
-            <div key={i} style={{
-              display: "flex", flexDirection: "column", alignItems: "center",
-              gap: 3, padding: "6px 0", borderRadius: 7,
-              backgroundColor: isToday ? "rgba(122,154,130,0.12)" : hasEvent ? "rgba(255,255,255,0.02)" : "transparent",
-              border: isToday ? "1px solid rgba(122,154,130,0.25)" : "1px solid transparent",
-            }}>
-              <span style={{
-                fontFamily: "var(--font-mono), monospace",
-                fontSize: 11,
-                color: isToday ? "#7A9A82" : "rgba(255,255,255,0.65)",
-                fontWeight: isToday ? 700 : 400,
-              }}>
-                {day}
-              </span>
-              <div style={{ display: "flex", gap: 2, height: 7, alignItems: "center" }}>
-                {hasT && <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: "#7A9A82", opacity: 0.9 }} />}
-                {hasM && <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: "#d4a847", opacity: 0.9 }} />}
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
 export default async function DashboardPage() {
-  const [players, matches, trainings, club] = await Promise.all([
+  const [players, matches, trainings, club, user] = await Promise.all([
     getPlayers(),
     getMatches(),
     getTrainings(),
     getMyClub(),
+    currentUser(),
   ])
 
   const today = new Date().toISOString().slice(0, 10)
-  const now = new Date()
-  const thisMonth = now.getMonth()
-  const thisYear = now.getFullYear()
 
   const nextMatch = matches
     .filter(m => m.date.slice(0,10) >= today && m.goals_for === null)
-    .sort((a, b) => a.date.slice(0,10).localeCompare(b.date.slice(0,10)))[0]
+    .sort((a, b) => a.date.slice(0,10).localeCompare(b.date.slice(0,10)))[0] ?? null
+
+  const nextTraining = nextMatch ? null : trainings
+    .filter(t => t.date.slice(0,10) >= today)
+    .sort((a, b) => a.date.slice(0,10).localeCompare(b.date.slice(0,10)))[0] ?? null
+
+  const lastPastMatch = matches
+    .filter(m => m.date.slice(0,10) < today)
+    .sort((a, b) => b.date.slice(0,10).localeCompare(a.date.slice(0,10)))[0] ?? null
+  const lastPastMatchStats = lastPastMatch ? await getMatchStats(lastPastMatch.id) : []
+  const unsavedBilanMatch = lastPastMatch && lastPastMatchStats.length === 0 ? lastPastMatch : null
 
   const recentResults = matches
     .filter(m => m.goals_for !== null)
     .slice(0, 3)
 
-  const monthTrainings = trainings.filter(t => {
-    const d = new Date(t.date.slice(0, 10) + "T12:00:00")
-    return d.getMonth() === thisMonth && d.getFullYear() === thisYear
-  })
-
-  const availablePlayers  = players.filter(p => p.status === "available")
-  const injuredPlayers    = players.filter(p => p.status === "injured")
-  const uncertainPlayers  = players.filter(p => p.status === "uncertain")
-  const nonAvailable      = players.filter(p => p.status !== "available")
+  const nonAvailable = players.filter(p => p.status !== "available")
 
   const lastTrainings = trainings.slice(0, 4)
+
+  const userName = user?.firstName ?? user?.emailAddresses?.[0]?.emailAddress ?? "Coach"
 
   return (
     <div className="page-pad" style={{ maxWidth: 1100 }}>
@@ -158,44 +65,13 @@ export default async function DashboardPage() {
         subtitle={[club?.level, "Saison 2025/2026"].filter(Boolean).join(" — ")}
       />
 
-      {/* 4 metric cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 32 }}>
-        <MetricCard
-          label="Prochain match"
-          value={nextMatch ? formatDate(nextMatch.date) : "—"}
-          sub={nextMatch
-            ? `vs ${nextMatch.opponent} · ${nextMatch.home_away === "home" ? "Domicile" : "Extérieur"}`
-            : "Aucun match à venir"}
-          accent
-        />
-        <MetricCard
-          label="Joueurs disponibles"
-          value={availablePlayers.length || (players.length === 0 ? "—" : 0)}
-          sub={players.length > 0 ? `sur ${players.length} dans l'effectif` : "Effectif vide"}
-          accent
-        />
-        <MetricCard
-          label="Entraînements ce mois"
-          value={monthTrainings.length || (trainings.length === 0 ? "—" : 0)}
-          sub="séances réalisées"
-        />
-        <MetricCard
-          label="Blessés en cours"
-          value={injuredPlayers.length + uncertainPlayers.length || (players.length === 0 ? "—" : 0)}
-          sub={players.length > 0
-            ? `${injuredPlayers.length} blessé${injuredPlayers.length !== 1 ? "s" : ""} · ${uncertainPlayers.length} incertain${uncertainPlayers.length !== 1 ? "s" : ""}`
-            : "Effectif vide"}
-          warn={injuredPlayers.length > 0}
-        />
-      </div>
-
-      {/* Mini calendrier */}
-      <div style={{
-        backgroundColor: "var(--bg-card)", border: "1px solid rgba(122,154,130,0.1)",
-        borderRadius: 12, padding: "20px 22px", marginBottom: 20,
-      }}>
-        <MiniCalendar trainings={trainings} matches={matches} />
-      </div>
+      <TodayPanel
+        userName={userName}
+        nextMatch={nextMatch}
+        nextTraining={nextTraining}
+        concernedCount={nonAvailable.length}
+        unsavedBilanMatch={unsavedBilanMatch}
+      />
 
       {/* 2 columns */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
