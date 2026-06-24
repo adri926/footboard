@@ -1,5 +1,7 @@
 "use client"
 
+import FootboardMark from "@/components/FootboardMark"
+
 export default function OfflinePage() {
   return (
     <main style={{
@@ -8,6 +10,9 @@ export default function OfflinePage() {
       padding: 24,
     }}>
       <div style={{ textAlign: "center", maxWidth: 360 }}>
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
+          <FootboardMark size={32} />
+        </div>
         <p style={{
           fontFamily: "var(--font-mono), monospace",
           fontSize: 10, letterSpacing: "0.14em",

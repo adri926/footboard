@@ -1,4 +1,17 @@
+"use client"
+
 import Link from "next/link"
+import { usePathname } from "next/navigation"
+import FootboardMark from "@/components/FootboardMark"
+
+// Hors du contexte app authentifié — même logique que components/Nav.tsx, le
+// footer marketing (Tarifs/Blog/Mentions légales...) n'a rien à faire dans le
+// shell app et ajoutait un défilement inutile en bas de chaque page. Le cas
+// "shell tactique" (digiboard/analyse-video/concepts pour un coach/joueur
+// connecté) est couvert par data-marketing-nav, déjà injecté par
+// TactiqueShellLayout — on réutilise le même attribut sur le footer.
+const HIDE_ON = ["/tactique/digiboard"]
+const HIDE_ON_PREFIXES = ["/dashboard", "/joueur"]
 
 const COLS = [
   {
@@ -33,8 +46,12 @@ const COLS = [
 const SOCIALS = ["X", "Instagram", "YouTube"]
 
 export default function Footer() {
+  const pathname = usePathname()
+  if (HIDE_ON.includes(pathname)) return null
+  if (HIDE_ON_PREFIXES.some(prefix => pathname.startsWith(prefix))) return null
+
   return (
-    <footer style={{
+    <footer data-marketing-nav style={{
       borderTop: "1px solid rgba(122,154,130,0.12)",
       backgroundColor: "var(--bg)",
       color: "rgba(255,255,255,0.92)",
@@ -45,10 +62,12 @@ export default function Footer() {
           {/* Colonne logo */}
           <div className="col-span-2 md:col-span-1">
             <Link href="/" style={{
+              display: "flex", alignItems: "center", gap: 8,
               fontFamily: "var(--font-display), system-ui, sans-serif",
               fontWeight: 900, fontSize: 20, letterSpacing: "0.05em",
               color: "rgba(255,255,255,0.95)",
             }}>
+              <FootboardMark size={24} />
               FOOT<span style={{ color: "#7A9A82" }}>BOARD</span>
             </Link>
             <p style={{

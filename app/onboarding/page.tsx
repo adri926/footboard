@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useClerk } from "@clerk/nextjs"
 import Link from "next/link"
 import { createClub } from "@/app/dashboard/club/actions"
+import FootboardMark from "@/components/FootboardMark"
 
 const LEVELS = [
   "National 3", "Régional 1", "Régional 2", "Régional 3",
@@ -91,13 +92,16 @@ export default function OnboardingPage() {
         padding: 24,
       }}>
         <div style={{ width: "100%", maxWidth: 480 }}>
-          <p style={{
-            fontFamily: "var(--font-display), system-ui, sans-serif",
-            fontWeight: 900, fontSize: 18, letterSpacing: "0.06em",
-            color: "rgba(255,255,255,0.95)", marginBottom: 40,
-          }}>
-            FOOTBOARD
-          </p>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 40 }}>
+            <FootboardMark size={20} />
+            <p style={{
+              fontFamily: "var(--font-display), system-ui, sans-serif",
+              fontWeight: 900, fontSize: 18, letterSpacing: "0.06em",
+              color: "rgba(255,255,255,0.95)",
+            }}>
+              FOOTBOARD
+            </p>
+          </div>
 
           <div style={{ marginBottom: 36 }}>
             <p style={{
@@ -187,13 +191,16 @@ export default function OnboardingPage() {
     }}>
       <div style={{ width: "100%", maxWidth: 440 }}>
 
-        <p style={{
-          fontFamily: "var(--font-display), system-ui, sans-serif",
-          fontWeight: 900, fontSize: 18, letterSpacing: "0.06em",
-          color: "rgba(255,255,255,0.95)", marginBottom: 40,
-        }}>
-          FOOTBOARD
-        </p>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 40 }}>
+          <FootboardMark size={20} />
+          <p style={{
+            fontFamily: "var(--font-display), system-ui, sans-serif",
+            fontWeight: 900, fontSize: 18, letterSpacing: "0.06em",
+            color: "rgba(255,255,255,0.95)",
+          }}>
+            FOOTBOARD
+          </p>
+        </div>
 
         <div style={{ marginBottom: 32 }}>
           <p style={{

@@ -1,4 +1,5 @@
 import { SignIn } from "@clerk/nextjs"
+import FootboardMark from "@/components/FootboardMark"
 
 export default function SignInPage() {
   return (
@@ -15,8 +16,11 @@ export default function SignInPage() {
 
       {/* Logo + titre */}
       <div style={{ textAlign: "center" }}>
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
+          <FootboardMark size={36} />
+        </div>
         <p style={{
-          fontFamily: "'Space Mono', monospace",
+          fontFamily: "var(--font-mono), monospace",
           fontSize: 10, fontWeight: 700, letterSpacing: "0.20em",
           color: "rgba(122,154,130,0.6)",
           textTransform: "uppercase", marginBottom: 10,
@@ -24,7 +28,7 @@ export default function SignInPage() {
           PLATEFORME COACH
         </p>
         <h1 style={{
-          fontFamily: "'Barlow Condensed', system-ui, sans-serif",
+          fontFamily: "var(--font-display), system-ui, sans-serif",
           fontWeight: 900, fontSize: 42, lineHeight: 0.95,
           color: "rgba(255,255,255,0.92)",
           letterSpacing: "0.02em",
@@ -46,7 +50,7 @@ export default function SignInPage() {
             colorInputBackground: "rgba(255,255,255,0.04)",
             colorInputText: "rgba(255,255,255,0.85)",
             borderRadius: "10px",
-            fontFamily: "'Barlow', system-ui, sans-serif",
+            fontFamily: "var(--font-body), sans-serif",
           },
           elements: {
             card: {
@@ -56,7 +60,7 @@ export default function SignInPage() {
               padding: "28px",
             },
             headerTitle: {
-              fontFamily: "'Barlow Condensed', system-ui, sans-serif",
+              fontFamily: "var(--font-display), system-ui, sans-serif",
               fontWeight: 900,
               fontSize: "20px",
               letterSpacing: "0.04em",
@@ -73,7 +77,7 @@ export default function SignInPage() {
               color: "#7A9A82",
               fontWeight: 700,
               padding: "13px",
-              fontFamily: "'Space Mono', monospace",
+              fontFamily: "var(--font-mono), monospace",
               fontSize: "11px",
               letterSpacing: "0.06em",
               transition: "all 0.2s",
@@ -81,7 +85,7 @@ export default function SignInPage() {
             socialButtonsBlockButtonText: {
               color: "#7A9A82",
               fontWeight: 700,
-              fontFamily: "'Space Mono', monospace",
+              fontFamily: "var(--font-mono), monospace",
               fontSize: "11px",
               letterSpacing: "0.06em",
             },
@@ -91,7 +95,7 @@ export default function SignInPage() {
               backgroundColor: "#7A9A82",
               color: "#17160f",
               fontWeight: 700,
-              fontFamily: "'Space Mono', monospace",
+              fontFamily: "var(--font-mono), monospace",
               letterSpacing: "0.06em",
             },
             footer: { display: "none" },
@@ -100,7 +104,7 @@ export default function SignInPage() {
       />
 
       <p style={{
-        fontFamily: "'Space Mono', monospace",
+        fontFamily: "var(--font-mono), monospace",
         fontSize: 9, letterSpacing: "0.08em",
         color: "rgba(255,255,255,0.18)",
         textAlign: "center", maxWidth: 280, lineHeight: 1.7,

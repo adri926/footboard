@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useState, useEffect } from "react"
 import { usePathname } from "next/navigation"
+import FootboardMark from "@/components/FootboardMark"
 
 const NAV_ITEMS = [
   { href: "/joueur",              label: "Calendrier",      icon: "▦" },
@@ -88,13 +89,16 @@ export default function PlayerMobileHeader({ clubName, playerName }: Props) {
         transition: "transform 0.25s ease",
       }}>
         <div style={{ padding: "20px 20px 16px", paddingTop: "calc(20px + env(safe-area-inset-top))", borderBottom: "1px solid rgba(122,154,130,0.08)" }}>
-          <p style={{
-            fontFamily: "var(--font-display), system-ui, sans-serif",
-            fontWeight: 900, fontSize: 16, letterSpacing: "0.06em",
-            color: "rgba(255,255,255,0.95)",
-          }}>
-            FOOTBOARD
-          </p>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <FootboardMark size={22} />
+            <p style={{
+              fontFamily: "var(--font-display), system-ui, sans-serif",
+              fontWeight: 900, fontSize: 16, letterSpacing: "0.06em",
+              color: "rgba(255,255,255,0.95)",
+            }}>
+              FOOTBOARD
+            </p>
+          </div>
           <p style={{
             fontFamily: "var(--font-mono), monospace",
             fontSize: 8, letterSpacing: "0.1em",
