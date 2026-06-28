@@ -1,32 +1,34 @@
 import Link from "next/link"
 
 const STATS = [
+  { value: "IA", label: "ANALYSE VIDÉO" },
   { value: "16", label: "FORMATIONS" },
   { value: "12", label: "CONCEPTS ANIMÉS" },
-  { value: "IA", label: "ANALYSE VIDÉO" },
 ]
 
 const PRIMARY = {
-  tag: "TABLEAU TACTIQUE",
-  title: "DIGIBOARD",
-  desc: "Dessine tes schémas en direct. Place les joueurs, trace les trajectoires, explique ta vision en temps réel à ton groupe.",
-  href: "/tactique/digiboard",
-  cta: "OUVRIR LE DIGIBOARD",
+  tag: "IA · ANALYSE VIDÉO",
+  title: "ANALYSE VIDÉO",
+  desc: "Upload la vidéo d'un match : l'IA génère une timeline d'événements, tague tes joueurs et répond à tes questions en langage naturel. Le cœur tactique de Footboard.",
+  href: "/tactique/analyse-video",
+  cta: "ANALYSER UN MATCH",
 }
 
 const SECONDARY = [
   {
     num: "01",
-    tag: "IA",
-    title: "ANALYSE VIDÉO",
-    desc: "Upload la vidéo d'un match : timeline d'événements et questions en langage naturel.",
-    href: "/tactique/analyse-video",
-    cta: "ANALYSER →",
+    tag: "TABLEAU TACTIQUE",
+    title: "DIGIBOARD",
+    desc: "Dessine tes schémas en direct : place les joueurs, trace les trajectoires, explique ta vision au groupe.",
+    href: "/tactique/digiboard",
+    cta: "OUVRIR →",
     icon: (
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <rect x="3" y="5" width="14" height="14" rx="2" strokeWidth="1" opacity="0.3" />
-        <path d="M17 9l4-2v10l-4-2z" strokeLinecap="round" strokeLinejoin="round" />
-        <circle cx="10" cy="12" r="2.5" />
+        <rect x="3" y="4" width="18" height="16" rx="2" strokeWidth="1" opacity="0.3" />
+        <path d="M12 4v16" strokeWidth="0.8" opacity="0.6" />
+        <circle cx="8" cy="9" r="1.5" />
+        <circle cx="16" cy="14" r="1.5" />
+        <path d="M9 10l6 3" strokeLinecap="round" strokeDasharray="2 2" opacity="0.7" />
       </svg>
     ),
   },
@@ -34,7 +36,7 @@ const SECONDARY = [
     num: "02",
     tag: "APPRENTISSAGE",
     title: "CONCEPTS",
-    desc: "Systèmes de jeu, pressing, transitions — les fondamentaux en schémas.",
+    desc: "Systèmes de jeu, pressing, transitions — les fondamentaux en schémas animés.",
     href: "/tactique/concepts",
     cta: "LIRE →",
     icon: (
@@ -121,7 +123,7 @@ export default function TactiquePage() {
             fontSize: 10, letterSpacing: "0.12em",
             color: "var(--sauge)", marginBottom: 10,
           }}>
-            MODULE TACTIQUE
+            STUDIO TACTIQUE
           </p>
           <h1 style={{
             fontFamily: "var(--font-display), system-ui, sans-serif",
@@ -129,14 +131,14 @@ export default function TactiquePage() {
             letterSpacing: "-0.01em",
             color: "var(--text-primary)",
           }}>
-            TACTIQUE
+            STUDIO
           </h1>
           <p style={{
             fontFamily: "var(--font-body), sans-serif",
             fontSize: 15, color: "var(--text-muted)",
             marginTop: 12, maxWidth: 440, lineHeight: 1.5,
           }}>
-            Crée, anime et comprends les systèmes de jeu.
+            Analyse tes matchs avec l&apos;IA, dessine tes schémas, forme ton groupe.
           </p>
         </div>
 

@@ -34,11 +34,11 @@ export const DASHBOARD_NAV_GROUPS: DashboardNavGroup[] = [
     ],
   },
   {
-    label: "Tactique",
+    label: "Studio",
     items: [
+      { href: "/tactique/analyse-video",  label: "Analyse vidéo", icon: "◬", badge: "IA" },
       { href: "/tactique/digiboard",      label: "Digiboard",     icon: "⬡" },
       { href: "/tactique/concepts",       label: "Concepts",      icon: "▶" },
-      { href: "/tactique/analyse-video",  label: "Analyse vidéo", icon: "◬", badge: "IA" },
     ],
   },
 ]
