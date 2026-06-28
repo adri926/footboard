@@ -532,6 +532,17 @@ export default function MatchsClient({ matches, players, club, availability, act
                     }}>
                       BILAN
                     </Link>
+                    <Link href={`/tactique/analyse-video?match=${m.id}`} style={{
+                      fontFamily: "var(--font-mono), monospace",
+                      fontSize: 8, fontWeight: 700, letterSpacing: "0.06em",
+                      padding: "5px 10px", borderRadius: 6,
+                      backgroundColor: "var(--sauge-dim)",
+                      border: "1px solid var(--sauge-border)",
+                      color: "var(--sauge)",
+                      textDecoration: "none",
+                    }}>
+                      ◬ ANALYSER
+                    </Link>
                     <button onClick={() => openEdit(m)} style={{
                       fontFamily: "var(--font-mono), monospace", fontSize: 8,
                       padding: "5px 10px", borderRadius: 6, cursor: "pointer",

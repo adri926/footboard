@@ -9,7 +9,12 @@ function formatMatchLabel(m: Match) {
   return `${date} — ${m.home_away === "home" ? "vs" : "@"} ${m.opponent}`
 }
 
-export default function UploadForm({ matches }: { matches: Match[] }) {
+export default function UploadForm(
+  { matches, preselectMatchId = null }: { matches: Match[]; preselectMatchId?: string | null }
+) {
+  // Match présélectionné quand on arrive depuis « Analyser la vidéo de ce match ».
+  const preMatch = preselectMatchId ? matches.find(m => m.id === preselectMatchId) ?? null : null
+
   const [isPending, setIsPending] = useState(false)
   const [progress, setProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
@@ -86,6 +91,7 @@ export default function UploadForm({ matches }: { matches: Match[] }) {
         name="title"
         type="text"
         placeholder="Titre (ex: AS Poincaré vs FC Rival)"
+        defaultValue={preMatch ? `${preMatch.home_away === "home" ? "vs" : "@"} ${preMatch.opponent}` : undefined}
         style={{
           backgroundColor: "var(--bg-input)",
           border: "1px solid rgba(122,154,130,0.18)",
@@ -109,7 +115,7 @@ export default function UploadForm({ matches }: { matches: Match[] }) {
       {matches.length > 0 && (
         <select
           name="matchId"
-          defaultValue=""
+          defaultValue={preMatch ? preMatch.id : ""}
           style={{
             backgroundColor: "var(--bg-input)",
             border: "1px solid rgba(122,154,130,0.18)",

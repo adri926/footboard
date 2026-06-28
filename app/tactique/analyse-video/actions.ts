@@ -57,6 +57,63 @@ export async function listAnalyses(): Promise<VideoAnalysis[]> {
   return data as VideoAnalysis[]
 }
 
+export interface PlayerAnalysisEvent {
+  id: string
+  analysisId: string
+  analysisTitle: string
+  matchId: string | null
+  createdAt: string
+  timestampSec: number
+  label: string
+  description: string
+  eventType: EventType
+}
+
+// Notes d'analyse vidéo taguées sur un joueur — remontées côté fiche joueur (Effectif)
+// pour souder l'IA aux modules de gestion. Filtré au scope du club via les analyses.
+export async function getPlayerAnalysisEvents(playerId: string): Promise<PlayerAnalysisEvent[]> {
+  const { userId } = await auth()
+  if (!userId) return []
+  const scope = await getClubScope()
+
+  const { data: analyses } = await supabase
+    .from("video_analyses")
+    .select("id, title, created_at, match_id")
+    .eq(scope.column, scope.value)
+
+  if (!analyses || analyses.length === 0) return []
+  const byId = new Map(analyses.map(a => [a.id, a]))
+
+  const { data: events } = await supabase
+    .from("analysis_events")
+    .select("id, timestamp_sec, label, description, event_type, analysis_id")
+    .eq("player_id", playerId)
+    .in("analysis_id", analyses.map(a => a.id))
+
+  if (!events) return []
+
+  return events
+    .map(e => {
+      const a = byId.get(e.analysis_id)!
+      return {
+        id: e.id,
+        analysisId: e.analysis_id,
+        analysisTitle: a.title,
+        matchId: a.match_id,
+        createdAt: a.created_at,
+        timestampSec: e.timestamp_sec,
+        label: e.label,
+        description: e.description,
+        eventType: e.event_type as EventType,
+      }
+    })
+    .sort((x, y) =>
+      x.createdAt === y.createdAt
+        ? x.timestampSec - y.timestampSec
+        : x.createdAt < y.createdAt ? 1 : -1
+    )
+}
+
 export interface VideoAnnotation {
   id: string
   timestampSec: number

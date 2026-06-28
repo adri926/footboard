@@ -13,15 +13,22 @@ const STATUS_LABEL: Record<string, string> = {
   error: "ERREUR",
 }
 
-export default async function AnalyseVideoPage() {
+export default async function AnalyseVideoPage(
+  { searchParams }: { searchParams: Promise<{ match?: string }> }
+) {
   // Page à double usage (visiteur marketing non connecté + outil interne coach) —
   // getMatches() exige une session (getClubScope() lève sinon), donc on ne l'appelle
   // que si un utilisateur est authentifié. listAnalyses() gère déjà ce cas (retourne []).
   const { userId } = await auth()
-  const [analyses, matches] = await Promise.all([
+  const [analyses, matches, sp] = await Promise.all([
     listAnalyses(),
     userId ? getMatches() : Promise.resolve([]),
+    searchParams,
   ])
+
+  // Lien "Analyser la vidéo de ce match" (depuis la liste des matchs) → on présélectionne
+  // le match dans le formulaire pour souder la gestion à l'IA.
+  const preselectMatchId = sp.match ?? null
 
   return (
     <main style={{ background: "var(--bg)", minHeight: "calc(100vh - 56px)" }}>
@@ -35,7 +42,7 @@ export default async function AnalyseVideoPage() {
             fontSize: 10, letterSpacing: "0.12em",
             color: "var(--sauge)", marginBottom: 10,
           }}>
-            MODULE TACTIQUE — IA
+            STUDIO TACTIQUE — IA
           </p>
           <h1 style={{
             fontFamily: "var(--font-display), system-ui, sans-serif",
@@ -56,7 +63,7 @@ export default async function AnalyseVideoPage() {
         </div>
 
         <div style={{ marginBottom: 32 }}>
-          <UploadForm matches={matches} />
+          <UploadForm matches={matches} preselectMatchId={preselectMatchId} />
         </div>
 
         <div>

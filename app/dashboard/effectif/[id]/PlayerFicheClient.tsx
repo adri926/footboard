@@ -14,8 +14,24 @@ import PhysicalEntryList from "@/components/effectif/PhysicalEntryList"
 import PlayerAccountSection from "@/components/effectif/PlayerAccountSection"
 import type { Player } from "@/app/dashboard/effectif/actions"
 import type { PlayerSeasonStats } from "@/app/dashboard/matchs/actions"
+import type { PlayerAnalysisEvent } from "@/app/tactique/analyse-video/actions"
 import type { MedicalRecord } from "@/types/medical"
 import type { PhysicalEntry } from "@/types/physical"
+
+const EVENT_META: Record<PlayerAnalysisEvent["eventType"], { icon: string; label: string }> = {
+  but:        { icon: "⬤", label: "But" },
+  occasion:   { icon: "◬", label: "Occasion" },
+  carton:     { icon: "▮", label: "Carton" },
+  changement: { icon: "⇄", label: "Changement" },
+  tactique:   { icon: "⬡", label: "Tactique" },
+  autre:      { icon: "◦", label: "Note" },
+}
+
+function formatTimestamp(sec: number) {
+  const m = Math.floor(sec / 60)
+  const s = Math.floor(sec % 60)
+  return `${m}:${s.toString().padStart(2, "0")}`
+}
 
 const POSITION_LABELS: Record<Player["position"], string> = {
   GK: "Gardien", DEF: "Défenseur", MIL: "Milieu", ATT: "Attaquant",
@@ -40,9 +56,10 @@ interface Props {
   stats:    PlayerSeasonStats
   medical:  MedicalRecord
   physical: PhysicalEntry[]
+  analysisEvents: PlayerAnalysisEvent[]
 }
 
-export default function PlayerFicheClient({ player, stats, medical, physical }: Props) {
+export default function PlayerFicheClient({ player, stats, medical, physical, analysisEvents }: Props) {
   const searchParams = useSearchParams()
   const tabParam = searchParams.get("tab")
   const initialTab = TABS.some(t => t.key === tabParam) ? (tabParam as Tab) : "identite"
@@ -149,36 +166,97 @@ export default function PlayerFicheClient({ player, stats, medical, physical }: 
       )}
 
       {tab === "stats" && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
-          {[
-            { label: "Matchs joués",      value: stats.matchesPlayed },
-            { label: "Titularisations",   value: stats.starts },
-            { label: "Minutes",           value: stats.minutesPlayed },
-            { label: "Minutes / match",   value: minutesPerMatch },
-            { label: "Buts",              value: stats.goals },
-            { label: "Passes déc.",       value: stats.assists },
-          ].map(stat => (
-            <div key={stat.label} style={{
-              padding: "16px 18px", borderRadius: 10,
-              backgroundColor: "var(--bg-card)",
-              border: "1px solid rgba(122,154,130,0.08)",
-            }}>
-              <p style={{
-                fontFamily: "var(--font-mono), monospace",
-                fontSize: 8, letterSpacing: "0.1em",
-                color: "rgba(122,154,130,0.45)", marginBottom: 6, textTransform: "uppercase",
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+            {[
+              { label: "Matchs joués",      value: stats.matchesPlayed },
+              { label: "Titularisations",   value: stats.starts },
+              { label: "Minutes",           value: stats.minutesPlayed },
+              { label: "Minutes / match",   value: minutesPerMatch },
+              { label: "Buts",              value: stats.goals },
+              { label: "Passes déc.",       value: stats.assists },
+            ].map(stat => (
+              <div key={stat.label} style={{
+                padding: "16px 18px", borderRadius: 10,
+                backgroundColor: "var(--bg-card)",
+                border: "1px solid rgba(122,154,130,0.08)",
               }}>
-                {stat.label}
-              </p>
+                <p style={{
+                  fontFamily: "var(--font-mono), monospace",
+                  fontSize: 8, letterSpacing: "0.1em",
+                  color: "rgba(122,154,130,0.45)", marginBottom: 6, textTransform: "uppercase",
+                }}>
+                  {stat.label}
+                </p>
+                <p style={{
+                  fontFamily: "var(--font-display), system-ui, sans-serif",
+                  fontWeight: 900, fontSize: 28, lineHeight: 1,
+                  color: "rgba(255,255,255,0.85)",
+                }}>
+                  {stat.value}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <Section title="Vu en analyse vidéo">
+            {analysisEvents.length > 0 ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {analysisEvents.map(ev => {
+                  const meta = EVENT_META[ev.eventType] ?? EVENT_META.autre
+                  return (
+                    <Link key={ev.id} href={`/tactique/analyse-video/${ev.analysisId}`} style={{
+                      display: "flex", alignItems: "flex-start", gap: 12,
+                      padding: "12px 14px", borderRadius: 10,
+                      backgroundColor: "rgba(122,154,130,0.04)",
+                      border: "1px solid rgba(122,154,130,0.10)",
+                      textDecoration: "none",
+                    }}>
+                      <span style={{
+                        fontSize: 13, color: "#7A9A82", lineHeight: 1.4, flexShrink: 0,
+                      }}>
+                        {meta.icon}
+                      </span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{
+                          fontFamily: "var(--font-body), sans-serif",
+                          fontWeight: 500, fontSize: 13, color: "rgba(255,255,255,0.85)",
+                          marginBottom: 3,
+                        }}>
+                          {ev.label}
+                        </p>
+                        {ev.description && (
+                          <p style={{
+                            fontFamily: "var(--font-body), sans-serif",
+                            fontWeight: 400, fontSize: 12, color: "rgba(255,255,255,0.45)",
+                            lineHeight: 1.5,
+                          }}>
+                            {ev.description}
+                          </p>
+                        )}
+                        <p style={{
+                          fontFamily: "var(--font-mono), monospace",
+                          fontSize: 8, letterSpacing: "0.08em",
+                          color: "rgba(122,154,130,0.5)", marginTop: 5,
+                          textTransform: "uppercase",
+                        }}>
+                          {meta.label} · {ev.analysisTitle} · {formatTimestamp(ev.timestampSec)}
+                        </p>
+                      </div>
+                    </Link>
+                  )
+                })}
+              </div>
+            ) : (
               <p style={{
-                fontFamily: "var(--font-display), system-ui, sans-serif",
-                fontWeight: 900, fontSize: 28, lineHeight: 1,
-                color: "rgba(255,255,255,0.85)",
+                fontFamily: "var(--font-body), sans-serif", fontWeight: 400,
+                fontSize: 13, color: "rgba(255,255,255,0.3)", lineHeight: 1.6,
               }}>
-                {stat.value}
+                Aucune note d&apos;analyse vidéo pour ce joueur. Tague-le sur un événement
+                depuis une analyse pour le retrouver ici.
               </p>
-            </div>
-          ))}
+            )}
+          </Section>
         </div>
       )}
 
