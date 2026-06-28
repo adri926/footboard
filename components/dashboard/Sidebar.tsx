@@ -19,16 +19,22 @@ interface Props {
 // une logique par groupes avec sous-menu caché au 2e tap rendait Matchs/Digiboard
 // "perdus", peu découvrable). Le hamburger (menu complet, getDashboardNavGroups)
 // reste le filet de sécurité pour tout le reste (Calendrier, Entraînements, Concepts).
+//
+// L'IA (analyse vidéo) est le différenciateur du produit : on la place AU CENTRE du
+// bandeau — la zone la plus accessible au pouce — et on l'accentue en pastille
+// surélevée (primary), façon bouton-action signature. La gestion ("Actu") recule
+// sur le côté : l'app n'est plus une gestion de club avec un module tactique, c'est
+// un assistant tactique IA qui gère aussi le club.
 const BOTTOM_TABS = [
+  { href: "/dashboard/effectif",      label: "Effectif",   icon: "◻" },
+  { href: "/tactique/digiboard",      label: "Digiboard",  icon: "⬡" },
+  { href: "/tactique/analyse-video",  label: "IA",         icon: "◬", primary: true },
   // "Terrain" couvre Matchs + Entraînements (segment toujours visible en haut des
   // deux pages, voir TerrainSegment.tsx) — le tab doit s'allumer sur les deux routes.
   { href: "/dashboard/matchs",        label: "Terrain",    icon: "◷", activeOn: ["/dashboard/matchs", "/dashboard/entrainements"] },
-  { href: "/tactique/analyse-video",  label: "IA",         icon: "◬" },
-  // "Actu" (ex-Accueil) — au milieu du bandeau, fait référence à l'écran
-  // "Aujourd'hui" (TodayPanel) : ce qui se passe maintenant, pas un accueil générique.
+  // "Actu" (ex-Accueil) — fait référence à l'écran "Aujourd'hui" (TodayPanel) :
+  // ce qui se passe maintenant, pas un accueil générique.
   { href: "/dashboard",               label: "Actu",       icon: "◉" },
-  { href: "/dashboard/effectif",      label: "Effectif",   icon: "◻" },
-  { href: "/tactique/digiboard",      label: "Digiboard",  icon: "⬡" },
 ]
 
 export default function Sidebar({ clubName, clubLevel, userName, teams, activeTeamId }: Props) {
@@ -233,6 +239,44 @@ export default function Sidebar({ clubName, clubLevel, userName, teams, activeTe
             : tab.href === "/dashboard"
               ? pathname === "/dashboard"
               : pathname.startsWith(tab.href)
+
+          const primary = "primary" in tab && tab.primary
+
+          // Onglet IA — pastille sauge surélevée façon bouton-action signature, popant
+          // au-dessus du bandeau. Pas d'indicateur borderTop : l'état actif se lit sur
+          // l'anneau + l'éclat de la pastille.
+          if (primary) {
+            return (
+              <Link
+                key={tab.href}
+                href={tab.href}
+                style={{
+                  flex: 1, display: "flex", flexDirection: "column",
+                  alignItems: "center", justifyContent: "center", gap: 4,
+                  textDecoration: "none",
+                }}>
+                <span style={{
+                  width: 48, height: 48, borderRadius: "50%", marginTop: -26,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  backgroundColor: "#7A9A82",
+                  borderStyle: "solid", borderWidth: 3, borderColor: "#16160f",
+                  boxShadow: active
+                    ? "0 0 0 2px rgba(122,154,130,0.55), 0 6px 18px rgba(122,154,130,0.4)"
+                    : "0 6px 18px rgba(0,0,0,0.45)",
+                  fontSize: 20, color: "#16160f", lineHeight: 1,
+                }}>
+                  {tab.icon}
+                </span>
+                <span style={{
+                  fontFamily: "var(--font-mono), monospace",
+                  fontSize: 7, fontWeight: 700, letterSpacing: "0.06em",
+                  color: active ? "#7A9A82" : "rgba(122,154,130,0.75)",
+                }}>
+                  {tab.label.toUpperCase()}
+                </span>
+              </Link>
+            )
+          }
 
           return (
             <Link

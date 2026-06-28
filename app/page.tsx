@@ -1,5 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
+import { auth } from "@clerk/nextjs/server"
+import { redirect } from "next/navigation"
 import HeroPitch from "@/components/HeroPitch"
 import PricingCard from "@/components/home/PricingCard"
 
@@ -120,7 +122,15 @@ const STRUCTURED_DATA = {
   },
 }
 
-export default function Home() {
+export default async function Home() {
+  // Un utilisateur authentifié ne doit jamais retomber sur la page marketing —
+  // surtout en PWA (où le start_url /dashboard peut avoir été mis en cache sur "/"
+  // au moment de l'install). On bascule côté serveur vers /dashboard, qui route
+  // ensuite coach / joueur / onboarding. Le marketing reste visible pour les
+  // visiteurs non connectés (acquisition desktop).
+  const { userId } = await auth()
+  if (userId) redirect("/dashboard")
+
   return (
     <main style={{ background: "var(--bg)", color: "rgba(255,255,255,0.92)" }}>
       <script
