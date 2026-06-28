@@ -6,6 +6,7 @@ import MatchForm from "@/components/dashboard/MatchForm"
 import PageHeader from "@/components/dashboard/PageHeader"
 import ClubLogo from "@/components/dashboard/ClubLogo"
 import TerrainSegment from "@/components/dashboard/TerrainSegment"
+import OnboardingHint from "@/components/OnboardingHint"
 import { deleteMatch } from "./actions"
 import { sendConvocations } from "./convocations"
 import type { Match } from "./actions"
@@ -280,6 +281,13 @@ export default function MatchsClient({ matches, players, club, availability, act
           </button>
         }
       />
+
+      {played.length > 0 && (
+        <OnboardingHint id="match-analyse" title="ANALYSE VIDÉO">
+          Sur un match passé, tape <strong style={{ color: "var(--sauge)", fontWeight: 700 }}>◬ ANALYSER</strong> pour
+          lancer l&apos;IA : timeline d&apos;événements, joueurs tagués et questions sur le match.
+        </OnboardingHint>
+      )}
 
       {/* Vide */}
       {matches.length === 0 && (

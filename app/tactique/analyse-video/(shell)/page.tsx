@@ -5,6 +5,7 @@ import { getMatches } from "@/app/dashboard/matchs/actions"
 import UploadForm from "./UploadForm"
 import BackLink from "./BackLink"
 import DeleteAnalysisButton from "./DeleteAnalysisButton"
+import OnboardingHint from "@/components/OnboardingHint"
 
 const STATUS_LABEL: Record<string, string> = {
   uploading: "UPLOAD...",
@@ -61,6 +62,13 @@ export default async function AnalyseVideoPage(
             répond à tes questions sur le match.
           </p>
         </div>
+
+        {userId && (
+          <OnboardingHint id="ia-loop" title="LA BOUCLE IA">
+            Lie une analyse à un match, tague tes joueurs sur la timeline — leurs notes
+            remontent automatiquement sur leur fiche (onglet Statistiques).
+          </OnboardingHint>
+        )}
 
         <div style={{ marginBottom: 32 }}>
           <UploadForm matches={matches} preselectMatchId={preselectMatchId} />
