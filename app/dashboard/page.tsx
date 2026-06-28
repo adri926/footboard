@@ -3,10 +3,12 @@ import { currentUser } from "@clerk/nextjs/server"
 import PlayerStatusBadge from "@/components/dashboard/PlayerStatusBadge"
 import PageHeader from "@/components/dashboard/PageHeader"
 import TodayPanel from "@/components/dashboard/TodayPanel"
+import TacticHero from "@/components/dashboard/TacticHero"
 import { getPlayers } from "@/app/dashboard/effectif/actions"
 import { getMatches, getMatchStats } from "@/app/dashboard/matchs/actions"
 import { getTrainings } from "@/app/dashboard/entrainements/actions"
 import { getMyClub } from "@/app/dashboard/club/actions"
+import { listAnalyses } from "@/app/tactique/analyse-video/actions"
 import { TRAINING_TYPES } from "@/lib/training-types"
 
 function formatDate(dateStr: string) {
@@ -22,13 +24,16 @@ const TYPE_COLORS: Record<string, string> = {
 }
 
 export default async function DashboardPage() {
-  const [players, matches, trainings, club, user] = await Promise.all([
+  const [players, matches, trainings, club, user, analyses] = await Promise.all([
     getPlayers(),
     getMatches(),
     getTrainings(),
     getMyClub(),
     currentUser(),
+    listAnalyses(),
   ])
+
+  const lastAnalysis = analyses[0] ?? null
 
   const today = new Date().toISOString().slice(0, 10)
 
@@ -64,6 +69,8 @@ export default async function DashboardPage() {
         title={club?.name ?? "Mon Club"}
         subtitle={[club?.level, "Saison 2025/2026"].filter(Boolean).join(" — ")}
       />
+
+      <TacticHero lastAnalysis={lastAnalysis} />
 
       <TodayPanel
         userName={userName}
