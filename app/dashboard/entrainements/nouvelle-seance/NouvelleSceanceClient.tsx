@@ -15,6 +15,7 @@ interface Props {
 
 export default function NouvelleSceanceClient({ clubProfile, matchContext, initialBlocks, templateName }: Props) {
   const [blocks, setBlocks] = useState<SessionBlock[]>(initialBlocks ?? [])
+  const [mobileView, setMobileView] = useState<"library" | "builder">("library")
 
   function handleAdd(exercise: Exercise, notes: string) {
     const block: SessionBlock = {
@@ -39,7 +40,7 @@ export default function NouvelleSceanceClient({ clubProfile, matchContext, initi
   }
 
   return (
-    <div style={{ padding: "28px 32px", maxWidth: 1200, height: "calc(100vh - 56px)", display: "flex", flexDirection: "column" }}>
+    <div className="seance-root" style={{ maxWidth: 1200, height: "calc(100vh - 56px)", display: "flex", flexDirection: "column" }}>
 
       <Link href="/dashboard/entrainements" style={{
         fontFamily: "var(--font-mono), monospace",
@@ -75,23 +76,55 @@ export default function NouvelleSceanceClient({ clubProfile, matchContext, initi
         </div>
       </div>
 
-      <div style={{ flex: 1, display: "grid", gridTemplateColumns: "35% 1fr", gap: 16, minHeight: 0 }}>
-        <ExerciseLibrary
-          clubProfile={clubProfile}
-          matchContext={matchContext}
-          onAdd={handleAdd}
-        />
+      {/* Bascule mobile uniquement (cachée en desktop via .seance-switch) */}
+      <div className="seance-switch" style={{
+        marginBottom: 14, border: "1px solid rgba(122,154,130,0.15)",
+        borderRadius: 8, overflow: "hidden",
+      }}>
+        <button onClick={() => setMobileView("library")} style={segBtn(mobileView === "library")}>
+          BIBLIOTHÈQUE
+        </button>
+        <button onClick={() => setMobileView("builder")} style={segBtn(mobileView === "builder")}>
+          SÉANCE{blocks.length > 0 ? ` · ${blocks.length}` : ""}
+        </button>
+      </div>
 
-        <SessionBuilder
-          blocks={blocks}
-          sessionType="libre"
-          clubProfile={clubProfile}
-          onReorder={setBlocks}
-          onRemove={handleRemove}
-          onChangeDuration={handleChangeDuration}
-          defaultName={templateName ? `Copie — ${templateName}` : ""}
-        />
+      <div
+        className="seance-grid"
+        data-view={mobileView}
+        style={{ flex: 1, display: "grid", gridTemplateColumns: "35% 1fr", gap: 16, minHeight: 0 }}
+      >
+        <div className="seance-pane--library" style={{ minHeight: 0 }}>
+          <ExerciseLibrary
+            clubProfile={clubProfile}
+            matchContext={matchContext}
+            onAdd={handleAdd}
+          />
+        </div>
+
+        <div className="seance-pane--builder" style={{ minHeight: 0 }}>
+          <SessionBuilder
+            blocks={blocks}
+            sessionType="libre"
+            clubProfile={clubProfile}
+            onReorder={setBlocks}
+            onRemove={handleRemove}
+            onChangeDuration={handleChangeDuration}
+            defaultName={templateName ? `Copie — ${templateName}` : ""}
+          />
+        </div>
       </div>
     </div>
   )
+}
+
+function segBtn(active: boolean): React.CSSProperties {
+  return {
+    flex: 1, padding: "9px 0", cursor: "pointer",
+    fontFamily: "var(--font-mono), monospace",
+    fontSize: 9, fontWeight: 700, letterSpacing: "0.1em",
+    border: "none",
+    backgroundColor: active ? "rgba(122,154,130,0.15)" : "transparent",
+    color: active ? "#7A9A82" : "rgba(255,255,255,0.4)",
+  }
 }
