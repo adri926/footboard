@@ -165,7 +165,9 @@ p, span, li, td, th, label, input, textarea, select {
 /* Mobile: < 768px */
 @media (max-width: 767px) {
   .sidebar-shell { display: none; }
-  .dashboard-main { padding-top: 56px; }
+  /* Pas de padding-top ici : le décalage sous le header fixe est assuré par le
+     spacer .mh-pad (rendu par MobileHeader, safe-area incluse). Cumuler les deux
+     créait un double vide de ~112px en haut ("la page semble coupée"). */
 }
 
 /* ── Mobile Header & Drawer ──────────────────────────────────── */

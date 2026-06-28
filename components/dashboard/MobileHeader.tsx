@@ -4,7 +4,7 @@ import Link from "next/link"
 import { useState } from "react"
 import { usePathname } from "next/navigation"
 import { getDashboardNavGroups } from "@/lib/dashboardNav"
-import FootboardMark from "@/components/FootboardMark"
+import Logo from "@/components/Logo"
 
 interface Props {
   clubName:  string
@@ -48,12 +48,8 @@ export default function MobileHeader({ clubName, clubLevel, userName }: Props) {
         padding: "0 16px",
         paddingTop: "env(safe-area-inset-top)",
       }}>
-        <Link href="/dashboard" style={{
-          fontFamily: "var(--font-display), system-ui, sans-serif",
-          fontWeight: 900, fontSize: 15, letterSpacing: "0.06em",
-          color: "rgba(255,255,255,0.95)",
-        }}>
-          FOOTBOARD
+        <Link href="/dashboard" style={{ textDecoration: "none" }}>
+          <Logo size={26} fontSize={15} />
         </Link>
         <button
           onClick={() => setOpen(o => !o)}
@@ -95,16 +91,7 @@ export default function MobileHeader({ clubName, clubLevel, userName }: Props) {
       }}>
         {/* Logo */}
         <div style={{ padding: "20px 20px 16px", paddingTop: "calc(20px + env(safe-area-inset-top))", borderBottom: "1px solid rgba(122,154,130,0.08)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <FootboardMark size={22} />
-            <p style={{
-              fontFamily: "var(--font-display), system-ui, sans-serif",
-              fontWeight: 900, fontSize: 16, letterSpacing: "0.06em",
-              color: "rgba(255,255,255,0.95)",
-            }}>
-              FOOTBOARD
-            </p>
-          </div>
+          <Logo size={22} fontSize={16} />
           <p style={{
             fontFamily: "var(--font-mono), monospace",
             fontSize: 8, letterSpacing: "0.1em",
