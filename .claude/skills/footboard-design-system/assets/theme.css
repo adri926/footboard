@@ -1,0 +1,55 @@
+/*
+ * Footboard — design tokens (Tailwind CSS 4)
+ * À importer dans app/globals.css :
+ *   @import "tailwindcss";
+ *   @import "./theme.css";
+ *
+ * Génère automatiquement les utilitaires Tailwind correspondants
+ * (bg-bg, text-accent, rounded-lg, font-display, etc.)
+ */
+
+@theme {
+  /* Fonds */
+  --color-bg: #181812;
+  --color-bg-elevated: #1f1f1a;
+  --color-bg-overlay: #232320;
+
+  /* Bordures — remplacent les box-shadow pour la profondeur */
+  --color-border: #2c2c26;
+  --color-border-strong: #3a3a32;
+
+  /* Texte */
+  --color-text-primary: #f2f1ea;
+  --color-text-secondary: #b8b6a9;
+  --color-text-tertiary: #7a7968;
+
+  /* Accent sage */
+  --color-accent: #7a9a82;
+  --color-accent-hover: #8fae96;
+  --color-accent-active: #6b8873;
+  --color-accent-muted: rgb(122 154 130 / 0.12);
+
+  /* Sémantique — désaturé, cohérent avec la palette chaude */
+  --color-success: #6fa57a;
+  --color-warning: #c9a227;
+  --color-error: #b5564b;
+
+  /* Typographie — pense à charger les polices via next/font */
+  --font-display: "Barlow Condensed", sans-serif;
+  --font-sans: "Barlow", sans-serif;
+  --font-mono: "Space Mono", monospace;
+
+  /* Rayons */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  /* Durées de transition */
+  --duration-fast: 150ms;
+  --duration-base: 220ms;
+  --duration-slow: 350ms;
+
+  /* Easing "premium" — sortie douce, jamais de rebond */
+  --ease-premium: cubic-bezier(0.22, 1, 0.36, 1);
+}
