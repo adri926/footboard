@@ -22,19 +22,22 @@ interface Props {
 //
 // L'IA (analyse vidéo) est le différenciateur du produit : on la place AU CENTRE du
 // bandeau — la zone la plus accessible au pouce — et on l'accentue en pastille
-// surélevée (primary), façon bouton-action signature. La gestion ("Actu") recule
-// sur le côté : l'app n'est plus une gestion de club avec un module tactique, c'est
-// un assistant tactique IA qui gère aussi le club.
+// surélevée (primary), façon bouton-action signature.
+//
+// Ordre autour du centre : à GAUCHE de l'IA = le club (Actu = point d'ancrage
+// "aujourd'hui" en tête, puis Effectif) ; à DROITE = le jeu (Terrain collé au centre
+// car très fréquent, puis Digiboard, outil plus ponctuel). L'IA fait le pont entre
+// gérer le club et préparer le jeu.
 const BOTTOM_TABS = [
+  // "Actu" (ex-Accueil) — écran "Aujourd'hui" (TodayPanel) : ce qui se passe
+  // maintenant. Placé en premier comme réflexe d'accueil.
+  { href: "/dashboard",               label: "Actu",       icon: "◉" },
   { href: "/dashboard/effectif",      label: "Effectif",   icon: "◻" },
-  { href: "/tactique/digiboard",      label: "Digiboard",  icon: "⬡" },
   { href: "/tactique/analyse-video",  label: "IA",         icon: "◬", primary: true },
   // "Terrain" couvre Matchs + Entraînements (segment toujours visible en haut des
   // deux pages, voir TerrainSegment.tsx) — le tab doit s'allumer sur les deux routes.
   { href: "/dashboard/matchs",        label: "Terrain",    icon: "◷", activeOn: ["/dashboard/matchs", "/dashboard/entrainements"] },
-  // "Actu" (ex-Accueil) — fait référence à l'écran "Aujourd'hui" (TodayPanel) :
-  // ce qui se passe maintenant, pas un accueil générique.
-  { href: "/dashboard",               label: "Actu",       icon: "◉" },
+  { href: "/tactique/digiboard",      label: "Digiboard",  icon: "⬡" },
 ]
 
 export default function Sidebar({ clubName, clubLevel, userName, teams, activeTeamId }: Props) {
