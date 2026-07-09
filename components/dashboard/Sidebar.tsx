@@ -241,12 +241,10 @@ export default function Sidebar({ clubName, clubLevel, userName, teams, activeTe
         left: 14, right: 14, zIndex: 50,
         height: 62, alignItems: "stretch",
         padding: "0 8px",
-        backgroundColor: "rgba(24,24,17,0.64)",
-        backdropFilter: "blur(28px) saturate(180%)",
-        WebkitBackdropFilter: "blur(28px) saturate(180%)",
+        backgroundColor: "#1e1d15",
         border: "1px solid rgba(122,154,130,0.22)",
         borderRadius: 22,
-        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08), 0 14px 36px rgba(0,0,0,0.5)",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06), 0 14px 36px rgba(0,0,0,0.55)",
       }}>
         {BOTTOM_TABS.map(tab => {
           const activeOn = "activeOn" in tab ? tab.activeOn : undefined
