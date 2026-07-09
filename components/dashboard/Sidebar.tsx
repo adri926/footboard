@@ -56,7 +56,7 @@ export default function Sidebar({ clubName, clubLevel, userName, teams, activeTe
         @media (display-mode: standalone) {
           .sb { display: none !important; }
           .sb-bottom-nav { display: flex !important; }
-          .dashboard-main { padding-bottom: calc(72px + env(safe-area-inset-bottom)) !important; }
+          .dashboard-main { padding-bottom: calc(92px + env(safe-area-inset-bottom)) !important; }
         }
         /* Mode navigateur classique : comportement responsive existant, inchangé */
         @media (display-mode: browser) {
@@ -86,6 +86,11 @@ export default function Sidebar({ clubName, clubLevel, userName, teams, activeTe
           }
           @media (max-width: 767px) {
             .sb { display: none !important; }
+            /* Navigateur mobile (PWA non installée) : la sidebar est cachée — il faut donc
+               afficher le bandeau bas ici aussi, sinon plus aucune navigation primaire
+               (le tiroir ☰ ne sert plus qu'au compte/réglages). */
+            .sb-bottom-nav { display: flex !important; }
+            .dashboard-main { padding-bottom: calc(92px + env(safe-area-inset-bottom)) !important; }
           }
         }
       `}</style>
@@ -226,14 +231,22 @@ export default function Sidebar({ clubName, clubLevel, userName, teams, activeTe
         </Link>
       </aside>
 
-      {/* Bottom nav mobile — 5 destinations fixes, voir BOTTOM_TABS ci-dessus */}
+      {/* Bottom nav mobile — 5 destinations fixes, voir BOTTOM_TABS ci-dessus.
+          Flottant (détaché des bords, arrondi) + verre dépoli (fond translucide + flou).
+          Pas d'overflow:hidden : la pastille IA surélevée (marginTop:-26) déborde en haut. */}
       <nav className="sb-bottom-nav" style={{
         display: "none",
-        position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50,
-        height: 64, alignItems: "stretch",
-        backgroundColor: "#16160f",
-        borderTop: "1px solid rgba(122,154,130,0.15)",
-        paddingBottom: "env(safe-area-inset-bottom)",
+        position: "fixed",
+        bottom: "calc(14px + env(safe-area-inset-bottom))",
+        left: 14, right: 14, zIndex: 50,
+        height: 62, alignItems: "stretch",
+        padding: "0 8px",
+        backgroundColor: "rgba(24,24,17,0.64)",
+        backdropFilter: "blur(28px) saturate(180%)",
+        WebkitBackdropFilter: "blur(28px) saturate(180%)",
+        border: "1px solid rgba(122,154,130,0.22)",
+        borderRadius: 22,
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08), 0 14px 36px rgba(0,0,0,0.5)",
       }}>
         {BOTTOM_TABS.map(tab => {
           const activeOn = "activeOn" in tab ? tab.activeOn : undefined
@@ -272,8 +285,8 @@ export default function Sidebar({ clubName, clubLevel, userName, teams, activeTe
                 </span>
                 <span style={{
                   fontFamily: "var(--font-mono), monospace",
-                  fontSize: 7, fontWeight: 700, letterSpacing: "0.06em",
-                  color: active ? "#7A9A82" : "rgba(122,154,130,0.75)",
+                  fontSize: 9.5, fontWeight: 700, letterSpacing: "0.04em",
+                  color: active ? "#7A9A82" : "rgba(122,154,130,0.8)",
                 }}>
                   {tab.label.toUpperCase()}
                 </span>
@@ -289,16 +302,16 @@ export default function Sidebar({ clubName, clubLevel, userName, teams, activeTe
                 flex: 1, display: "flex", flexDirection: "column",
                 alignItems: "center", justifyContent: "center", gap: 3,
                 textDecoration: "none",
-                backgroundColor: active ? "rgba(122,154,130,0.06)" : "transparent",
-                borderTop: active ? "2px solid rgba(122,154,130,0.6)" : "2px solid transparent",
+                margin: "9px 3px", borderRadius: 14,
+                backgroundColor: active ? "rgba(122,154,130,0.13)" : "transparent",
               }}>
-              <span style={{ fontSize: 13, color: active ? "#7A9A82" : "rgba(255,255,255,0.3)" }}>
+              <span style={{ fontSize: 16, color: active ? "#7A9A82" : "rgba(255,255,255,0.62)" }}>
                 {tab.icon}
               </span>
               <span style={{
                 fontFamily: "var(--font-mono), monospace",
-                fontSize: 7, fontWeight: 700, letterSpacing: "0.06em",
-                color: active ? "#7A9A82" : "rgba(255,255,255,0.3)",
+                fontSize: 9.5, fontWeight: 700, letterSpacing: "0.04em",
+                color: active ? "#7A9A82" : "rgba(255,255,255,0.62)",
               }}>
                 {tab.label.toUpperCase()}
               </span>
