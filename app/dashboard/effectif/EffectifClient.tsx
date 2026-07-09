@@ -1,6 +1,6 @@
 "use client"
 
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useState, useTransition } from "react"
 import Link from "next/link"
 import PlayerStatusBadge from "@/components/dashboard/PlayerStatusBadge"
@@ -41,8 +41,10 @@ interface Props { players: Player[] }
 
 export default function EffectifClient({ players }: Props) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [showForm, setShowForm]     = useState(false)
-  const [showImport, setShowImport] = useState(false)
+  // Ouverture directe de l'import depuis la checklist "Bien démarrer" (?import=1).
+  const [showImport, setShowImport] = useState(() => searchParams.get("import") === "1")
   const [editing, setEditing]       = useState<Player | undefined>(undefined)
   const [deleting, startDelete]     = useTransition()
   const [statusFilter, setStatusFilter] = useState<MedicalStatus | "tous">("tous")
@@ -187,7 +189,7 @@ export default function EffectifClient({ players }: Props) {
             fontWeight: 400, fontSize: 14,
             color: "rgba(255,255,255,0.3)", marginBottom: 8,
           }}>
-            Aucun joueur pour l'instant.
+            Aucun joueur pour l&apos;instant.
           </p>
           <p style={{
             fontFamily: "var(--font-mono), monospace",

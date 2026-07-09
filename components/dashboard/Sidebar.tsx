@@ -272,14 +272,13 @@ export default function Sidebar({ clubName, clubLevel, userName, teams, activeTe
                   textDecoration: "none",
                 }}>
                 <span style={{
-                  width: 48, height: 48, borderRadius: "50%", marginTop: -26,
+                  width: 42, height: 42, borderRadius: "50%", marginTop: -20,
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  backgroundColor: "#7A9A82",
-                  borderStyle: "solid", borderWidth: 3, borderColor: "#16160f",
-                  boxShadow: active
-                    ? "0 0 0 2px rgba(122,154,130,0.55), 0 6px 18px rgba(122,154,130,0.4)"
-                    : "0 6px 18px rgba(0,0,0,0.45)",
-                  fontSize: 20, color: "#16160f", lineHeight: 1,
+                  backgroundColor: active ? "rgba(122,154,130,0.28)" : "rgba(122,154,130,0.15)",
+                  borderStyle: "solid", borderWidth: 1,
+                  borderColor: active ? "rgba(122,154,130,0.6)" : "rgba(122,154,130,0.32)",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.35)",
+                  fontSize: 17, color: "#7A9A82", lineHeight: 1,
                 }}>
                   {tab.icon}
                 </span>

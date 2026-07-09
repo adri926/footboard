@@ -15,10 +15,10 @@ interface Props {
 
 export default function GettingStarted({ userName, clubLabel, players, match, session }: Props) {
   const steps = [
-    { title: "Créer ton club", sub: "C'est fait 🎉", done: true, href: null as string | null, cta: null as string | null },
-    { title: "Ajouter tes joueurs", sub: "Constitue ton effectif pour convoquer et composer", done: players, href: "/dashboard/effectif", cta: "Ajouter" },
-    { title: "Planifier ton premier match", sub: "Date, adversaire, domicile ou extérieur", done: match, href: "/dashboard/matchs", cta: "Planifier" },
-    { title: "Créer ta première séance", sub: "Pioche dans la bibliothèque d'exercices", done: session, href: "/dashboard/entrainements/nouvelle-seance", cta: "Créer" },
+    { title: "Créer ton club", sub: "C'est fait 🎉", done: true, href: null as string | null, cta: null as string | null, href2: null as string | null, cta2: null as string | null },
+    { title: "Ajouter tes joueurs", sub: "Constitue ton effectif pour convoquer et composer", done: players, href: "/dashboard/effectif", cta: "Ajouter", href2: "/dashboard/effectif?import=1", cta2: "Importer une liste" },
+    { title: "Planifier ton premier match", sub: "Date, adversaire, domicile ou extérieur", done: match, href: "/dashboard/matchs", cta: "Planifier", href2: null as string | null, cta2: null as string | null },
+    { title: "Créer ta première séance", sub: "Pioche dans la bibliothèque d'exercices", done: session, href: "/dashboard/entrainements/nouvelle-seance", cta: "Créer", href2: null as string | null, cta2: null as string | null },
   ]
   const doneCount = steps.filter(s => s.done).length
   const firstTodo = steps.findIndex(s => !s.done)
@@ -91,17 +91,31 @@ export default function GettingStarted({ userName, clubLabel, players, match, se
                   {s.sub}
                 </p>
               </div>
-              {!s.done && s.href && (
-                <Link href={s.href} style={{
-                  flexShrink: 0, textDecoration: "none",
-                  fontFamily: "var(--font-mono), monospace", fontSize: 10, fontWeight: 700,
-                  letterSpacing: "0.06em", color: "var(--sauge)",
-                  backgroundColor: isNext ? "var(--sauge-dim)" : "transparent",
-                  border: `1px solid ${isNext ? "var(--sauge-border)" : "rgba(122,154,130,0.2)"}`,
-                  borderRadius: 8, padding: "8px 12px",
-                }}>
-                  {s.cta} →
-                </Link>
+              {!s.done && (s.href || s.href2) && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, flexShrink: 0, alignItems: "flex-end" }}>
+                  {s.href && (
+                    <Link href={s.href} style={{
+                      textDecoration: "none",
+                      fontFamily: "var(--font-mono), monospace", fontSize: 10, fontWeight: 700,
+                      letterSpacing: "0.06em", color: "var(--sauge)",
+                      backgroundColor: isNext ? "var(--sauge-dim)" : "transparent",
+                      border: `1px solid ${isNext ? "var(--sauge-border)" : "rgba(122,154,130,0.2)"}`,
+                      borderRadius: 8, padding: "8px 12px", whiteSpace: "nowrap",
+                    }}>
+                      {s.cta} →
+                    </Link>
+                  )}
+                  {s.href2 && (
+                    <Link href={s.href2} style={{
+                      textDecoration: "none",
+                      fontFamily: "var(--font-mono), monospace", fontSize: 9, fontWeight: 700,
+                      letterSpacing: "0.06em", color: "var(--text-muted)",
+                      whiteSpace: "nowrap",
+                    }}>
+                      {s.cta2} →
+                    </Link>
+                  )}
+                </div>
               )}
             </div>
           )
