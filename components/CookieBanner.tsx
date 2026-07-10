@@ -9,6 +9,8 @@ export default function CookieBanner() {
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
+    // Lecture de localStorage au montage (indispo en SSR) — setState légitime ici.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!localStorage.getItem(STORAGE_KEY)) setVisible(true)
   }, [])
 

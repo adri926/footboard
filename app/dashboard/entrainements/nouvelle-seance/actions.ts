@@ -1,5 +1,6 @@
 "use server"
 
+import { dbError } from "@/lib/db-error"
 import { revalidatePath } from "next/cache"
 import { supabase } from "@/lib/supabase"
 import { getClubScope } from "@/lib/scope"
@@ -61,7 +62,7 @@ export async function saveSession(
 
   if (blocksErr) {
     await supabase.from("training_sessions").delete().eq("id", session.id)
-    return { ok: false, error: blocksErr.message }
+    return dbError(blocksErr)
   }
 
   revalidatePath("/dashboard/entrainements")

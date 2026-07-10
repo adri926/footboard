@@ -30,7 +30,8 @@ export default async function DashboardPage({
   searchParams: Promise<{ preview?: string }>
 }) {
   const sp = await searchParams
-  const previewStart = sp.preview === "start" // aperçu non destructif de l'écran premier run
+  // Aperçu non destructif de l'écran premier run — désactivé en production.
+  const previewStart = process.env.NODE_ENV !== "production" && sp.preview === "start"
   const [players, matches, trainings, club, user, analyses] = await Promise.all([
     getPlayers(),
     getMatches(),

@@ -1,5 +1,6 @@
 "use server"
 
+import { dbError } from "@/lib/db-error"
 import { z } from "zod"
 import { revalidatePath } from "next/cache"
 import { Resend } from "resend"
@@ -114,7 +115,7 @@ export async function setFee(
       org_id:      scope.orgId,
     }, { onConflict: "player_id,season" })
 
-  if (error) return { ok: false, error: error.message }
+  if (error) return dbError(error)
   revalidatePath("/dashboard/club/cotisations")
   return { ok: true }
 }
@@ -213,8 +214,8 @@ export async function applyFeeToAll(
       .eq("season", CURRENT_SEASON),
   ])
 
-  if (playersErr) return { ok: false, error: playersErr.message }
-  if (feesErr) return { ok: false, error: feesErr.message }
+  if (playersErr) return dbError(playersErr)
+  if (feesErr) return dbError(feesErr)
   if (!players || players.length === 0) return { ok: false, error: "Aucun joueur dans l'effectif." }
 
   const feeByPlayer = new Map((fees ?? []).map(f => [f.player_id, f]))
@@ -236,7 +237,7 @@ export async function applyFeeToAll(
     .from("player_fees")
     .upsert(rows, { onConflict: "player_id,season" })
 
-  if (error) return { ok: false, error: error.message }
+  if (error) return dbError(error)
   revalidatePath("/dashboard/club/cotisations")
   return { ok: true }
 }

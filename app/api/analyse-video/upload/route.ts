@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@clerk/nextjs/server"
 import { supabase } from "@/lib/supabase"
 import { getClubScope } from "@/lib/scope"
+import { checkVideoAnalysisQuota } from "@/lib/rate-limit"
 import { analyzeVideo } from "@/app/tactique/analyse-video/actions"
 
 const BUCKET = "match-videos"
@@ -29,6 +30,13 @@ export async function POST(req: Request) {
   const matchIdRaw = (formData.get("matchId") as string | null)?.trim() || null
   const matchId = matchIdRaw && /^[0-9a-f-]{36}$/.test(matchIdRaw) ? matchIdRaw : null
   const aiRequested = formData.get("aiRequested") === "on"
+
+  // Garde-fou coût Gemini : plafond quotidien par club, seulement pour les analyses IA.
+  if (aiRequested) {
+    const quota = await checkVideoAnalysisQuota()
+    if (!quota.ok) return NextResponse.json(quota, { status: 429 })
+  }
+
   const ext = file.name.includes(".") ? file.name.split(".").pop() : "mp4"
   const path = `${scope.value}/${Date.now()}.${ext}`
 
