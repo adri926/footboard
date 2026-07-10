@@ -61,35 +61,20 @@ export default function Sidebar({ clubName, clubLevel, userName, teams, activeTe
         }
         /* Mode navigateur classique : comportement responsive existant, inchangé */
         @media (display-mode: browser) {
-          @media (max-width: 1024px) and (min-width: 768px) {
-            .sb { width: 64px !important; }
-            .sb-label, .sb-group, .sb-sub, .sb-avtext { display: none !important; }
-            .sb-logoicon { display: flex !important; }
-            .sb-item { justify-content: center !important; padding: 10px !important; gap: 0 !important; position: relative; }
-            .sb-item:hover::after {
-              content: attr(data-label);
-              position: absolute;
-              left: calc(100% + 8px); top: 50%;
-              transform: translateY(-50%);
-              background: #24221a;
-              color: rgba(255,255,255,0.85);
-              border: 1px solid rgba(122,154,130,0.2);
-              border-radius: 6px;
-              padding: 5px 10px;
-              font-size: 11px;
-              font-family: inherit;
-              white-space: nowrap;
-              z-index: 100;
-              pointer-events: none;
-            }
-            .sb-av { justify-content: center !important; padding: 14px 0 !important; }
-            .sb-logo { padding: 20px 0 16px !important; justify-content: center !important; }
+          /* Desktop : plus de sidebar — l'app se vit en COLONNE MOBILE CENTRÉE (header +
+             bandeau bas centrés sur la colonne), fond neutre autour. Le grand écran reste
+             réservé au marketing dans notre vision. */
+          @media (min-width: 768px) {
+            .sb { display: none !important; }
+            .sb-bottom-nav { display: flex !important; left: 0 !important; right: 0 !important; max-width: 612px; margin: 0 auto; }
+            .dashboard-main { max-width: 640px; margin: 0 auto; padding-bottom: calc(92px + env(safe-area-inset-bottom)) !important; }
+            /* Pages pleine largeur (analyse vidéo, digiboard) — neutralisent la colonne. */
+            html.full-bleed .dashboard-main { max-width: none !important; margin: 0 !important; }
+            html.full-bleed .sb-bottom-nav { left: 14px !important; right: 14px !important; max-width: none !important; margin: 0 !important; }
           }
+          /* Navigateur mobile (PWA non installée) : sidebar cachée, bandeau bas affiché. */
           @media (max-width: 767px) {
             .sb { display: none !important; }
-            /* Navigateur mobile (PWA non installée) : la sidebar est cachée — il faut donc
-               afficher le bandeau bas ici aussi, sinon plus aucune navigation primaire
-               (le tiroir ☰ ne sert plus qu'au compte/réglages). */
             .sb-bottom-nav { display: flex !important; }
             .dashboard-main { padding-bottom: calc(92px + env(safe-area-inset-bottom)) !important; }
           }

@@ -64,6 +64,13 @@ export default function MobileHeader({ clubName, clubLevel, userName }: Props) {
           .mh-bar { display: flex !important; }
           .mh-pad { display: block; height: calc(56px + env(safe-area-inset-top)); }
         }
+        /* Desktop : plus de sidebar → on montre le header mobile, centré sur la colonne. */
+        @media (min-width: 768px) and (display-mode: browser) {
+          .mh-bar { display: flex !important; left: 0 !important; right: 0 !important; max-width: 640px; margin: 0 auto; }
+          .mh-pad { display: block; height: calc(56px + env(safe-area-inset-top)); }
+          /* Pages pleine largeur (analyse vidéo, digiboard) : header pleine largeur. */
+          html.full-bleed .mh-bar { max-width: none !important; margin: 0 !important; }
+        }
       `}</style>
 
       {/* Fixed header bar — hidden via CSS at desktop */}
