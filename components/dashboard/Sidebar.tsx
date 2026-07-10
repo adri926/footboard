@@ -241,10 +241,12 @@ export default function Sidebar({ clubName, clubLevel, userName, teams, activeTe
         left: 14, right: 14, zIndex: 50,
         height: 62, alignItems: "stretch",
         padding: "0 8px",
-        backgroundColor: "#1e1d15",
+        backgroundColor: "rgba(24,24,17,0.52)",
+        backdropFilter: "blur(30px) saturate(170%)",
+        WebkitBackdropFilter: "blur(30px) saturate(170%)",
         border: "1px solid rgba(122,154,130,0.22)",
         borderRadius: 22,
-        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06), 0 14px 36px rgba(0,0,0,0.55)",
+        boxShadow: "0 14px 36px rgba(0,0,0,0.55)",
       }}>
         {BOTTOM_TABS.map(tab => {
           const activeOn = "activeOn" in tab ? tab.activeOn : undefined
@@ -272,10 +274,10 @@ export default function Sidebar({ clubName, clubLevel, userName, teams, activeTe
                 <span style={{
                   width: 42, height: 42, borderRadius: "50%", marginTop: -20,
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  backgroundColor: active ? "rgba(122,154,130,0.28)" : "rgba(122,154,130,0.15)",
+                  backgroundColor: active ? "#36453b" : "#29332c",
                   borderStyle: "solid", borderWidth: 1,
                   borderColor: active ? "rgba(122,154,130,0.6)" : "rgba(122,154,130,0.32)",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.35)",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
                   fontSize: 17, color: "#7A9A82", lineHeight: 1,
                 }}>
                   {tab.icon}
