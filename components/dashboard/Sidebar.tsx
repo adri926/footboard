@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import TeamSelector from "./TeamSelector"
+import TabIcon, { type TabIconName } from "./TabIcon"
 import type { Team } from "@/lib/teams"
 import { getDashboardNavGroups } from "@/lib/dashboardNav"
 
@@ -31,13 +32,13 @@ interface Props {
 const BOTTOM_TABS = [
   // "Actu" (ex-Accueil) — écran "Aujourd'hui" (TodayPanel) : ce qui se passe
   // maintenant. Placé en premier comme réflexe d'accueil.
-  { href: "/dashboard",               label: "Actu",       icon: "◉" },
-  { href: "/dashboard/effectif",      label: "Effectif",   icon: "◻" },
-  { href: "/tactique/analyse-video",  label: "IA",         icon: "◬", primary: true },
+  { href: "/dashboard",               label: "Actu",       iconKey: "actu" as TabIconName },
+  { href: "/dashboard/effectif",      label: "Effectif",   iconKey: "effectif" as TabIconName },
+  { href: "/tactique/analyse-video",  label: "IA",         iconKey: "ia" as TabIconName, primary: true },
   // "Terrain" couvre Matchs + Entraînements (segment toujours visible en haut des
   // deux pages, voir TerrainSegment.tsx) — le tab doit s'allumer sur les deux routes.
-  { href: "/dashboard/matchs",        label: "Terrain",    icon: "◷", activeOn: ["/dashboard/matchs", "/dashboard/entrainements"] },
-  { href: "/tactique/digiboard",      label: "Digiboard",  icon: "⬡" },
+  { href: "/dashboard/matchs",        label: "Terrain",    iconKey: "terrain" as TabIconName, activeOn: ["/dashboard/matchs", "/dashboard/entrainements"] },
+  { href: "/tactique/digiboard",      label: "Digiboard",  iconKey: "digiboard" as TabIconName },
 ]
 
 export default function Sidebar({ clubName, clubLevel, userName, teams, activeTeamId }: Props) {
@@ -278,9 +279,9 @@ export default function Sidebar({ clubName, clubLevel, userName, teams, activeTe
                   borderStyle: "solid", borderWidth: 1,
                   borderColor: active ? "rgba(122,154,130,0.6)" : "rgba(122,154,130,0.32)",
                   boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
-                  fontSize: 17, color: "#7A9A82", lineHeight: 1,
+                  color: "#7A9A82", lineHeight: 1,
                 }}>
-                  {tab.icon}
+                  <TabIcon name={tab.iconKey} size={20} />
                 </span>
                 <span style={{
                   fontFamily: "var(--font-mono), monospace",
@@ -304,8 +305,8 @@ export default function Sidebar({ clubName, clubLevel, userName, teams, activeTe
                 margin: "9px 3px", borderRadius: 14,
                 backgroundColor: active ? "rgba(122,154,130,0.13)" : "transparent",
               }}>
-              <span style={{ fontSize: 16, color: active ? "#7A9A82" : "rgba(255,255,255,0.62)" }}>
-                {tab.icon}
+              <span style={{ color: active ? "#7A9A82" : "rgba(255,255,255,0.62)", display: "flex" }}>
+                <TabIcon name={tab.iconKey} size={18} />
               </span>
               <span style={{
                 fontFamily: "var(--font-mono), monospace",

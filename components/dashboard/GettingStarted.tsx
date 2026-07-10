@@ -121,6 +121,44 @@ export default function GettingStarted({ userName, clubLabel, players, match, se
           )
         })}
       </div>
+
+      {/* Teaser du différenciateur — optionnel, hors checklist. */}
+      <Link href="/tactique/analyse-video" style={{
+        display: "flex", alignItems: "center", gap: 14, marginTop: 14,
+        textDecoration: "none",
+        border: "1px dashed rgba(122,154,130,0.3)",
+        borderRadius: 12, padding: "14px 16px",
+      }}>
+        <span style={{
+          width: 30, height: 30, flexShrink: 0, borderRadius: "50%",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 15, color: "#7A9A82",
+          backgroundColor: "rgba(122,154,130,0.12)",
+          border: "1px solid rgba(122,154,130,0.3)",
+        }}>
+          ◬
+        </span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{
+            fontFamily: "var(--font-body), sans-serif", fontWeight: 600,
+            fontSize: 14, color: "var(--text-primary)",
+          }}>
+            Découvre l&apos;analyse vidéo IA
+          </p>
+          <p style={{
+            fontFamily: "var(--font-body), sans-serif", fontSize: 12,
+            color: "var(--text-muted)", marginTop: 1,
+          }}>
+            Le point fort de Footboard — facultatif, quand tu veux
+          </p>
+        </div>
+        <span style={{
+          fontFamily: "var(--font-mono), monospace", fontSize: 10, fontWeight: 700,
+          letterSpacing: "0.06em", color: "var(--sauge)", flexShrink: 0,
+        }}>
+          Voir →
+        </span>
+      </Link>
     </div>
   )
 }

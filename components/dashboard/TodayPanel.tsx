@@ -12,6 +12,7 @@ interface Props {
   lastPastMatch: Match | null
   hasAnalysisForLastMatch: boolean
   hasUpcomingTraining: boolean
+  suggested?: { href: string; title: string }
 }
 
 function formatDate(dateStr: string) {
@@ -99,7 +100,7 @@ function ActionCard({
 
 export default function TodayPanel({
   userName, clubLabel, nextMatch, nextTraining, concernedCount, unsavedBilanMatch,
-  lastPastMatch, hasAnalysisForLastMatch, hasUpcomingTraining,
+  lastPastMatch, hasAnalysisForLastMatch, hasUpcomingTraining, suggested,
 }: Props) {
   const cards: React.ReactNode[] = []
 
@@ -157,6 +158,22 @@ export default function TodayPanel({
         sub="Compose ta séance à la main, depuis la bibliothèque d'exercices"
         ctaLabel="Créer"
         href="/dashboard/entrainements/nouvelle-seance"
+      />
+    )
+  }
+
+  // 3bis — Séance suggérée depuis une analyse (referme la boucle IA), optionnelle.
+  if (suggested) {
+    cards.push(
+      <ActionCard
+        key="suggested"
+        icon="◬"
+        eyebrow="OPTION IA"
+        title="Séance suggérée prête"
+        sub={`D'après ton analyse : ${suggested.title}`}
+        ctaLabel="Générer"
+        href={suggested.href}
+        subtle
       />
     )
   }

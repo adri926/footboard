@@ -10,6 +10,7 @@ import { getTrainings } from "@/app/dashboard/entrainements/actions"
 import { getMyClub } from "@/app/dashboard/club/actions"
 import { listAnalyses } from "@/app/tactique/analyse-video/actions"
 import { TRAINING_TYPES } from "@/lib/training-types"
+import { getCurrentSeason } from "@/lib/season"
 
 function formatDate(dateStr: string) {
   const m = dateStr.match(/(\d{4})-(\d{2})-(\d{2})/)
@@ -69,11 +70,22 @@ export default async function DashboardPage({
   const lastTrainings = trainings.slice(0, 4)
 
   const userName = user?.firstName ?? user?.emailAddresses?.[0]?.emailAddress ?? "Coach"
-  const clubLabel = [club?.name, club?.level, "Saison 2025/2026"].filter(Boolean).join(" · ")
+  const clubLabel = [club?.name, club?.level, `Saison ${getCurrentSeason()}`].filter(Boolean).join(" · ")
 
   // Premier run : tant que l'essentiel n'est pas en place (joueurs + au moins une échéance),
   // on guide via GettingStarted au lieu d'afficher un cockpit vide.
   const setupDone = players.length > 0 && (matches.length > 0 || trainings.length > 0)
+
+  // Boucle IA : si une analyse a produit un diagnostic et qu'aucun entraînement n'est prévu,
+  // on propose de générer la séance correspondante (referme la boucle vers "ta séance").
+  const diag = analyses.find(a => Array.isArray(a.diagnosis) && a.diagnosis.length > 0)?.diagnosis
+  const topWeakness = diag && diag.length > 0 ? diag[0] : null
+  const suggested = topWeakness && !hasUpcomingTraining
+    ? {
+        href: `/dashboard/entrainements/nouvelle-seance?axe=${topWeakness.phase}:${topWeakness.style}&titre=${encodeURIComponent(topWeakness.title)}`,
+        title: topWeakness.title,
+      }
+    : undefined
 
   if (!setupDone || previewStart) {
     return (
@@ -102,6 +114,7 @@ export default async function DashboardPage({
         lastPastMatch={lastPastMatch}
         hasAnalysisForLastMatch={hasAnalysisForLastMatch}
         hasUpcomingTraining={hasUpcomingTraining}
+        suggested={suggested}
       />
 
       {/* 2 columns */}
