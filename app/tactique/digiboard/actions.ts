@@ -1,5 +1,6 @@
 "use server"
 
+import { dbError } from "@/lib/db-error"
 import { auth } from "@clerk/nextjs/server"
 import { z } from "zod"
 import { supabase } from "@/lib/supabase"
@@ -85,7 +86,7 @@ export async function updateTacticalBoard(
     .eq("id", id)
     .eq("coach_id", userId)
 
-  if (error) return { ok: false, error: error.message }
+  if (error) return dbError(error)
   return { ok: true }
 }
 

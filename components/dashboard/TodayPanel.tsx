@@ -4,10 +4,15 @@ import type { Training } from "@/app/dashboard/entrainements/actions"
 
 interface Props {
   userName: string
+  clubLabel?: string
   nextMatch: Match | null
   nextTraining: Training | null
   concernedCount: number
   unsavedBilanMatch: Match | null
+  lastPastMatch: Match | null
+  hasAnalysisForLastMatch: boolean
+  hasUpcomingTraining: boolean
+  suggested?: { href: string; title: string }
 }
 
 function formatDate(dateStr: string) {
@@ -30,7 +35,7 @@ function countdownLabel(dateStr: string) {
 }
 
 function ActionCard({
-  icon, eyebrow, title, sub, ctaLabel, href, warn,
+  icon, eyebrow, title, sub, ctaLabel, href, warn, subtle,
 }: {
   icon: string
   eyebrow: string
@@ -39,15 +44,20 @@ function ActionCard({
   ctaLabel: string
   href: string
   warn?: boolean
+  subtle?: boolean
 }) {
   const accentColor = warn ? "#d4a847" : "#7A9A82"
+  const borderColor = subtle
+    ? "rgba(122,154,130,0.10)"
+    : warn ? "rgba(212,168,71,0.25)" : "rgba(122,154,130,0.13)"
   return (
     <Link href={href} style={{
       display: "flex", alignItems: "center", gap: 14,
       backgroundColor: "var(--bg-card)",
-      border: `1px solid ${warn ? "rgba(212,168,71,0.25)" : "rgba(122,154,130,0.13)"}`,
+      border: `1px solid ${borderColor}`,
       borderRadius: 12, padding: "16px 18px",
       textDecoration: "none",
+      opacity: subtle ? 0.9 : 1,
     }}>
       <span style={{
         fontSize: 22, width: 40, height: 40, flexShrink: 0,
@@ -59,12 +69,13 @@ function ActionCard({
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{
           fontFamily: "var(--font-mono), monospace", fontSize: 9, fontWeight: 700,
-          letterSpacing: "0.1em", color: accentColor, marginBottom: 3,
+          letterSpacing: "0.1em", color: subtle ? "var(--text-muted)" : accentColor, marginBottom: 3,
         }}>
           {eyebrow}
         </p>
         <p style={{
-          fontFamily: "var(--font-display), system-ui, sans-serif", fontWeight: 900,
+          fontFamily: "var(--font-display), system-ui, sans-serif",
+          fontWeight: subtle ? 700 : 900,
           fontSize: 17, color: "var(--text-primary)", lineHeight: 1.1,
         }}>
           {title}
@@ -78,7 +89,8 @@ function ActionCard({
       </div>
       <span style={{
         fontFamily: "var(--font-mono), monospace", fontSize: 9, fontWeight: 700,
-        letterSpacing: "0.06em", color: accentColor, whiteSpace: "nowrap", flexShrink: 0,
+        letterSpacing: "0.06em", color: subtle ? "var(--text-muted)" : accentColor,
+        whiteSpace: "nowrap", flexShrink: 0,
       }}>
         {ctaLabel} →
       </span>
@@ -86,9 +98,13 @@ function ActionCard({
   )
 }
 
-export default function TodayPanel({ userName, nextMatch, nextTraining, concernedCount, unsavedBilanMatch }: Props) {
+export default function TodayPanel({
+  userName, clubLabel, nextMatch, nextTraining, concernedCount, unsavedBilanMatch,
+  lastPastMatch, hasAnalysisForLastMatch, hasUpcomingTraining, suggested,
+}: Props) {
   const cards: React.ReactNode[] = []
 
+  // 1 — Prochaine échéance (le repère n°1 du coach).
   if (nextMatch) {
     cards.push(
       <ActionCard
@@ -97,7 +113,7 @@ export default function TodayPanel({ userName, nextMatch, nextTraining, concerne
         eyebrow={countdownLabel(nextMatch.date)}
         title={`vs ${nextMatch.opponent}`}
         sub={nextMatch.home_away === "home" ? "Domicile" : "Extérieur"}
-        ctaLabel="Préparer"
+        ctaLabel="Préparer la compo"
         href={`/dashboard/matchs/${nextMatch.id}/preparation`}
       />
     )
@@ -115,21 +131,7 @@ export default function TodayPanel({ userName, nextMatch, nextTraining, concerne
     )
   }
 
-  if (concernedCount > 0) {
-    cards.push(
-      <ActionCard
-        key="concerned"
-        icon="⚠"
-        eyebrow="EFFECTIF"
-        title={`${concernedCount} joueur${concernedCount > 1 ? "s" : ""} incertain${concernedCount > 1 ? "s" : ""} ou blessé${concernedCount > 1 ? "s" : ""}`}
-        sub="À vérifier avant la prochaine convocation"
-        ctaLabel="Voir"
-        href="/dashboard/effectif"
-        warn
-      />
-    )
-  }
-
+  // 2 — Bilan du dernier match non saisi.
   if (unsavedBilanMatch) {
     cards.push(
       <ActionCard
@@ -145,13 +147,91 @@ export default function TodayPanel({ userName, nextMatch, nextTraining, concerne
     )
   }
 
+  // 3 — Créer une séance (accès direct manuel, aucune IA imposée).
+  if (!hasUpcomingTraining) {
+    cards.push(
+      <ActionCard
+        key="new-session"
+        icon="🗒"
+        eyebrow="À FAIRE"
+        title="Créer la séance de la semaine"
+        sub="Compose ta séance à la main, depuis la bibliothèque d'exercices"
+        ctaLabel="Créer"
+        href="/dashboard/entrainements/nouvelle-seance"
+      />
+    )
+  }
+
+  // 3bis — Séance suggérée depuis une analyse (referme la boucle IA), optionnelle.
+  if (suggested) {
+    cards.push(
+      <ActionCard
+        key="suggested"
+        icon="◬"
+        eyebrow="OPTION IA"
+        title="Séance suggérée prête"
+        sub={`D'après ton analyse : ${suggested.title}`}
+        ctaLabel="Générer"
+        href={suggested.href}
+        subtle
+      />
+    )
+  }
+
+  // 4 — Analyser le dernier match (accélérateur IA, optionnel et discret).
+  if (lastPastMatch && !hasAnalysisForLastMatch) {
+    cards.push(
+      <ActionCard
+        key="analyse"
+        icon="◬"
+        eyebrow="OPTION IA"
+        title={`Analyser le match vs ${lastPastMatch.opponent}`}
+        sub="Laisse l'IA débriefer la vidéo — facultatif"
+        ctaLabel="Analyser"
+        href={`/tactique/analyse-video?match=${lastPastMatch.id}`}
+        subtle
+      />
+    )
+  }
+
+  // 5 — Effectif incertain / blessés.
+  if (concernedCount > 0) {
+    cards.push(
+      <ActionCard
+        key="concerned"
+        icon="⚠"
+        eyebrow="EFFECTIF"
+        title={`${concernedCount} joueur${concernedCount > 1 ? "s" : ""} incertain${concernedCount > 1 ? "s" : ""} ou blessé${concernedCount > 1 ? "s" : ""}`}
+        sub="À vérifier avant la prochaine convocation"
+        ctaLabel="Voir"
+        href="/dashboard/effectif"
+        warn
+      />
+    )
+  }
+
   return (
     <div style={{ marginBottom: 32 }}>
       <p style={{
         fontFamily: "var(--font-display), system-ui, sans-serif", fontWeight: 900,
-        fontSize: 22, color: "var(--text-primary)", marginBottom: 14,
+        fontSize: 22, color: "var(--text-primary)", marginBottom: 4,
       }}>
         Salut {userName} 👋
+      </p>
+      {clubLabel && (
+        <p style={{
+          fontFamily: "var(--font-body), sans-serif", fontSize: 12,
+          color: "var(--text-muted)", marginBottom: 14,
+        }}>
+          {clubLabel}
+        </p>
+      )}
+      <p style={{
+        fontFamily: "var(--font-mono), monospace", fontSize: 9, fontWeight: 700,
+        letterSpacing: "0.14em", color: "rgba(122,154,130,0.5)",
+        textTransform: "uppercase", marginBottom: 14,
+      }}>
+        Ta semaine
       </p>
 
       {cards.length > 0 ? (

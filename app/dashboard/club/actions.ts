@@ -1,5 +1,6 @@
 "use server"
 
+import { dbError } from "@/lib/db-error"
 import { auth, clerkClient } from "@clerk/nextjs/server"
 import { z } from "zod"
 import { revalidatePath } from "next/cache"
@@ -93,7 +94,7 @@ export async function createClub(
     .from("clubs")
     .insert({ ...parsed.data, owner_id: userId, org_id: orgId })
 
-  if (error) return { ok: false, error: error.message }
+  if (error) return dbError(error)
   revalidatePath("/dashboard")
   return { ok: true, orgId }
 }
@@ -111,7 +112,7 @@ export async function updateClub(
     .update(parsed.data)
     .eq(scope.column, scope.value)
 
-  if (error) return { ok: false, error: error.message }
+  if (error) return dbError(error)
   revalidatePath("/dashboard", "layout")
   return { ok: true }
 }

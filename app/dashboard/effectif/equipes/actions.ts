@@ -1,5 +1,6 @@
 "use server"
 
+import { dbError } from "@/lib/db-error"
 import { z } from "zod"
 import { revalidatePath } from "next/cache"
 import { cookies } from "next/headers"
@@ -67,7 +68,7 @@ export async function createTeam(
     .from("teams")
     .insert({ owner_id: scope.userId, org_id: scope.orgId, name: parsed.data })
 
-  if (error) return { ok: false, error: error.message }
+  if (error) return dbError(error)
   revalidatePath("/dashboard/effectif/equipes")
   revalidatePath("/dashboard", "layout")
   return { ok: true }
@@ -89,7 +90,7 @@ export async function renameTeam(
     .eq("id", teamId)
     .eq(scope.column, scope.value)
 
-  if (error) return { ok: false, error: error.message }
+  if (error) return dbError(error)
   revalidatePath("/dashboard/effectif/equipes")
   revalidatePath("/dashboard", "layout")
   return { ok: true }
@@ -119,7 +120,7 @@ export async function deleteTeam(
     .eq("id", teamId)
     .eq(scope.column, scope.value)
 
-  if (error) return { ok: false, error: error.message }
+  if (error) return dbError(error)
   revalidatePath("/dashboard/effectif/equipes")
   revalidatePath("/dashboard", "layout")
   return { ok: true }
@@ -147,14 +148,14 @@ export async function setTeamPlayer(
     const { error } = await supabase
       .from("team_players")
       .upsert({ team_id: teamId, player_id: playerId }, { onConflict: "team_id,player_id" })
-    if (error) return { ok: false, error: error.message }
+    if (error) return dbError(error)
   } else {
     const { error } = await supabase
       .from("team_players")
       .delete()
       .eq("team_id", teamId)
       .eq("player_id", playerId)
-    if (error) return { ok: false, error: error.message }
+    if (error) return dbError(error)
   }
 
   revalidatePath("/dashboard/effectif/equipes")

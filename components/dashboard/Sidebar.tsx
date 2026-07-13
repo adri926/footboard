@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import TeamSelector from "./TeamSelector"
+import TabIcon, { type TabIconName } from "./TabIcon"
 import type { Team } from "@/lib/teams"
 import { getDashboardNavGroups } from "@/lib/dashboardNav"
 
@@ -31,13 +32,13 @@ interface Props {
 const BOTTOM_TABS = [
   // "Actu" (ex-Accueil) — écran "Aujourd'hui" (TodayPanel) : ce qui se passe
   // maintenant. Placé en premier comme réflexe d'accueil.
-  { href: "/dashboard",               label: "Actu",       icon: "◉" },
-  { href: "/dashboard/effectif",      label: "Effectif",   icon: "◻" },
-  { href: "/tactique/analyse-video",  label: "IA",         icon: "◬", primary: true },
+  { href: "/dashboard",               label: "Actu",       iconKey: "actu" as TabIconName },
+  { href: "/dashboard/effectif",      label: "Effectif",   iconKey: "effectif" as TabIconName },
+  { href: "/tactique/analyse-video",  label: "IA",         iconKey: "ia" as TabIconName, primary: true },
   // "Terrain" couvre Matchs + Entraînements (segment toujours visible en haut des
   // deux pages, voir TerrainSegment.tsx) — le tab doit s'allumer sur les deux routes.
-  { href: "/dashboard/matchs",        label: "Terrain",    icon: "◷", activeOn: ["/dashboard/matchs", "/dashboard/entrainements"] },
-  { href: "/tactique/digiboard",      label: "Digiboard",  icon: "⬡" },
+  { href: "/dashboard/matchs",        label: "Terrain",    iconKey: "terrain" as TabIconName, activeOn: ["/dashboard/matchs", "/dashboard/entrainements"] },
+  { href: "/tactique/digiboard",      label: "Digiboard",  iconKey: "digiboard" as TabIconName },
 ]
 
 export default function Sidebar({ clubName, clubLevel, userName, teams, activeTeamId }: Props) {
@@ -56,36 +57,26 @@ export default function Sidebar({ clubName, clubLevel, userName, teams, activeTe
         @media (display-mode: standalone) {
           .sb { display: none !important; }
           .sb-bottom-nav { display: flex !important; }
-          .dashboard-main { padding-bottom: calc(72px + env(safe-area-inset-bottom)) !important; }
+          .dashboard-main { padding-bottom: calc(92px + env(safe-area-inset-bottom)) !important; }
         }
         /* Mode navigateur classique : comportement responsive existant, inchangé */
         @media (display-mode: browser) {
-          @media (max-width: 1024px) and (min-width: 768px) {
-            .sb { width: 64px !important; }
-            .sb-label, .sb-group, .sb-sub, .sb-avtext { display: none !important; }
-            .sb-logoicon { display: flex !important; }
-            .sb-item { justify-content: center !important; padding: 10px !important; gap: 0 !important; position: relative; }
-            .sb-item:hover::after {
-              content: attr(data-label);
-              position: absolute;
-              left: calc(100% + 8px); top: 50%;
-              transform: translateY(-50%);
-              background: #24221a;
-              color: rgba(255,255,255,0.85);
-              border: 1px solid rgba(122,154,130,0.2);
-              border-radius: 6px;
-              padding: 5px 10px;
-              font-size: 11px;
-              font-family: inherit;
-              white-space: nowrap;
-              z-index: 100;
-              pointer-events: none;
-            }
-            .sb-av { justify-content: center !important; padding: 14px 0 !important; }
-            .sb-logo { padding: 20px 0 16px !important; justify-content: center !important; }
+          /* Desktop : plus de sidebar — l'app se vit en COLONNE MOBILE CENTRÉE (header +
+             bandeau bas centrés sur la colonne), fond neutre autour. Le grand écran reste
+             réservé au marketing dans notre vision. */
+          @media (min-width: 768px) {
+            .sb { display: none !important; }
+            .sb-bottom-nav { display: flex !important; left: 0 !important; right: 0 !important; max-width: 612px; margin: 0 auto; }
+            .dashboard-main { max-width: 640px; margin: 0 auto; padding-bottom: calc(92px + env(safe-area-inset-bottom)) !important; }
+            /* Pages pleine largeur (analyse vidéo, digiboard) — neutralisent la colonne. */
+            html.full-bleed .dashboard-main { max-width: none !important; margin: 0 !important; }
+            html.full-bleed .sb-bottom-nav { left: 14px !important; right: 14px !important; max-width: none !important; margin: 0 !important; }
           }
+          /* Navigateur mobile (PWA non installée) : sidebar cachée, bandeau bas affiché. */
           @media (max-width: 767px) {
             .sb { display: none !important; }
+            .sb-bottom-nav { display: flex !important; }
+            .dashboard-main { padding-bottom: calc(92px + env(safe-area-inset-bottom)) !important; }
           }
         }
       `}</style>
@@ -226,14 +217,22 @@ export default function Sidebar({ clubName, clubLevel, userName, teams, activeTe
         </Link>
       </aside>
 
-      {/* Bottom nav mobile — 5 destinations fixes, voir BOTTOM_TABS ci-dessus */}
+      {/* Bottom nav mobile — 5 destinations fixes, voir BOTTOM_TABS ci-dessus.
+          Flottant (détaché des bords, arrondi) + verre dépoli (fond translucide + flou).
+          Pas d'overflow:hidden : la pastille IA surélevée (marginTop:-26) déborde en haut. */}
       <nav className="sb-bottom-nav" style={{
         display: "none",
-        position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50,
-        height: 64, alignItems: "stretch",
-        backgroundColor: "#16160f",
-        borderTop: "1px solid rgba(122,154,130,0.15)",
-        paddingBottom: "env(safe-area-inset-bottom)",
+        position: "fixed",
+        bottom: "calc(14px + env(safe-area-inset-bottom))",
+        left: 14, right: 14, zIndex: 50,
+        height: 62, alignItems: "stretch",
+        padding: "0 8px",
+        backgroundColor: "rgba(24,24,17,0.52)",
+        backdropFilter: "blur(30px) saturate(170%)",
+        WebkitBackdropFilter: "blur(30px) saturate(170%)",
+        border: "1px solid rgba(122,154,130,0.22)",
+        borderRadius: 22,
+        boxShadow: "0 14px 36px rgba(0,0,0,0.55)",
       }}>
         {BOTTOM_TABS.map(tab => {
           const activeOn = "activeOn" in tab ? tab.activeOn : undefined
@@ -259,21 +258,20 @@ export default function Sidebar({ clubName, clubLevel, userName, teams, activeTe
                   textDecoration: "none",
                 }}>
                 <span style={{
-                  width: 48, height: 48, borderRadius: "50%", marginTop: -26,
+                  width: 42, height: 42, borderRadius: "50%", marginTop: -20,
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  backgroundColor: "#7A9A82",
-                  borderStyle: "solid", borderWidth: 3, borderColor: "#16160f",
-                  boxShadow: active
-                    ? "0 0 0 2px rgba(122,154,130,0.55), 0 6px 18px rgba(122,154,130,0.4)"
-                    : "0 6px 18px rgba(0,0,0,0.45)",
-                  fontSize: 20, color: "#16160f", lineHeight: 1,
+                  backgroundColor: active ? "#36453b" : "#29332c",
+                  borderStyle: "solid", borderWidth: 1,
+                  borderColor: active ? "rgba(122,154,130,0.6)" : "rgba(122,154,130,0.32)",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
+                  color: "#7A9A82", lineHeight: 1,
                 }}>
-                  {tab.icon}
+                  <TabIcon name={tab.iconKey} size={20} />
                 </span>
                 <span style={{
                   fontFamily: "var(--font-mono), monospace",
-                  fontSize: 7, fontWeight: 700, letterSpacing: "0.06em",
-                  color: active ? "#7A9A82" : "rgba(122,154,130,0.75)",
+                  fontSize: 9.5, fontWeight: 700, letterSpacing: "0.04em",
+                  color: active ? "#7A9A82" : "rgba(122,154,130,0.8)",
                 }}>
                   {tab.label.toUpperCase()}
                 </span>
@@ -289,16 +287,16 @@ export default function Sidebar({ clubName, clubLevel, userName, teams, activeTe
                 flex: 1, display: "flex", flexDirection: "column",
                 alignItems: "center", justifyContent: "center", gap: 3,
                 textDecoration: "none",
-                backgroundColor: active ? "rgba(122,154,130,0.06)" : "transparent",
-                borderTop: active ? "2px solid rgba(122,154,130,0.6)" : "2px solid transparent",
+                margin: "9px 3px", borderRadius: 14,
+                backgroundColor: active ? "rgba(122,154,130,0.13)" : "transparent",
               }}>
-              <span style={{ fontSize: 13, color: active ? "#7A9A82" : "rgba(255,255,255,0.3)" }}>
-                {tab.icon}
+              <span style={{ color: active ? "#7A9A82" : "rgba(255,255,255,0.62)", display: "flex" }}>
+                <TabIcon name={tab.iconKey} size={18} />
               </span>
               <span style={{
                 fontFamily: "var(--font-mono), monospace",
-                fontSize: 7, fontWeight: 700, letterSpacing: "0.06em",
-                color: active ? "#7A9A82" : "rgba(255,255,255,0.3)",
+                fontSize: 9.5, fontWeight: 700, letterSpacing: "0.04em",
+                color: active ? "#7A9A82" : "rgba(255,255,255,0.62)",
               }}>
                 {tab.label.toUpperCase()}
               </span>

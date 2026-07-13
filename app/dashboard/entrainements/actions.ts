@@ -1,5 +1,6 @@
 "use server"
 
+import { dbError } from "@/lib/db-error"
 import { z } from "zod"
 import { revalidatePath } from "next/cache"
 import { supabase } from "@/lib/supabase"
@@ -54,7 +55,7 @@ export async function createTraining(
     .from("trainings")
     .insert({ ...parsed.data, owner_id: scope.userId, org_id: scope.orgId, team_id: team.id })
 
-  if (error) return { ok: false, error: error.message }
+  if (error) return dbError(error)
   revalidatePath("/dashboard/entrainements")
   return { ok: true }
 }
@@ -75,7 +76,7 @@ export async function updateTraining(
     .eq("id", id)
     .eq(scope.column, scope.value)
 
-  if (error) return { ok: false, error: error.message }
+  if (error) return dbError(error)
   revalidatePath("/dashboard/entrainements")
   return { ok: true }
 }
@@ -92,7 +93,7 @@ export async function deleteTraining(
     .eq("id", id)
     .eq(scope.column, scope.value)
 
-  if (error) return { ok: false, error: error.message }
+  if (error) return dbError(error)
   revalidatePath("/dashboard/entrainements")
   return { ok: true }
 }

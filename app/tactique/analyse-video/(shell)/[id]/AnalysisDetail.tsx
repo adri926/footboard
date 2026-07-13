@@ -2,9 +2,12 @@
 
 import { useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import type { AnalysisEvent, EventType, VideoAnnotation } from "../../actions"
-import { askAboutMatch, updateAnalysisEvent, deleteAnalysisEvent } from "../../actions"
+import type { AnalysisEvent, EventType, VideoAnnotation, Weakness } from "../../actions"
+import { askAboutMatch, updateAnalysisEvent, deleteAnalysisEvent, diagnoseAnalysis } from "../../actions"
 import DrawingCanvas from "@/components/tactique/DrawingCanvas"
+import ConceptAnimation from "@/components/pitch/ConceptAnimation"
+import Link from "next/link"
+import { matchConcept } from "@/lib/coach-loop"
 import { useVideoAnnotation } from "./useVideoAnnotation"
 import VideoAnnotationControls from "./VideoAnnotationControls"
 import VideoAnnotationList from "./VideoAnnotationList"
@@ -46,6 +49,20 @@ const SUGGESTED_QUESTIONS = [
   "Quel a été le tournant du match ?",
 ]
 
+const PHASE_LABEL: Record<Weakness["phase"], string> = {
+  attack: "Offensif",
+  defense: "Défensif",
+}
+
+const STYLE_LABEL: Record<Weakness["style"], string> = {
+  possession: "Possession",
+  counter: "Contre-attaque",
+  depth: "Jeu en profondeur",
+  "low-block": "Bloc bas",
+  "mid-block": "Bloc médian",
+  "high-press": "Pressing haut",
+}
+
 export default function AnalysisDetail({
   analysisId,
   videoUrl,
@@ -54,6 +71,7 @@ export default function AnalysisDetail({
   summary,
   status,
   aiRequested,
+  diagnosis,
 }: {
   analysisId: string
   videoUrl: string | null
@@ -62,6 +80,7 @@ export default function AnalysisDetail({
   summary: string | null
   status: "uploading" | "processing" | "ready" | "error"
   aiRequested: boolean
+  diagnosis: Weakness[] | null
 }) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const videoContainerRef = useRef<HTMLDivElement>(null)
@@ -75,6 +94,19 @@ export default function AnalysisDetail({
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draft, setDraft] = useState<{ label: string; description: string; timestamp_sec: number; event_type: EventType } | null>(null)
   const [savingId, setSavingId] = useState<string | null>(null)
+
+  const [weaknesses, setWeaknesses] = useState<Weakness[]>(diagnosis ?? [])
+  const [diagError, setDiagError] = useState<string | null>(null)
+  const [isDiagnosing, startDiagnose] = useTransition()
+
+  function diagnose() {
+    setDiagError(null)
+    startDiagnose(async () => {
+      const res = await diagnoseAnalysis(analysisId)
+      if (res.ok) setWeaknesses(res.weaknesses)
+      else setDiagError(res.error)
+    })
+  }
 
   function seekTo(sec: number) {
     if (videoRef.current) {
@@ -333,6 +365,159 @@ export default function AnalysisDetail({
             })}
           </div>
         </div>
+      )}
+
+      {status === "ready" && aiRequested && (
+      <div style={{
+        backgroundColor: "var(--bg-card)",
+        border: "1px solid rgba(122,154,130,0.13)",
+        borderRadius: 14, padding: "20px 22px",
+        display: "flex", flexDirection: "column", gap: 12,
+      }}>
+        <p style={{
+          fontFamily: "var(--font-mono), monospace",
+          fontSize: 9, letterSpacing: "0.12em",
+          color: "var(--sauge)",
+        }}>
+          AXES DE PROGRÈS
+        </p>
+
+        {weaknesses.length === 0 && (
+          <>
+            <p style={{
+              fontFamily: "var(--font-body), sans-serif",
+              fontSize: 13, color: "var(--text-muted)", lineHeight: 1.6,
+            }}>
+              L&apos;IA analyse le match pour dégager 2-3 axes de travail prioritaires.
+            </p>
+            <button
+              onClick={diagnose}
+              disabled={isDiagnosing}
+              style={{
+                alignSelf: "flex-start",
+                fontFamily: "var(--font-mono), monospace",
+                fontSize: 11, fontWeight: 700, letterSpacing: "0.08em",
+                color: "var(--sauge)",
+                backgroundColor: "var(--sauge-dim)",
+                border: "1px solid var(--sauge-border)",
+                borderRadius: 8, padding: "10px 16px",
+                cursor: isDiagnosing ? "default" : "pointer",
+                opacity: isDiagnosing ? 0.6 : 1,
+              }}
+            >
+              {isDiagnosing ? "ANALYSE..." : "ANALYSER LES AXES DE PROGRÈS"}
+            </button>
+          </>
+        )}
+
+        {weaknesses.map((w, i) => {
+          const concept = matchConcept(w)
+          return (
+          <div key={i} style={{
+            backgroundColor: "var(--bg-input)",
+            border: "1px solid rgba(122,154,130,0.13)",
+            borderRadius: 10, padding: "12px 14px",
+            display: "flex", flexDirection: "column", gap: 8,
+          }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+              <span style={{
+                fontFamily: "var(--font-mono), monospace",
+                fontSize: 10, fontWeight: 700, color: "var(--sauge)",
+              }}>
+                {i + 1}.
+              </span>
+              <span style={{
+                fontFamily: "var(--font-mono), monospace",
+                fontSize: 12, fontWeight: 700, letterSpacing: "0.04em",
+                color: "var(--text-primary)",
+              }}>
+                {w.title}
+              </span>
+            </div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {[PHASE_LABEL[w.phase], STYLE_LABEL[w.style]].map(tag => (
+                <span key={tag} style={{
+                  fontFamily: "var(--font-mono), monospace",
+                  fontSize: 9, fontWeight: 700, letterSpacing: "0.06em",
+                  color: "var(--text-muted)",
+                  border: "1px solid rgba(122,154,130,0.2)",
+                  borderRadius: 6, padding: "3px 8px",
+                }}>
+                  {tag}
+                </span>
+              ))}
+            </div>
+            <p style={{
+              fontFamily: "var(--font-body), sans-serif",
+              fontSize: 12, color: "var(--text-muted)", lineHeight: 1.55,
+            }}>
+              {w.explanation}
+            </p>
+
+            {concept && (
+              <div style={{
+                display: "flex", gap: 12, alignItems: "center",
+                borderTop: "1px solid rgba(122,154,130,0.13)",
+                marginTop: 4, paddingTop: 10,
+              }}>
+                <div style={{ width: 84, flexShrink: 0 }}>
+                  <ConceptAnimation frames={concept.frames} />
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+                  <span style={{
+                    fontFamily: "var(--font-mono), monospace",
+                    fontSize: 8, letterSpacing: "0.12em", color: "var(--sauge)",
+                  }}>
+                    CONCEPT À TRAVAILLER
+                  </span>
+                  <span style={{
+                    fontFamily: "var(--font-body), sans-serif",
+                    fontSize: 12, fontWeight: 600, color: "var(--text-primary)",
+                  }}>
+                    {concept.icon} {concept.title}
+                  </span>
+                  <Link
+                    href={`/tactique/concepts#${concept.id}`}
+                    style={{
+                      fontFamily: "var(--font-mono), monospace",
+                      fontSize: 9, fontWeight: 700, letterSpacing: "0.06em",
+                      color: "var(--sauge)", textDecoration: "none",
+                    }}
+                  >
+                    Voir la leçon animée →
+                  </Link>
+                </div>
+              </div>
+            )}
+
+            <Link
+              href={`/dashboard/entrainements/nouvelle-seance?axe=${w.phase}:${w.style}&titre=${encodeURIComponent(w.title)}`}
+              style={{
+                alignSelf: "flex-start",
+                fontFamily: "var(--font-mono), monospace",
+                fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
+                color: "var(--sauge)",
+                backgroundColor: "var(--sauge-dim)",
+                border: "1px solid var(--sauge-border)",
+                borderRadius: 8, padding: "8px 14px",
+                textDecoration: "none", marginTop: 2,
+              }}
+            >
+              ⚙ GÉNÉRER LA SÉANCE
+            </Link>
+          </div>
+          )
+        })}
+
+        {diagError && (
+          <p style={{
+            fontFamily: "var(--font-mono), monospace",
+            fontSize: 10, color: "rgba(220,80,80,0.8)",
+          }}>
+            {diagError}
+          </p>
+        )}
+      </div>
       )}
 
       {status === "ready" && aiRequested && (

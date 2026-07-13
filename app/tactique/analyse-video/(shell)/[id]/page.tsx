@@ -99,6 +99,7 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
               summary={analysis.summary}
               status={analysis.status}
               aiRequested={analysis.ai_requested}
+              diagnosis={analysis.diagnosis}
             />
           </div>
         )}

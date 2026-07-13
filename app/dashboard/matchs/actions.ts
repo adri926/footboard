@@ -1,5 +1,6 @@
 "use server"
 
+import { dbError } from "@/lib/db-error"
 import { z } from "zod"
 import { revalidatePath } from "next/cache"
 import { supabase } from "@/lib/supabase"
@@ -111,7 +112,7 @@ export async function saveLineup(
   if (rows.length === 0) return { ok: true }
 
   const { error } = await supabase.from("match_lineups").insert(rows)
-  if (error) return { ok: false, error: error.message }
+  if (error) return dbError(error)
 
   revalidatePath(`/dashboard/matchs/${matchId}/preparation`)
   return { ok: true }
@@ -145,7 +146,7 @@ export async function createMatch(
     .from("matches")
     .insert({ ...parsed.data, owner_id: scope.userId, org_id: scope.orgId, team_id: team.id })
 
-  if (error) return { ok: false, error: error.message }
+  if (error) return dbError(error)
   revalidatePath("/dashboard/matchs")
   return { ok: true }
 }
@@ -166,7 +167,7 @@ export async function updateMatch(
     .eq("id", id)
     .eq(scope.column, scope.value)
 
-  if (error) return { ok: false, error: error.message }
+  if (error) return dbError(error)
   revalidatePath("/dashboard/matchs")
   return { ok: true }
 }
@@ -203,6 +204,9 @@ export async function saveMatchStats(
   const parsed = z.array(MatchStatRowSchema).safeParse(rows)
   if (!parsed.success) return { ok: false, error: "Données invalides." }
 
+  // match_stats n'a pas de colonne de scope : l'appartenance au club est garantie en amont
+  // par getMatchById() (scopé) qui renvoie null pour un match d'un autre club → on ne
+  // supprime jamais les stats d'un match qu'on ne possède pas.
   await supabase.from("match_stats").delete().eq("match_id", matchId)
 
   const toInsert = parsed.data
@@ -219,7 +223,7 @@ export async function saveMatchStats(
 
   if (toInsert.length > 0) {
     const { error } = await supabase.from("match_stats").insert(toInsert)
-    if (error) return { ok: false, error: error.message }
+    if (error) return dbError(error)
   }
 
   revalidatePath(`/dashboard/matchs/${matchId}/bilan`)
@@ -324,7 +328,7 @@ export async function deleteMatch(
     .eq("id", id)
     .eq(scope.column, scope.value)
 
-  if (error) return { ok: false, error: error.message }
+  if (error) return dbError(error)
   revalidatePath("/dashboard/matchs")
   return { ok: true }
 }

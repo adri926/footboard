@@ -11,9 +11,10 @@ interface Props {
   matchContext:   MatchContext
   initialBlocks?: SessionBlock[]
   templateName?:  string
+  generatedName?: string
 }
 
-export default function NouvelleSceanceClient({ clubProfile, matchContext, initialBlocks, templateName }: Props) {
+export default function NouvelleSceanceClient({ clubProfile, matchContext, initialBlocks, templateName, generatedName }: Props) {
   const [blocks, setBlocks] = useState<SessionBlock[]>(initialBlocks ?? [])
   const [mobileView, setMobileView] = useState<"library" | "builder">("library")
 
@@ -71,7 +72,7 @@ export default function NouvelleSceanceClient({ clubProfile, matchContext, initi
             fontWeight: 900, fontSize: 28, lineHeight: 1,
             color: "var(--text-primary)", letterSpacing: "0.01em",
           }}>
-            {templateName ? `COPIE — ${templateName.toUpperCase()}` : "CRÉER UNE SÉANCE"}
+            {generatedName ? "SÉANCE GÉNÉRÉE" : templateName ? `COPIE — ${templateName.toUpperCase()}` : "CRÉER UNE SÉANCE"}
           </h1>
         </div>
       </div>
@@ -110,7 +111,7 @@ export default function NouvelleSceanceClient({ clubProfile, matchContext, initi
             onReorder={setBlocks}
             onRemove={handleRemove}
             onChangeDuration={handleChangeDuration}
-            defaultName={templateName ? `Copie — ${templateName}` : ""}
+            defaultName={generatedName ?? (templateName ? `Copie — ${templateName}` : "")}
           />
         </div>
       </div>

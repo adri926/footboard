@@ -1,1 +1,3 @@
-export const CURRENT_SEASON = "2025/2026"
+import { getCurrentSeason } from "@/lib/season"
+
+export const CURRENT_SEASON = getCurrentSeason()

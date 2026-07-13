@@ -8,11 +8,27 @@ import { getClubScope } from "@/lib/scope"
 import { sendPushToUser } from "@/lib/push"
 import { getLineup } from "@/app/dashboard/matchs/actions"
 import type { Drawing, DrawingType } from "@/types/tactical"
+import type { Phase, Style } from "@/lib/scenarios"
 
 const BUCKET = "match-videos"
 const MODEL = "gemini-2.5-flash"
 
 export type EventType = "but" | "occasion" | "carton" | "changement" | "tactique" | "autre"
+
+// Un axe de progrès déduit de l'analyse. phase/style sont contraints aux tags des concepts
+// (lib/scenarios.ts) pour un mapping direct vers l'animation tactique correspondante.
+export interface Weakness {
+  title: string
+  explanation: string
+  phase: Phase
+  style: Style
+  priority: number      // 1 = le plus urgent
+}
+
+// Valeurs runtime de l'union Style — sert d'enum au responseSchema Gemini.
+const TACTICAL_STYLES: Style[] = [
+  "possession", "counter", "depth", "low-block", "mid-block", "high-press",
+]
 
 export interface VideoAnalysis {
   id: string
@@ -23,6 +39,7 @@ export interface VideoAnalysis {
   summary: string | null
   match_id: string | null
   ai_requested: boolean
+  diagnosis: Weakness[] | null
 }
 
 export interface AnalysisEvent {
@@ -49,7 +66,7 @@ export async function listAnalyses(): Promise<VideoAnalysis[]> {
 
   const { data, error } = await supabase
     .from("video_analyses")
-    .select("id, title, status, error_message, created_at, summary, match_id, ai_requested")
+    .select("id, title, status, error_message, created_at, summary, match_id, ai_requested, diagnosis")
     .eq(scope.column, scope.value)
     .order("created_at", { ascending: false })
 
@@ -133,7 +150,7 @@ export async function getAnalysis(id: string): Promise<{
 
   const { data: analysis, error } = await supabase
     .from("video_analyses")
-    .select("id, title, status, error_message, created_at, video_path, summary, match_id, ai_requested")
+    .select("id, title, status, error_message, created_at, video_path, summary, match_id, ai_requested, diagnosis")
     .eq(scope.column, scope.value)
     .eq("id", id)
     .maybeSingle()
@@ -180,6 +197,106 @@ export async function getAnalysis(id: string): Promise<{
     })),
     videoUrl: signed?.signedUrl ?? null,
   }
+}
+
+// Boucle IA — étape 1 : traduit une analyse de match en 2-3 axes de progrès mappés sur les
+// tags des concepts (phase/style). Raisonne sur le texte déjà extrait (résumé + timeline),
+// jamais sur la vidéo — ~100x moins cher, et fonctionne après expiration du fichier Gemini.
+// Le résultat est mis en cache dans video_analyses.diagnosis pour ne pas re-payer.
+export async function diagnoseAnalysis(
+  analysisId: string
+): Promise<{ ok: true; weaknesses: Weakness[] } | { ok: false; error: string }> {
+  const { userId } = await auth()
+  if (!userId) return { ok: false, error: "Connecte-toi." }
+  const scope = await getClubScope()
+
+  const { data: analysis, error } = await supabase
+    .from("video_analyses")
+    .select("summary, status, ai_requested, diagnosis")
+    .eq(scope.column, scope.value)
+    .eq("id", analysisId)
+    .maybeSingle()
+
+  if (error || !analysis) return { ok: false, error: "Analyse introuvable." }
+  if (analysis.status !== "ready") return { ok: false, error: "L'analyse n'est pas encore prête." }
+  if (!analysis.ai_requested) return { ok: false, error: "Analyse IA non demandée pour cette vidéo." }
+
+  // Déjà diagnostiqué — on renvoie le cache sans rappeler Gemini.
+  if (Array.isArray(analysis.diagnosis) && analysis.diagnosis.length > 0) {
+    return { ok: true, weaknesses: analysis.diagnosis as Weakness[] }
+  }
+
+  const { data: events } = await supabase
+    .from("analysis_events")
+    .select("timestamp_sec, label, description, event_type")
+    .eq("analysis_id", analysisId)
+    .order("timestamp_sec", { ascending: true })
+
+  const timeline = (events ?? [])
+    .map(e => `${Math.floor(e.timestamp_sec / 60)}'${String(e.timestamp_sec % 60).padStart(2, "0")} — [${e.event_type}] ${e.label} : ${e.description}`)
+    .join("\n")
+
+  if (!analysis.summary && !timeline) {
+    return { ok: false, error: "Pas assez d'éléments pour établir un diagnostic." }
+  }
+
+  const ai = getAI()
+  const result = await ai.models.generateContent({
+    model: MODEL,
+    contents: [{
+      role: "user",
+      parts: [{
+        text:
+          "Tu es un analyste tactique de football amateur. À partir du résumé et de la " +
+          "timeline d'événements d'un match, identifie 2 à 3 axes de progrès prioritaires " +
+          "pour l'équipe filmée. Pour chaque axe : un titre court, une explication concrète " +
+          "en 1-2 phrases ancrée sur ce que montre la timeline, la phase concernée (attack " +
+          "ou defense), le style de jeu à travailler parmi la liste imposée, et une priorité " +
+          "(1 = le plus urgent). Réponds en français.\n\n" +
+          (analysis.summary ? `RÉSUMÉ :\n${analysis.summary}\n\n` : "") +
+          (timeline ? `TIMELINE :\n${timeline}` : ""),
+      }],
+    }],
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          weaknesses: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                title: { type: Type.STRING },
+                explanation: { type: Type.STRING },
+                phase: { type: Type.STRING, enum: ["attack", "defense"] },
+                style: { type: Type.STRING, enum: TACTICAL_STYLES },
+                priority: { type: Type.INTEGER },
+              },
+              required: ["title", "explanation", "phase", "style", "priority"],
+            },
+          },
+        },
+        required: ["weaknesses"],
+      },
+    },
+  })
+
+  const parsed = JSON.parse(result.text ?? "{}") as { weaknesses?: Weakness[] }
+  const weaknesses = (parsed.weaknesses ?? [])
+    .slice(0, 3)
+    .sort((a, b) => a.priority - b.priority)
+
+  if (weaknesses.length === 0) {
+    return { ok: false, error: "Le diagnostic n'a rien renvoyé, réessaie." }
+  }
+
+  await supabase
+    .from("video_analyses")
+    .update({ diagnosis: weaknesses })
+    .eq("id", analysisId)
+
+  return { ok: true, weaknesses }
 }
 
 export async function analyzeVideo(

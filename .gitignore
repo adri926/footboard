@@ -24,6 +24,9 @@
 .DS_Store
 *.pem
 
+# outil de démo local (mockup iframe) — ne doit jamais partir en prod
+/public/mockup.html
+
 # debug
 npm-debug.log*
 yarn-debug.log*

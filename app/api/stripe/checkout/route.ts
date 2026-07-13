@@ -4,16 +4,17 @@ import { auth } from "@clerk/nextjs/server"
 import { supabase } from "@/lib/supabase"
 import { getClubScope } from "@/lib/scope"
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? "")
-
 export async function POST() {
   const { userId } = await auth()
   if (!userId) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
 
-  const priceId = process.env.STRIPE_PRICE_CLUB_MONTHLY
-  if (!priceId || !process.env.STRIPE_SECRET_KEY) {
+  // Instanciation paresseuse (le build échoue si on crée Stripe au chargement sans clé).
+  const priceId   = process.env.STRIPE_PRICE_CLUB_MONTHLY
+  const secretKey = process.env.STRIPE_SECRET_KEY
+  if (!priceId || !secretKey) {
     return NextResponse.json({ error: "Stripe non configuré." }, { status: 503 })
   }
+  const stripe = new Stripe(secretKey)
 
   const scope = await getClubScope()
   const { data: club } = await supabase

@@ -1,5 +1,6 @@
 "use server"
 
+import { dbError } from "@/lib/db-error"
 import { auth } from "@clerk/nextjs/server"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
@@ -33,7 +34,7 @@ export async function subscribePush(subscription: PushSubscriptionPayload): Prom
       auth:     subscription.keys.auth,
     }, { onConflict: "endpoint" })
 
-  if (error) return { ok: false, error: error.message }
+  if (error) return dbError(error)
   return { ok: true }
 }
 
@@ -47,7 +48,7 @@ export async function unsubscribePush(endpoint: string): Promise<{ ok: true } | 
     .eq("endpoint", endpoint)
     .eq("user_id", userId)
 
-  if (error) return { ok: false, error: error.message }
+  if (error) return dbError(error)
   return { ok: true }
 }
 
@@ -74,7 +75,7 @@ export async function setAvailability(matchId: string, status: "present" | "abse
       responded_at: new Date().toISOString(),
     }, { onConflict: "match_id,player_id" })
 
-  if (error) return { ok: false, error: error.message }
+  if (error) return dbError(error)
   revalidatePath("/joueur")
   return { ok: true }
 }

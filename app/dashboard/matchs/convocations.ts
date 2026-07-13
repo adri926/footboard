@@ -7,7 +7,9 @@ import { supabase } from "@/lib/supabase"
 import { getClubScope } from "@/lib/scope"
 import { sendPushToUser } from "@/lib/push"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Null-safe : ne pas instancier (Resend throw sans clé) au chargement du module → casserait
+// `next build` quand RESEND_API_KEY est absente (CI, preview). Null si non configuré.
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 const FROM   = process.env.RESEND_FROM ?? "Footboard <onboarding@resend.dev>"
 
 export interface ConvocablePlayer {
@@ -129,6 +131,7 @@ export async function sendConvocations(
 
   const withEmail = players.filter(p => p.email)
   if (withEmail.length === 0) return { ok: false, error: "Aucun joueur sélectionné n'a d'adresse email." }
+  if (!resend) return { ok: false, error: "Envoi d'email non configuré (clé Resend manquante)." }
 
   const date     = formatDate(match.date)
   const location = match.home_away === "home" ? "Domicile" : "Extérieur"

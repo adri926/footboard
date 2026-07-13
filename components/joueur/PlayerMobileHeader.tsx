@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { usePathname } from "next/navigation"
 import FootboardMark from "@/components/FootboardMark"
 
@@ -21,7 +21,12 @@ export default function PlayerMobileHeader({ clubName, playerName }: Props) {
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
 
-  useEffect(() => { setOpen(false) }, [pathname])
+  // Ferme le menu au changement de route — pattern "reset au rendu" (pas d'effet).
+  const [prevPathname, setPrevPathname] = useState(pathname)
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname)
+    setOpen(false)
+  }
 
   return (
     <>

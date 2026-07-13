@@ -1,5 +1,6 @@
 "use server"
 
+import { dbError } from "@/lib/db-error"
 import { z } from "zod"
 import { randomBytes } from "crypto"
 import { revalidatePath } from "next/cache"
@@ -77,7 +78,7 @@ export async function createPlayer(
     .from("players")
     .insert({ ...parsed.data, owner_id: scope.userId, org_id: scope.orgId })
 
-  if (error) return { ok: false, error: error.message }
+  if (error) return dbError(error)
   revalidatePath("/dashboard/effectif")
   return { ok: true }
 }
@@ -99,7 +100,7 @@ export async function updatePlayer(
     .eq("id", id)
     .eq(scope.column, scope.value)  // impossible de modifier un joueur d'un autre club
 
-  if (error) return { ok: false, error: error.message }
+  if (error) return dbError(error)
   revalidatePath("/dashboard/effectif")
   return { ok: true }
 }
@@ -145,7 +146,7 @@ export async function importPlayers(
   }))
 
   const { error } = await supabase.from("players").insert(toInsert)
-  if (error) return { ok: false, error: error.message }
+  if (error) return dbError(error)
 
   revalidatePath("/dashboard/effectif")
   return { ok: true, count: toInsert.length }
@@ -207,7 +208,7 @@ export async function addPhysicalEntry(
     notes:      parsed.data.notes ?? null,
   })
 
-  if (error) return { ok: false, error: error.message }
+  if (error) return dbError(error)
   revalidatePath(`/dashboard/effectif/${playerId}`)
   return { ok: true }
 }
@@ -226,7 +227,7 @@ export async function deletePhysicalEntry(
     .eq("id", id)
     .eq(scope.column, scope.value)
 
-  if (error) return { ok: false, error: error.message }
+  if (error) return dbError(error)
   revalidatePath(`/dashboard/effectif/${playerId}`)
   return { ok: true }
 }
@@ -258,8 +259,9 @@ export async function invitePlayer(
   const token = randomBytes(24).toString("hex")
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
 
-  // Repart d'une invitation propre à chaque (ré)envoi
-  await supabase.from("player_invites").delete().eq("player_id", playerId)
+  // Repart d'une invitation propre à chaque (ré)envoi. Filtre de scope direct (défense en
+  // profondeur) même si `player` a déjà été vérifié comme appartenant au club plus haut.
+  await supabase.from("player_invites").delete().eq("player_id", playerId).eq(scope.column, scope.value)
 
   const { error: insertErr } = await supabase.from("player_invites").insert({
     player_id: playerId,
@@ -269,7 +271,7 @@ export async function invitePlayer(
     token,
     expires_at: expiresAt,
   })
-  if (insertErr) return { ok: false, error: insertErr.message }
+  if (insertErr) return dbError(insertErr)
 
   if (hasEmailKey()) {
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"
@@ -281,7 +283,7 @@ export async function invitePlayer(
     await resend!.emails.send({ from: FROM, to: player.email, subject, html })
   }
 
-  await supabase.from("players").update({ invite_status: "pending" }).eq("id", playerId)
+  await supabase.from("players").update({ invite_status: "pending" }).eq("id", playerId).eq(scope.column, scope.value)
   revalidatePath(`/dashboard/effectif/${playerId}`)
   return { ok: true }
 }
@@ -299,7 +301,7 @@ export async function deletePlayer(
     .eq("id", id)
     .eq(scope.column, scope.value)
 
-  if (error) return { ok: false, error: error.message }
+  if (error) return dbError(error)
   revalidatePath("/dashboard/effectif")
   return { ok: true }
 }

@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from "next/server"
 import Stripe from "stripe"
 import { supabase } from "@/lib/supabase"
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? "")
-
 export async function POST(req: NextRequest) {
+  // Instanciation paresseuse : ne pas créer le client Stripe au chargement du module
+  // (sinon le build échoue quand STRIPE_SECRET_KEY est absente — Stripe non encore activé).
+  const secretKey     = process.env.STRIPE_SECRET_KEY
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
-  if (!webhookSecret) return NextResponse.json({ error: "Webhook non configuré" }, { status: 503 })
+  if (!secretKey || !webhookSecret) return NextResponse.json({ error: "Webhook non configuré" }, { status: 503 })
+  const stripe = new Stripe(secretKey)
 
   const body = await req.text()
   const sig  = req.headers.get("stripe-signature") ?? ""

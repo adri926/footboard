@@ -1,5 +1,6 @@
 "use server"
 
+import { dbError } from "@/lib/db-error"
 import { z } from "zod"
 import { revalidatePath } from "next/cache"
 import { Resend } from "resend"
@@ -8,7 +9,8 @@ import { getClubScope } from "@/lib/scope"
 import { requireFeesAccess, getMyClub } from "@/app/dashboard/club/actions"
 import { CURRENT_SEASON } from "./constants"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Null-safe : Resend throw sans clé → ne pas instancier au chargement (casserait `next build`).
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 const FROM   = process.env.RESEND_FROM ?? "Footboard <onboarding@resend.dev>"
 
 export type FeeStatus = "paid" | "partial" | "unpaid" | "none"
@@ -114,7 +116,7 @@ export async function setFee(
       org_id:      scope.orgId,
     }, { onConflict: "player_id,season" })
 
-  if (error) return { ok: false, error: error.message }
+  if (error) return dbError(error)
   revalidatePath("/dashboard/club/cotisations")
   return { ok: true }
 }
@@ -173,6 +175,7 @@ export async function sendFeeReminder(
   const amountDue  = Number(fee?.amount_due ?? 0)
   const amountPaid = Number(fee?.amount_paid ?? 0)
   if (amountDue <= amountPaid) return { ok: false, error: "Cette cotisation est déjà réglée." }
+  if (!resend) return { ok: false, error: "Envoi d'email non configuré (clé Resend manquante)." }
 
   try {
     await resend.emails.send({
@@ -213,8 +216,8 @@ export async function applyFeeToAll(
       .eq("season", CURRENT_SEASON),
   ])
 
-  if (playersErr) return { ok: false, error: playersErr.message }
-  if (feesErr) return { ok: false, error: feesErr.message }
+  if (playersErr) return dbError(playersErr)
+  if (feesErr) return dbError(feesErr)
   if (!players || players.length === 0) return { ok: false, error: "Aucun joueur dans l'effectif." }
 
   const feeByPlayer = new Map((fees ?? []).map(f => [f.player_id, f]))
@@ -236,7 +239,7 @@ export async function applyFeeToAll(
     .from("player_fees")
     .upsert(rows, { onConflict: "player_id,season" })
 
-  if (error) return { ok: false, error: error.message }
+  if (error) return dbError(error)
   revalidatePath("/dashboard/club/cotisations")
   return { ok: true }
 }

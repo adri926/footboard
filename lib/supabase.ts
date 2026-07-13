@@ -1,14 +1,16 @@
 import { createClient } from "@supabase/supabase-js"
 
-const SUPABASE_URL   = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const SERVICE_KEY    = process.env.SUPABASE_SERVICE_ROLE_KEY
+// Ne pas throw au chargement du module : `next build` évalue les modules ("collecting page
+// data") sans les secrets runtime → un throw casse le build et la CI. createClient avec des
+// valeurs vides ne lève rien à la construction (seulement à l'usage réel). En prod, les
+// variables d'environnement sont fournies par l'hébergeur.
+// Placeholders non-vides : createClient() lève "supabaseUrl/Key is required" sur valeur vide.
+// Au build (sans secrets) on veut juste que l'évaluation du module réussisse ; en prod les
+// vraies variables sont fournies par l'hébergeur.
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "http://localhost:54321"
+const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY || "build-placeholder-key"
 
-if (!SERVICE_KEY) {
-  throw new Error("SUPABASE_SERVICE_ROLE_KEY manquante — vérifie tes variables d'environnement.")
-}
-
-// Client serveur uniquement — utilise la service_role key (jamais exposée côté client).
-// RLS activée sur toutes les tables : la service_role la bypasse légitimement.
+// Client serveur uniquement — service_role key (jamais exposée côté client).
 // Chaque action vérifie auth() Clerk AVANT d'appeler ce client.
 export const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
   auth: { persistSession: false },
