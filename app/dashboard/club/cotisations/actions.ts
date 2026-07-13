@@ -9,7 +9,8 @@ import { getClubScope } from "@/lib/scope"
 import { requireFeesAccess, getMyClub } from "@/app/dashboard/club/actions"
 import { CURRENT_SEASON } from "./constants"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Null-safe : Resend throw sans clé → ne pas instancier au chargement (casserait `next build`).
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 const FROM   = process.env.RESEND_FROM ?? "Footboard <onboarding@resend.dev>"
 
 export type FeeStatus = "paid" | "partial" | "unpaid" | "none"
@@ -174,6 +175,7 @@ export async function sendFeeReminder(
   const amountDue  = Number(fee?.amount_due ?? 0)
   const amountPaid = Number(fee?.amount_paid ?? 0)
   if (amountDue <= amountPaid) return { ok: false, error: "Cette cotisation est déjà réglée." }
+  if (!resend) return { ok: false, error: "Envoi d'email non configuré (clé Resend manquante)." }
 
   try {
     await resend.emails.send({
