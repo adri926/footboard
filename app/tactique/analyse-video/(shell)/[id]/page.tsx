@@ -4,6 +4,7 @@ import { getAnalysis } from "../../actions"
 import { getMatchById } from "@/app/dashboard/matchs/actions"
 import AnalysisDetail from "./AnalysisDetail"
 import ProcessingPoller from "./ProcessingPoller"
+import DesktopFullBleed from "@/components/dashboard/DesktopFullBleed"
 
 const STATUS_LABEL: Record<string, string> = {
   uploading: "UPLOAD EN COURS...",
@@ -22,7 +23,10 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
 
   return (
     <main style={{ background: "var(--bg)", minHeight: "calc(100vh - 56px)" }}>
-      <div style={{ maxWidth: 640, margin: "0 auto", padding: "48px 24px 64px" }}>
+      {/* W0 : sur desktop, on sort de la colonne mobile pour un lecteur plus large. */}
+      <DesktopFullBleed />
+      <style>{`.av-shell { max-width: 640px; } @media (min-width: 768px) { .av-shell { max-width: 920px; } }`}</style>
+      <div className="av-shell" style={{ margin: "0 auto", padding: "48px 24px 64px" }}>
 
         <Link href="/tactique/analyse-video" style={{
           fontFamily: "var(--font-mono), monospace",
