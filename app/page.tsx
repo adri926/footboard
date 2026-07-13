@@ -4,6 +4,9 @@ import { auth } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
 import HeroPitch from "@/components/HeroPitch"
 import PricingCard from "@/components/home/PricingCard"
+import AiLoopSection from "@/components/home/AiLoopSection"
+import DevicesSection from "@/components/home/DevicesSection"
+import FaqSection from "@/components/home/FaqSection"
 
 export const metadata: Metadata = {
   title: "Footboard — Analyse vidéo IA, dominez le terrain",
@@ -169,9 +172,9 @@ export default async function Home() {
               fontWeight: 400, fontSize: 17, lineHeight: 1.6,
               color: "rgba(255,255,255,0.45)", maxWidth: 400, marginBottom: 32,
             }}>
-              Pas de caméra robot, pas de budget pro. Juste ton téléphone et une IA
-              qui regarde le match avec toi — plus toute la gestion de ton club,
-              dans la même appli.
+              Pas de caméra robot, pas de budget pro. Juste ton téléphone (ou ta
+              tablette) et une IA qui regarde le match avec toi — plus toute la
+              gestion de ton club, dans la même appli.
             </p>
             <div className="flex gap-3 flex-wrap">
               <Link href="/dashboard" className="transition hover:opacity-85" style={{
@@ -231,6 +234,9 @@ export default async function Home() {
             </div>
           ))}
         </div>
+
+        {/* ── 2bis. LA BOUCLE IA (différenciateur) ── */}
+        <AiLoopSection />
 
         {/* ── 3. FONCTIONNALITÉS ── */}
         <div className="mb-24">
@@ -407,6 +413,12 @@ export default async function Home() {
             ))}
           </div>
         </div>
+
+        {/* ── 5bis. PARTOUT (mobile · tablette · web) ── */}
+        <DevicesSection />
+
+        {/* ── 5ter. FAQ ── */}
+        <FaqSection />
 
         {/* ── 6. CTA FINAL ── */}
         <div className="mb-20 rounded-2xl p-10 text-center" style={{
